@@ -1892,6 +1892,35 @@ dependencies = [
  "log",
  "num",
  "pxu",
+ "pxu-plot",
+ "ron",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-wasm",
+ "url",
+ "wasm-bindgen-futures",
+ "wasm-logger",
+ "web-sys",
+]
+
+[[package]]
+name = "pxu-plot"
+version = "0.1.0"
+dependencies = [
+ "base64 0.21.0",
+ "chrono",
+ "clap",
+ "console_error_panic_hook",
+ "eframe",
+ "egui",
+ "flate2",
+ "itertools",
+ "log",
+ "num",
+ "pxu",
  "ron",
  "serde",
  "serde_json",

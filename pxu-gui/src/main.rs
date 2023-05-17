@@ -5,7 +5,6 @@ mod anim;
 mod app;
 mod arguments;
 mod frame_history;
-mod plot;
 mod ui_state;
 
 use crate::arguments::Arguments;

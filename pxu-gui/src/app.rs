@@ -4,8 +4,8 @@ use pxu::Pxu;
 
 use crate::anim::Anim;
 use crate::arguments::Arguments;
-use crate::plot::Plot;
 use crate::ui_state::UiState;
+use pxu_plot::Plot;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]

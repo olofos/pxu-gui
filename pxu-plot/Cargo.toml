@@ -1,5 +1,5 @@
 [package]
-name = "pxu-gui"
+name = "pxu-plot"
 version = "0.1.0"
 authors = ["Olof Ohlsson Sax <olof.ohlsson.sax@gmail.com>"]
 edition = "2021"
@@ -27,7 +27,6 @@ chrono = { version = "0.4", features = [
 ], default-features = false }
 
 pxu = { path = "../pxu", features = ["egui"] }
-pxu-plot = { path = "../pxu-plot"}
 serde_json = "1.0.95"
 serde_urlencoded = "0.7.1"
 base64 = "0.21.0"

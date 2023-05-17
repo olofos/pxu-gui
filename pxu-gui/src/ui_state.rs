@@ -2,7 +2,7 @@ use crate::arguments::Arguments;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct UiState {
-    pub plot_state: crate::plot::PlotState,
+    pub plot_state: pxu_plot::PlotState,
     #[serde(skip)]
     pub show_side_panel: bool,
     #[serde(skip)]
