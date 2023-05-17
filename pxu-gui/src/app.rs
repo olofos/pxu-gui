@@ -189,7 +189,7 @@ impl eframe::App for PxuGuiApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let rect = ui.available_rect_before_wrap();
 
-            if let Some(component) = self.ui_state.fullscreen_component {
+            let plots = if let Some(component) = self.ui_state.fullscreen_component {
                 let plot = match component {
                     pxu::Component::P => &mut self.p_plot,
                     pxu::Component::Xp => &mut self.xp_plot,
@@ -198,7 +198,7 @@ impl eframe::App for PxuGuiApp {
                     pxu::Component::X => &mut self.x_plot,
                 };
 
-                plot.show(ui, rect, &mut self.pxu, &mut self.ui_state);
+                vec![(plot, rect)]
             } else {
                 use egui::Rect;
                 const GAP: f32 = 8.0;
@@ -208,33 +208,25 @@ impl eframe::App for PxuGuiApp {
 
                 let top_left = rect.left_top();
 
-                self.p_plot.show(
-                    ui,
-                    Rect::from_min_size(top_left, size),
-                    &mut self.pxu,
-                    &mut self.ui_state,
-                );
+                vec![
+                    (&mut self.p_plot, Rect::from_min_size(top_left, size)),
+                    (
+                        &mut self.u_plot,
+                        Rect::from_min_size(top_left + vec2(w + GAP, 0.0), size),
+                    ),
+                    (
+                        &mut self.xp_plot,
+                        Rect::from_min_size(top_left + vec2(0.0, h + GAP), size),
+                    ),
+                    (
+                        &mut self.xm_plot,
+                        Rect::from_min_size(top_left + vec2(w + GAP, h + GAP), size),
+                    ),
+                ]
+            };
 
-                self.u_plot.show(
-                    ui,
-                    Rect::from_min_size(top_left + vec2(w + GAP, 0.0), size),
-                    &mut self.pxu,
-                    &mut self.ui_state,
-                );
-
-                self.xp_plot.show(
-                    ui,
-                    Rect::from_min_size(top_left + vec2(0.0, h + GAP), size),
-                    &mut self.pxu,
-                    &mut self.ui_state,
-                );
-
-                self.xm_plot.show(
-                    ui,
-                    Rect::from_min_size(top_left + vec2(w + GAP, h + GAP), size),
-                    &mut self.pxu,
-                    &mut self.ui_state,
-                );
+            for (plot, rect) in plots {
+                plot.show(ui, rect, &mut self.pxu, &mut self.ui_state);
             }
         });
 
