@@ -3,6 +3,13 @@ use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
 use pxu_plot::{Plot, PlotState};
 
+type FrameSetupFunction = fn(&mut PresentationApp);
+
+enum Frame {
+    Images,
+    Plot(FrameSetupFunction),
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -61,16 +68,16 @@ impl Default for PresentationApp {
 
 impl PresentationApp {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        if let Some(storage) = cc.storage {
-            let app: Self = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-            return app;
-        }
+        // if let Some(storage) = cc.storage {
+        //     let app: Self = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+        //     return app;
+        // }
 
         Default::default()
     }
@@ -93,7 +100,7 @@ impl eframe::App for PresentationApp {
         //         });
         //     });
         // });
-        if ctx.input().key_pressed(egui::Key::Q) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
             _frame.close();
         }
         {
@@ -123,7 +130,7 @@ impl eframe::App for PresentationApp {
 
                 let top_left = rect.left_top();
 
-                let t = ctx.input().time;
+                let t = ctx.input(|i| i.time);
                 let x = 0.5 + 0.5 * (t.cos() * t.cos()) as f32;
                 ctx.request_repaint_after(std::time::Duration::from_millis((1000.0 / 20.0) as u64));
 

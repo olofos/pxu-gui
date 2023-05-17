@@ -5,7 +5,7 @@ mod app;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-fn main() {
+fn main() -> Result<(), eframe::Error> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -29,7 +29,7 @@ fn main() {
             cc.egui_ctx.set_style(style);
             Box::new(app::PresentationApp::new(cc))
         }),
-    );
+    )
 }
 
 // when compiling to web using trunk.
