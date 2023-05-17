@@ -102,7 +102,7 @@ impl eframe::App for PxuGuiApp {
     fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         if self.ui_state.show_fps {
             self.frame_history
-                .on_new_frame(ctx.input().time, frame.info().cpu_usage);
+                .on_new_frame(ctx.input(|i| i.time), frame.info().cpu_usage);
         }
 
         if self.ui_state.continuous_mode {
@@ -121,11 +121,11 @@ impl eframe::App for PxuGuiApp {
             });
         });
 
-        if ctx.input().key_pressed(egui::Key::Enter) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
             self.ui_state.show_side_panel = !self.ui_state.show_side_panel;
         }
 
-        if ctx.input().key_pressed(egui::Key::Escape) {
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.ui_state.plot_state.close_fullscreen();
             self.ui_state.show_side_panel = true;
         }

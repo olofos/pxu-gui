@@ -67,10 +67,10 @@ impl Plot {
         }
 
         if ui.rect_contains_pointer(rect) {
-            let zoom = ui.input().zoom_delta();
+            let zoom = ui.input(|i| i.zoom_delta());
             self.zoom(zoom);
 
-            let scroll = ui.input().scroll_delta;
+            let scroll = ui.input(|i| i.scroll_delta);
             self.origin -= Vec2::new(
                 scroll.x * (self.height / rect.height()) * (self.width_factor),
                 scroll.y * (self.height / rect.height()),
@@ -110,9 +110,9 @@ impl Plot {
 
             if point_response.dragged() {
                 let delta = point_response.drag_delta();
-                let delta = if ui.input().key_down(egui::Key::E) {
+                let delta = if ui.input(|i| i.key_down(egui::Key::E)) {
                     vec2(delta.x, 0.0)
-                } else if ui.input().key_down(egui::Key::W) {
+                } else if ui.input(|i| i.key_down(egui::Key::W)) {
                     vec2(0.0, delta.y)
                 } else {
                     delta
@@ -120,7 +120,7 @@ impl Plot {
                 let new_value = to_screen.inverse() * (center + delta);
                 let new_value = Complex64::new(new_value.x as f64, -new_value.y as f64);
 
-                let new_value = if ui.input().key_pressed(egui::Key::R) {
+                let new_value = if ui.input(|i| i.key_pressed(egui::Key::R)) {
                     match self.component {
                         pxu::Component::P => Complex64::from(new_value.re),
                         pxu::Component::U => {
@@ -160,7 +160,7 @@ impl Plot {
             plot_state.toggle_fullscreen(self.component)
         }
 
-        if ui.input().key_pressed(egui::Key::Home) {
+        if ui.input(|i| i.key_pressed(egui::Key::Home)) {
             let z = pxu.state.points[plot_state.active_point].get(self.component);
             self.origin = egui::pos2(z.re as f32, -z.im as f32);
         }
@@ -491,8 +491,6 @@ impl Plot {
         self.draw_points(rect, pxu, plot_state, &mut shapes);
 
         {
-            let f = ui.fonts();
-
             let text = match self.component {
                 pxu::Component::P => "p",
                 pxu::Component::U => "u",
@@ -501,26 +499,28 @@ impl Plot {
                 pxu::Component::X => "X",
             };
 
-            let text_shape = egui::epaint::Shape::text(
-                &f,
-                rect.right_top() + vec2(-10.0, 10.0),
-                egui::Align2::RIGHT_TOP,
-                text,
-                egui::TextStyle::Monospace.resolve(ui.style()),
-                Color32::BLACK,
-            );
+            ui.fonts(|f| {
+                let text_shape = egui::epaint::Shape::text(
+                    &f,
+                    rect.right_top() + vec2(-10.0, 10.0),
+                    egui::Align2::RIGHT_TOP,
+                    text,
+                    egui::TextStyle::Monospace.resolve(ui.style()),
+                    Color32::BLACK,
+                );
 
-            shapes.push(egui::epaint::Shape::rect_filled(
-                text_shape.visual_bounding_rect().expand(6.0),
-                egui::Rounding::none(),
-                Color32::WHITE,
-            ));
-            shapes.push(egui::epaint::Shape::rect_stroke(
-                text_shape.visual_bounding_rect().expand(4.0),
-                egui::Rounding::none(),
-                egui::Stroke::new(0.5, Color32::BLACK),
-            ));
-            shapes.push(text_shape);
+                shapes.push(egui::epaint::Shape::rect_filled(
+                    text_shape.visual_bounding_rect().expand(6.0),
+                    egui::Rounding::none(),
+                    Color32::WHITE,
+                ));
+                shapes.push(egui::epaint::Shape::rect_stroke(
+                    text_shape.visual_bounding_rect().expand(4.0),
+                    egui::Rounding::none(),
+                    egui::Stroke::new(0.5, Color32::BLACK),
+                ));
+                shapes.push(text_shape);
+            });
         }
 
         ui.painter().extend(shapes);
