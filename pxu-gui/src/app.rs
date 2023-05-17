@@ -17,11 +17,11 @@ pub struct PxuGuiApp {
     xm_plot: Plot,
     u_plot: Plot,
     x_plot: Plot,
+    ui_state: UiState,
     #[serde(skip)]
     frame_history: crate::frame_history::FrameHistory,
     #[serde(skip)]
     anim_data: Anim,
-    ui_state: UiState,
     #[serde(skip)]
     path_dialog_text: Option<String>,
 }
@@ -118,7 +118,6 @@ impl eframe::App for PxuGuiApp {
                         frame.close();
                     }
                 });
-                ui.menu_button("View", |ui| self.ui_state.menu(ui, None));
             });
         });
 
@@ -127,7 +126,7 @@ impl eframe::App for PxuGuiApp {
         }
 
         if ctx.input().key_pressed(egui::Key::Escape) {
-            self.ui_state.close_fullscreen();
+            self.ui_state.plot_state.close_fullscreen();
             self.ui_state.show_side_panel = true;
         }
 
@@ -141,7 +140,7 @@ impl eframe::App for PxuGuiApp {
                 < (1000.0 / 20.0f64).floor() as i64
             {
                 if self.pxu.contours.update(
-                    self.pxu.state.points[self.ui_state.active_point]
+                    self.pxu.state.points[self.ui_state.plot_state.active_point]
                         .p
                         .re
                         .floor() as i32,
@@ -163,7 +162,7 @@ impl eframe::App for PxuGuiApp {
                             self.ui_state.saved_paths_to_load = None;
                             self.ui_state.path_load_progress = None;
                             if !self.pxu.paths.is_empty() {
-                                self.ui_state.path_index = Some(0);
+                                self.ui_state.plot_state.path_index = Some(0);
                             }
                         }
                     }
@@ -189,7 +188,7 @@ impl eframe::App for PxuGuiApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let rect = ui.available_rect_before_wrap();
 
-            let plots = if let Some(component) = self.ui_state.fullscreen_component {
+            let mut plots = if let Some(component) = self.ui_state.plot_state.fullscreen_component {
                 let plot = match component {
                     pxu::Component::P => &mut self.p_plot,
                     pxu::Component::Xp => &mut self.xp_plot,
@@ -225,8 +224,14 @@ impl eframe::App for PxuGuiApp {
                 ]
             };
 
+            self.ui_state.plot_state.reset();
+
+            for (plot, rect) in plots.iter_mut() {
+                plot.interact(ui, *rect, &mut self.pxu, &mut self.ui_state.plot_state);
+            }
+
             for (plot, rect) in plots {
-                plot.show(ui, rect, &mut self.pxu, &mut self.ui_state);
+                plot.show(ui, rect, &mut self.pxu, &mut self.ui_state.plot_state);
             }
         });
 
@@ -258,7 +263,7 @@ impl eframe::App for PxuGuiApp {
                                 close_dialog = true;
                                 self.pxu.consts = saved_paths[0].consts;
                                 self.pxu.state = saved_paths[0].start.clone();
-                                self.ui_state.active_point = saved_paths[0].excitation;
+                                self.ui_state.plot_state.active_point = saved_paths[0].excitation;
                                 self.pxu.paths = saved_paths
                                     .into_iter()
                                     .map(|saved_path| {
@@ -301,7 +306,7 @@ impl PxuGuiApp {
                 if let Some(n) = n {
                     let n = n as usize;
                     self.pxu.state = pxu::State::new(n, self.pxu.consts);
-                    self.ui_state.active_point = n / 2;
+                    self.ui_state.plot_state.active_point = n / 2;
                     self.anim_data.stop();
                 }
                 self.pxu.state.points.len() as f64
@@ -410,7 +415,7 @@ impl PxuGuiApp {
     }
 
     fn draw_state_information(&mut self, ui: &mut egui::Ui) {
-        let active_point = &self.pxu.state.points[self.ui_state.active_point];
+        let active_point = &self.pxu.state.points[self.ui_state.plot_state.active_point];
         ui.separator();
         {
             ui.label(format!("Momentum: {:.3}", self.pxu.state.p()));
@@ -508,7 +513,7 @@ impl PxuGuiApp {
             if !self.pxu.paths.is_empty() {
                 ui.separator();
                 ui.label("Path:");
-                let path_name = if let Some(path_index) = self.ui_state.path_index {
+                let path_name = if let Some(path_index) = self.ui_state.plot_state.path_index {
                     &self.pxu.paths[path_index].base_path.name
                 } else {
                     "None"
@@ -518,10 +523,10 @@ impl PxuGuiApp {
                     .show_ui(ui, |ui| {
                         ui.style_mut().wrap = Some(false);
                         ui.set_min_width(60.0);
-                        ui.selectable_value(&mut self.ui_state.path_index, None, "None");
+                        ui.selectable_value(&mut self.ui_state.plot_state.path_index, None, "None");
                         for i in 0..self.pxu.paths.len() {
                             ui.selectable_value(
-                                &mut self.ui_state.path_index,
+                                &mut self.ui_state.plot_state.path_index,
                                 Some(i),
                                 &self.pxu.paths[i].base_path.name,
                             );

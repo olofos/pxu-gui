@@ -2,7 +2,6 @@ use eframe::emath::RectTransform;
 use egui::{vec2, Color32, Pos2, Rect, Stroke, Ui, Vec2};
 use num::complex::Complex64;
 
-use crate::ui_state::UiState;
 use pxu::kinematics::UBranch;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -13,19 +12,49 @@ pub struct Plot {
     pub origin: Pos2,
 }
 
-#[derive(Debug)]
-struct InteractionPointIndices {
-    hovered: Option<usize>,
-    dragged: Option<usize>,
+#[derive(Default, serde::Deserialize, serde::Serialize)]
+pub struct PlotState {
+    pub active_point: usize,
+    #[serde(skip)]
+    pub interaction_point: Option<usize>,
+    #[serde(skip)]
+    pub interaction_component: Option<pxu::Component>,
+    #[serde(skip)]
+    pub hovered: bool,
+    #[serde(skip)]
+    pub dragged: bool,
+    #[serde(skip)]
+    pub path_index: Option<usize>,
+    #[serde(skip)]
+    pub fullscreen_component: Option<pxu::Component>,
+    #[serde(skip)]
+    pub show_x: bool,
 }
 
-// enum Response {
-//     None,
-//     Hovered(),
-//     Dragged(),
-//     Zoom(),
-//     Scroll(),
-// }
+impl PlotState {
+    pub fn reset(&mut self) {
+        self.interaction_point = None;
+        self.interaction_component = None;
+    }
+
+    pub fn toggle_fullscreen(&mut self, component: pxu::Component) {
+        if self.fullscreen_component.is_some() {
+            if self.fullscreen_component != Some(component) {
+                log::warn!(
+                    "Toggling the wrong fullscreen component ({:?} vs {component:?})",
+                    self.fullscreen_component
+                );
+            }
+            self.fullscreen_component = None;
+        } else {
+            self.fullscreen_component = Some(component);
+        }
+    }
+
+    pub fn close_fullscreen(&mut self) {
+        self.fullscreen_component = None;
+    }
+}
 
 impl Plot {
     fn interact_with_grid(&mut self, ui: &mut Ui, rect: Rect, response: &egui::Response) {
@@ -54,13 +83,10 @@ impl Plot {
         ui: &mut Ui,
         rect: Rect,
         pxu: &mut pxu::Pxu,
-        ui_state: &mut UiState,
+        plot_state: &mut PlotState,
         response: &egui::Response,
-    ) -> InteractionPointIndices {
+    ) {
         let to_screen = self.to_screen(rect);
-
-        let mut hovered = None;
-        let mut dragged = None;
 
         let state = &mut pxu.state;
 
@@ -75,12 +101,11 @@ impl Plot {
             let point_id = response.id.with(id);
             let point_response = ui.interact(point_rect, point_id, egui::Sense::drag());
 
-            if point_response.hovered() {
-                hovered = Some(j);
-            }
-
-            if point_response.dragged() {
-                dragged = Some(j);
+            if point_response.hovered() || point_response.dragged() {
+                plot_state.interaction_point = Some(j);
+                plot_state.interaction_component = Some(self.component);
+                plot_state.dragged = point_response.dragged();
+                plot_state.hovered = point_response.hovered();
             }
 
             if point_response.dragged() {
@@ -109,21 +134,19 @@ impl Plot {
                     new_value
                 };
 
-                ui_state.active_point = j;
+                plot_state.active_point = j;
                 state.update(j, self.component, new_value, &pxu.contours, pxu.consts);
             }
         }
-
-        InteractionPointIndices { hovered, dragged }
     }
 
-    fn interact(
+    fn do_interact(
         &mut self,
         ui: &mut Ui,
         rect: Rect,
         pxu: &mut pxu::Pxu,
-        ui_state: &mut UiState,
-    ) -> InteractionPointIndices {
+        plot_state: &mut PlotState,
+    ) {
         let response = ui.interact(
             rect,
             ui.id().with(format!("{:?}", self.component)),
@@ -131,20 +154,16 @@ impl Plot {
         );
 
         self.interact_with_grid(ui, rect, &response);
-        let interaction_points = self.interact_with_points(ui, rect, pxu, ui_state, &response);
+        self.interact_with_points(ui, rect, pxu, plot_state, &response);
 
         if response.double_clicked() {
-            ui_state.toggle_fullscreen(self.component)
+            plot_state.toggle_fullscreen(self.component)
         }
 
         if ui.input().key_pressed(egui::Key::Home) {
-            let z = pxu.state.points[ui_state.active_point].get(self.component);
+            let z = pxu.state.points[plot_state.active_point].get(self.component);
             self.origin = egui::pos2(z.re as f32, -z.im as f32);
         }
-
-        response.context_menu(|ui| ui_state.menu(ui, Some(self.component)));
-
-        interaction_points
     }
 
     fn draw_grid(&self, rect: Rect, contours: &pxu::Contours, shapes: &mut Vec<egui::Shape>) {
@@ -194,7 +213,7 @@ impl Plot {
         &self,
         rect: Rect,
         pxu: &pxu::Pxu,
-        ui_state: &mut UiState,
+        plot_state: &PlotState,
         shapes: &mut Vec<egui::Shape>,
     ) {
         let to_screen = self.to_screen(rect);
@@ -203,7 +222,7 @@ impl Plot {
 
         {
             let shift = if self.component == pxu::Component::U {
-                2.0 * (pxu.state.points[ui_state.active_point]
+                2.0 * (pxu.state.points[plot_state.active_point]
                     .sheet_data
                     .log_branch_p
                     * pxu.consts.k()) as f32
@@ -214,20 +233,20 @@ impl Plot {
 
             let visible_cuts = pxu
                 .contours
-                .get_visible_cuts(pxu, self.component, ui_state.active_point)
+                .get_visible_cuts(pxu, self.component, plot_state.active_point)
                 .collect::<Vec<_>>();
 
             for cut in visible_cuts {
                 let hide_log_cut = |comp| {
                     comp != cut.component
                         || (comp == pxu::Component::Xp
-                            && pxu.state.points[ui_state.active_point]
+                            && pxu.state.points[plot_state.active_point]
                                 .sheet_data
                                 .u_branch
                                 .1
                                 == UBranch::Between)
                         || (comp == pxu::Component::Xm
-                            && pxu.state.points[ui_state.active_point]
+                            && pxu.state.points[plot_state.active_point]
                                 .sheet_data
                                 .u_branch
                                 .0
@@ -337,16 +356,17 @@ impl Plot {
         &self,
         rect: Rect,
         pxu: &pxu::Pxu,
-        ui_state: &UiState,
-        points: InteractionPointIndices,
+        plot_state: &PlotState,
         shapes: &mut Vec<egui::Shape>,
     ) {
         let to_screen = self.to_screen(rect);
 
         for (i, pt) in pxu.state.points.iter().enumerate() {
-            let is_hovered = points.hovered == Some(i);
-            let is_dragged = points.dragged == Some(i);
-            let is_active = ui_state.active_point == i;
+            let is_interactive = plot_state.interaction_component == Some(self.component)
+                && plot_state.interaction_point == Some(i);
+            let is_hovered = is_interactive && plot_state.hovered;
+            let is_dragged = is_interactive && plot_state.dragged;
+            let is_active = plot_state.active_point == i;
 
             let z = pt.get(self.component);
             let center = to_screen * egui::pos2(z.re as f32, -z.im as f32);
@@ -368,7 +388,7 @@ impl Plot {
             let fill = if is_active {
                 Color32::BLUE
             } else if pxu.state.points[i]
-                .same_sheet(&pxu.state.points[ui_state.active_point], self.component)
+                .same_sheet(&pxu.state.points[plot_state.active_point], self.component)
             {
                 Color32::BLACK
             } else {
@@ -382,7 +402,7 @@ impl Plot {
                 stroke,
             }));
 
-            if ui_state.show_x
+            if plot_state.show_x
                 && (self.component == pxu::Component::Xp || self.component == pxu::Component::Xm)
             {
                 let z = pt.x;
@@ -397,28 +417,21 @@ impl Plot {
         }
     }
 
-    fn draw(
-        &self,
-        ui: &mut Ui,
-        rect: Rect,
-        pxu: &mut pxu::Pxu,
-        ui_state: &mut UiState,
-        interaction_points: InteractionPointIndices,
-    ) {
+    fn draw(&self, ui: &mut Ui, rect: Rect, pxu: &mut pxu::Pxu, plot_state: &PlotState) {
         let to_screen = self.to_screen(rect);
 
         let mut shapes = vec![];
 
         self.draw_grid(rect, &pxu.contours, &mut shapes);
-        self.draw_cuts(rect, pxu, ui_state, &mut shapes);
+        self.draw_cuts(rect, pxu, plot_state, &mut shapes);
 
-        if let Some(path_index) = ui_state.path_index {
+        if let Some(path_index) = plot_state.path_index {
             if path_index < pxu.paths.len() {
                 for (active_point, segments) in pxu.paths[path_index].segments.iter().enumerate() {
                     let mut points = vec![];
                     let mut same_branch = false;
 
-                    let color = if active_point == ui_state.active_point {
+                    let color = if active_point == plot_state.active_point {
                         Color32::BLUE
                     } else {
                         Color32::GRAY
@@ -439,7 +452,7 @@ impl Plot {
                             .map(|z| to_screen * egui::pos2(z.re as f32, -(z.im as f32)))
                             .collect::<Vec<_>>();
 
-                        let segment_same_branch = pxu.state.points[ui_state.active_point]
+                        let segment_same_branch = pxu.state.points[plot_state.active_point]
                             .sheet_data
                             .is_same(&segment.sheet_data, self.component);
 
@@ -475,7 +488,7 @@ impl Plot {
             }
         }
 
-        self.draw_points(rect, pxu, ui_state, interaction_points, &mut shapes);
+        self.draw_points(rect, pxu, plot_state, &mut shapes);
 
         {
             let f = ui.fonts();
@@ -527,12 +540,37 @@ impl Plot {
         )
     }
 
-    pub fn show(&mut self, ui: &mut Ui, rect: Rect, pxu: &mut pxu::Pxu, ui_state: &mut UiState) {
+    pub fn interact(
+        &mut self,
+        ui: &mut Ui,
+        rect: Rect,
+        pxu: &mut pxu::Pxu,
+        plot_state: &mut PlotState,
+    ) {
         let old_clip_rect = ui.clip_rect();
         ui.set_clip_rect(rect);
 
-        let interaction_points = self.interact(ui, rect, pxu, ui_state);
-        self.draw(ui, rect, pxu, ui_state, interaction_points);
+        self.do_interact(ui, rect, pxu, plot_state);
+
+        ui.set_clip_rect(old_clip_rect);
+        ui.painter().add(egui::epaint::Shape::rect_stroke(
+            rect,
+            egui::epaint::Rounding::same(4.0),
+            Stroke::new(1.0, Color32::DARK_GRAY),
+        ));
+    }
+
+    pub fn show(
+        &mut self,
+        ui: &mut Ui,
+        rect: Rect,
+        pxu: &mut pxu::Pxu,
+        plot_state: &mut PlotState,
+    ) {
+        let old_clip_rect = ui.clip_rect();
+        ui.set_clip_rect(rect);
+
+        self.draw(ui, rect, pxu, plot_state);
 
         ui.set_clip_rect(old_clip_rect);
         ui.painter().add(egui::epaint::Shape::rect_stroke(
