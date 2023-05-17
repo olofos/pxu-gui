@@ -1,0 +1,51 @@
+[package]
+name = "presentation"
+version = "0.1.0"
+authors = ["Olof Ohlsson Sax <olof.ohlsson.sax@gmail.com>"]
+edition = "2021"
+rust-version = "1.65"
+
+[dependencies]
+egui = "0.20.0"
+eframe = { version = "0.20.0", default-features = false, features = [
+    "accesskit",     # Make egui comptaible with screen readers. NOTE: adds a lot of dependencies.
+    "default_fonts", # Embed the default egui fonts.
+    "glow",          # Use the glow rendering backend. Alternative: "wgpu".
+    "persistence",   # Enable restoring app state when restarting the app.
+] }
+num = "0.4.0"
+
+# You only need serde if you want app persistence:
+serde = { version = "1", features = ["derive"] }
+log = "0.4.6"
+itertools = "0.10.5"
+chrono = { version = "0.4", features = [
+    "js-sys",
+    "wasmbind",
+    "clock",
+    "std",
+], default-features = false }
+
+pxu = { path = "../pxu", features = ["egui"] }
+pxu-plot = { path = "../pxu-plot"}
+serde_json = "1.0.95"
+serde_urlencoded = "0.7.1"
+base64 = "0.21.0"
+flate2 = "1.0.25"
+ron = "0.8.0"
+
+
+# native:
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tracing-subscriber = "0.3"
+tracing = "0.1.37"
+clap = { version = "4.2.2", features = ["derive", "cargo"] }
+
+# web:
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.6"
+tracing-wasm = "0.2"
+wasm-bindgen-futures = "0.4"
+wasm-logger = "0.2.0"
+web-sys = { version = "0.3.61", features = ["Window", "Document", "Location"] }
+url = "2.3.1"
