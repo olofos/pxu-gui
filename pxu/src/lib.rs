@@ -11,7 +11,6 @@ mod state;
 
 pub use contours::{
     compute_branch_point, BranchPointType, Component, Contours, GridLine, GridLineComponent,
-    UCutType,
 };
 pub use cut::{Cut, CutType};
 pub use kinematics::CouplingConstants;

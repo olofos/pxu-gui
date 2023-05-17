@@ -1,7 +1,7 @@
 use crate::kinematics::{CouplingConstants, UBranch};
 pub use crate::point::Point;
 
-use crate::contours::{Component, UCutType};
+use crate::contours::Component;
 use itertools::Itertools;
 
 use num::complex::Complex64;
@@ -121,10 +121,8 @@ impl Cut {
         None
     }
 
-    pub fn is_visible(&self, pt: &Point, u_cut_type: UCutType) -> bool {
-        self.visibility
-            .iter()
-            .all(|cond| cond.check(pt, u_cut_type))
+    pub fn is_visible(&self, pt: &Point) -> bool {
+        self.visibility.iter().all(|cond| cond.check(pt))
     }
 }
 
@@ -162,59 +160,17 @@ pub enum CutVisibilityCondition {
     EBranch(i32),
     UpBranch(UBranch),
     UmBranch(UBranch),
-
-    ImXpOrUpBranch(i8, UBranch),
-    ImXmOrUmBranch(i8, UBranch),
-
-    LongCuts,
-    ShortCuts,
-    ShortOrSemiShortCuts,
 }
 
 impl CutVisibilityCondition {
-    fn check(&self, pt: &Point, u_cut_type: UCutType) -> bool {
-        let long_cuts = u_cut_type == UCutType::Long;
+    fn check(&self, pt: &Point) -> bool {
         match self {
             Self::ImXp(sign) => pt.xp.im.signum() as i8 == sign.signum(),
             Self::ImXm(sign) => pt.xm.im.signum() as i8 == sign.signum(),
             Self::LogBranch(b) => *b == (pt.sheet_data.log_branch_p + pt.sheet_data.log_branch_m),
             Self::EBranch(b) => pt.sheet_data.e_branch == *b,
-            Self::UpBranch(b) => {
-                if u_cut_type != UCutType::Short {
-                    if *b == UBranch::Between || *b == UBranch::Inside {
-                        pt.sheet_data.u_branch.0 != UBranch::Outside
-                    } else {
-                        pt.sheet_data.u_branch.0 == UBranch::Outside
-                    }
-                } else {
-                    pt.sheet_data.u_branch.0 == *b
-                }
-            }
-            Self::UmBranch(b) => {
-                if u_cut_type != UCutType::Short {
-                    if *b == UBranch::Between || *b == UBranch::Inside {
-                        pt.sheet_data.u_branch.1 != UBranch::Outside
-                    } else {
-                        pt.sheet_data.u_branch.1 == UBranch::Outside
-                    }
-                } else {
-                    pt.sheet_data.u_branch.1 == *b
-                }
-            }
-
-            Self::ImXpOrUpBranch(b1, b2) => match u_cut_type {
-                UCutType::Long => Self::ImXp(*b1).check(pt, u_cut_type),
-                UCutType::Short => Self::UpBranch(b2.clone()).check(pt, u_cut_type),
-            },
-
-            Self::ImXmOrUmBranch(b1, b2) => match u_cut_type {
-                UCutType::Long => Self::ImXm(*b1).check(pt, u_cut_type),
-                UCutType::Short => Self::UmBranch(b2.clone()).check(pt, u_cut_type),
-            },
-
-            Self::LongCuts => long_cuts,
-            Self::ShortCuts => u_cut_type == UCutType::Short,
-            Self::ShortOrSemiShortCuts => !long_cuts,
+            Self::UpBranch(b) => pt.sheet_data.u_branch.0 == *b,
+            Self::UmBranch(b) => pt.sheet_data.u_branch.1 == *b,
         }
     }
 
@@ -226,12 +182,6 @@ impl CutVisibilityCondition {
             Self::EBranch(b) => Self::EBranch(*b),
             Self::UpBranch(b) => Self::UmBranch(b.clone()),
             Self::UmBranch(b) => Self::UpBranch(b.clone()),
-            Self::ImXpOrUpBranch(b1, b2) => Self::ImXmOrUmBranch(-*b1, b2.clone()),
-            Self::ImXmOrUmBranch(b1, b2) => Self::ImXpOrUpBranch(-*b1, b2.clone()),
-
-            Self::LongCuts => Self::LongCuts,
-            Self::ShortCuts => Self::ShortCuts,
-            Self::ShortOrSemiShortCuts => Self::ShortOrSemiShortCuts,
         }
     }
 }

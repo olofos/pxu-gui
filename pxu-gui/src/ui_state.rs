@@ -1,5 +1,3 @@
-use pxu::UCutType;
-
 use crate::arguments::Arguments;
 
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -7,7 +5,6 @@ use crate::arguments::Arguments;
 pub struct UiState {
     #[serde(skip)]
     pub fullscreen_component: Option<pxu::Component>,
-    pub u_cut_type: UCutType,
     #[serde(skip)]
     pub show_side_panel: bool,
     pub active_point: usize,
@@ -31,7 +28,6 @@ impl Default for UiState {
     fn default() -> Self {
         Self {
             fullscreen_component: Default::default(),
-            u_cut_type: Default::default(),
             show_side_panel: true,
             active_point: 0,
             show_fps: false,
@@ -81,15 +77,6 @@ impl UiState {
     }
 
     pub fn menu(&mut self, ui: &mut egui::Ui, component: Option<pxu::Component>) {
-        ui.menu_button("Cut type", |ui| {
-            if UCutType::all()
-                .map(|typ| ui.radio_value(&mut self.u_cut_type, typ, typ.to_string()))
-                .any(|r| r.clicked())
-            {
-                ui.close_menu();
-            }
-        });
-
         if ui
             .button(if self.show_side_panel {
                 "Hide side panel"

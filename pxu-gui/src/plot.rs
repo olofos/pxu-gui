@@ -4,7 +4,6 @@ use num::complex::Complex64;
 
 use crate::ui_state::UiState;
 use pxu::kinematics::UBranch;
-use pxu::UCutType;
 
 #[derive(serde::Deserialize, serde::Serialize)]
 pub struct Plot {
@@ -215,15 +214,8 @@ impl Plot {
 
             let visible_cuts = pxu
                 .contours
-                .get_visible_cuts(
-                    pxu,
-                    self.component,
-                    ui_state.u_cut_type,
-                    ui_state.active_point,
-                )
+                .get_visible_cuts(pxu, self.component, ui_state.active_point)
                 .collect::<Vec<_>>();
-
-            let long_cuts = ui_state.u_cut_type == UCutType::Long;
 
             for cut in visible_cuts {
                 let hide_log_cut = |comp| {
@@ -246,7 +238,7 @@ impl Plot {
                     pxu::CutType::E => Color32::BLACK,
 
                     pxu::CutType::Log(comp) => {
-                        if ui_state.u_cut_type == UCutType::Short && hide_log_cut(comp) {
+                        if hide_log_cut(comp) {
                             continue;
                         } else if comp == pxu::Component::Xp {
                             Color32::from_rgb(255, 128, 128)
@@ -255,18 +247,12 @@ impl Plot {
                         }
                     }
 
-                    pxu::CutType::ULongNegative(comp) => {
-                        if !long_cuts {
-                            continue;
-                        } else if comp == pxu::Component::Xp {
-                            Color32::from_rgb(255, 0, 0)
-                        } else {
-                            Color32::from_rgb(0, 192, 0)
-                        }
+                    pxu::CutType::ULongNegative(_) => {
+                        continue;
                     }
 
                     pxu::CutType::ULongPositive(comp) => {
-                        if ui_state.u_cut_type == UCutType::Short && hide_log_cut(comp) {
+                        if hide_log_cut(comp) {
                             continue;
                         } else if comp == pxu::Component::Xp {
                             Color32::from_rgb(255, 0, 0)
@@ -276,9 +262,7 @@ impl Plot {
                     }
 
                     pxu::CutType::UShortScallion(comp) => {
-                        if long_cuts {
-                            continue;
-                        } else if comp == pxu::Component::Xp {
+                        if comp == pxu::Component::Xp {
                             Color32::from_rgb(255, 0, 0)
                         } else {
                             Color32::from_rgb(0, 192, 0)
@@ -286,9 +270,7 @@ impl Plot {
                     }
 
                     pxu::CutType::UShortKidney(comp) => {
-                        if long_cuts {
-                            continue;
-                        } else if comp == pxu::Component::Xp {
+                        if comp == pxu::Component::Xp {
                             Color32::from_rgb(255, 0, 0)
                         } else {
                             Color32::from_rgb(0, 192, 0)
@@ -385,11 +367,9 @@ impl Plot {
 
             let fill = if is_active {
                 Color32::BLUE
-            } else if pxu.state.points[i].same_sheet(
-                &pxu.state.points[ui_state.active_point],
-                self.component,
-                ui_state.u_cut_type,
-            ) {
+            } else if pxu.state.points[i]
+                .same_sheet(&pxu.state.points[ui_state.active_point], self.component)
+            {
                 Color32::BLACK
             } else {
                 Color32::GRAY
@@ -461,7 +441,7 @@ impl Plot {
 
                         let segment_same_branch = pxu.state.points[ui_state.active_point]
                             .sheet_data
-                            .is_same(&segment.sheet_data, self.component, ui_state.u_cut_type);
+                            .is_same(&segment.sheet_data, self.component);
 
                         if segment_same_branch != same_branch {
                             if same_branch {

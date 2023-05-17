@@ -57,7 +57,6 @@ pub struct FigureWriter {
     pub plot_count: u64,
     pub component: pxu::Component,
     y_shift: Option<f64>,
-    u_cut_type: pxu::UCutType,
 }
 
 impl FigureWriter {
@@ -97,7 +96,6 @@ progress_file=io.open(""#;
         y0: f64,
         size: Size,
         component: pxu::Component,
-        u_cut_type: pxu::UCutType,
         settings: &Settings,
         pb: &ProgressBar,
     ) -> std::io::Result<Self> {
@@ -147,7 +145,6 @@ progress_file=io.open(""#;
             plot_count: 0,
             component,
             y_shift: None,
-            u_cut_type,
             caption: String::new(),
         })
     }
@@ -298,24 +295,22 @@ progress_file=io.open(""#;
     }
 
     pub fn add_cuts(&mut self, pxu: &pxu::Pxu, options: &[&str]) -> Result<()> {
-        use pxu::{kinematics::UBranch, CutType::*, UCutType::*};
+        use pxu::{kinematics::UBranch, CutType::*};
 
-        let u_cut_type = self.u_cut_type;
         for cut in pxu
             .contours
-            .get_visible_cuts(pxu, self.component, self.u_cut_type, 0)
+            .get_visible_cuts(pxu, self.component, 0)
             .filter(|cut| match cut.typ {
                 Log(comp) | ULongPositive(comp) => {
-                    u_cut_type != Short
-                        || (comp == pxu::Component::Xp
-                            && cut.component == pxu::Component::Xp
-                            && pxu.state.points[0].sheet_data.u_branch.1 != UBranch::Between)
+                    (comp == pxu::Component::Xp
+                        && cut.component == pxu::Component::Xp
+                        && pxu.state.points[0].sheet_data.u_branch.1 != UBranch::Between)
                         || (comp == pxu::Component::Xm
                             && cut.component == pxu::Component::Xm
                             && pxu.state.points[0].sheet_data.u_branch.0 != UBranch::Between)
                 }
-                ULongNegative(_) => u_cut_type == Long,
-                UShortScallion(_) | UShortKidney(_) => u_cut_type != Long,
+                ULongNegative(_) => false,
+                UShortScallion(_) | UShortKidney(_) => true,
                 E => true,
                 DebugPath => false,
             })
@@ -356,11 +351,9 @@ progress_file=io.open(""#;
         let mut points = vec![];
 
         for segment in &path.segments[0] {
-            let segment_same_branch = segment.sheet_data.is_same(
-                &pxu.state.points[0].sheet_data,
-                self.component,
-                self.u_cut_type,
-            );
+            let segment_same_branch = segment
+                .sheet_data
+                .is_same(&pxu.state.points[0].sheet_data, self.component);
 
             if segment_same_branch != same_branch && !points.is_empty() {
                 if same_branch {

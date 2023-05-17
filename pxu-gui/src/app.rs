@@ -1,7 +1,6 @@
 use egui::{vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
-use pxu::UCutType;
 
 use crate::anim::Anim;
 use crate::arguments::Arguments;
@@ -504,13 +503,6 @@ impl PxuGuiApp {
     fn draw_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::right("side_panel").show(ctx, |ui| {
             self.draw_coupling_controls(ui);
-
-            ui.label("U cuts: ");
-            ui.horizontal(|ui| {
-                for typ in UCutType::all() {
-                    ui.radio_value(&mut self.ui_state.u_cut_type, typ, format!("{typ}"));
-                }
-            });
 
             if ui.add(egui::Button::new("Reset")).clicked() {
                 self.pxu.consts = CouplingConstants::new(2.0, 5);

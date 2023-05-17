@@ -25,7 +25,6 @@ fn fig_p_xpl_preimage(
             height: 6.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -34,7 +33,7 @@ fn fig_p_xpl_preimage(
 
     for cut in pxu
         .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Short, 0)
+        .get_visible_cuts(&pxu, pxu::Component::P, 0)
         .filter(|cut| matches!(cut.typ, pxu::CutType::E))
     {
         figure.add_cut(cut, &[], pxu.consts)?;
@@ -150,7 +149,6 @@ fn fig_xpl_cover(
             height: 3.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -161,84 +159,6 @@ fn fig_xpl_cover(
     ) {
         figure.add_grid_line(contour, &["thin", "black"])?;
     }
-    figure.finish(cache, settings, pb)
-}
-
-fn fig_p_plane_long_cuts_regions(
-    pxu: Arc<Pxu>,
-    cache: Arc<cache::Cache>,
-    settings: &Settings,
-    pb: &ProgressBar,
-) -> Result<FigureCompiler> {
-    let mut figure = FigureWriter::new(
-        "p-plane-long-cuts-regions",
-        -2.6..2.6,
-        0.0,
-        Size {
-            width: 15.0,
-            height: 6.0,
-        },
-        pxu::Component::P,
-        pxu::UCutType::Long,
-        settings,
-        pb,
-    )?;
-
-    let color_physical = "blue!10";
-    let color_mirror_p = "red!10";
-    let color_mirror_m = "green!10";
-
-    {
-        let x1 = figure.bounds.x_range.start - 0.25;
-        let x2 = figure.bounds.x_range.end + 0.25;
-        let y1 = figure.bounds.y_range.start - 0.25;
-        let y2 = figure.bounds.y_range.end + 0.25;
-
-        figure.add_plot_all(
-            &[format!("fill={color_physical}").as_str()],
-            vec![
-                Complex64::new(x1, y1),
-                Complex64::new(x1, y2),
-                Complex64::new(x2, y2),
-                Complex64::new(x2, y1),
-            ],
-        )?;
-    }
-
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Long, 0)
-    {
-        let color_mirror = match cut.typ {
-            pxu::CutType::ULongPositive(pxu::Component::Xp)
-            | pxu::CutType::ULongNegative(pxu::Component::Xp) => color_mirror_p,
-            pxu::CutType::ULongPositive(pxu::Component::Xm)
-            | pxu::CutType::ULongNegative(pxu::Component::Xm) => color_mirror_m,
-            _ => {
-                continue;
-            }
-        };
-
-        let mut cropped_path = figure.crop(&cut.path);
-        if cropped_path.len() >= 2 {
-            let len = cropped_path.len();
-            let start = cropped_path[0];
-            let mid = cropped_path[len / 2];
-            let end = cropped_path[len - 1];
-
-            cropped_path.push(Complex64::new(mid.re.round(), end.im));
-            cropped_path.push(Complex64::new(mid.re.round(), start.im));
-
-            figure.add_plot_all(
-                &["draw=none", format!("fill={color_mirror}").as_str()],
-                cropped_path,
-            )?;
-        }
-    }
-
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &[])?;
-
     figure.finish(cache, settings, pb)
 }
 
@@ -257,33 +177,6 @@ fn fig_p_plane_short_cuts(
             height: 10.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
-        settings,
-        pb,
-    )?;
-
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &[])?;
-
-    figure.finish(cache, settings, pb)
-}
-
-fn fig_p_plane_long_cuts(
-    pxu: Arc<Pxu>,
-    cache: Arc<cache::Cache>,
-    settings: &Settings,
-    pb: &ProgressBar,
-) -> Result<FigureCompiler> {
-    let mut figure = FigureWriter::new(
-        "p-plane-long-cuts",
-        -2.6..2.6,
-        0.0,
-        Size {
-            width: 25.0,
-            height: 10.0,
-        },
-        pxu::Component::P,
-        pxu::UCutType::Long,
         settings,
         pb,
     )?;
@@ -309,7 +202,6 @@ fn fig_xp_cuts_1(
             height: 12.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -385,7 +277,6 @@ fn fig_u_period_between_between(
             height: 12.5,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -421,7 +312,6 @@ fn fig_u_band_between_outside(
             height: 12.5,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -457,7 +347,6 @@ fn fig_u_band_between_inside(
             height: 12.5,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -493,7 +382,6 @@ fn fig_p_band_between_outside(
             height: 6.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -523,7 +411,6 @@ fn fig_p_band_between_inside(
             height: 6.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -546,7 +433,6 @@ fn fig_xp_band_between_inside(
             height: 8.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -582,7 +468,6 @@ fn fig_xp_band_between_outside(
             height: 8.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -618,7 +503,6 @@ fn fig_xm_band_between_inside(
             height: 8.0,
         },
         pxu::Component::Xm,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -654,7 +538,6 @@ fn fig_xm_band_between_outside(
             height: 16.0,
         },
         pxu::Component::Xm,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -690,7 +573,6 @@ fn fig_xp_period_between_between(
             height: 8.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -720,7 +602,6 @@ fn fig_xm_period_between_between(
             height: 8.0,
         },
         pxu::Component::Xm,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -750,7 +631,6 @@ fn fig_p_period_between_between(
             height: 8.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -780,7 +660,6 @@ fn fig_u_crossing_0(
             height: 6.0,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -813,7 +692,6 @@ fn fig_xp_crossing_0(
             height: 6.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -846,7 +724,6 @@ fn fig_xm_crossing_0(
             height: 6.0,
         },
         pxu::Component::Xm,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -926,7 +803,6 @@ fn fig_p_two_particle_bs_0(
             height: 4.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -955,7 +831,6 @@ fn fig_xp_two_particle_bs_0(
             height: 8.0,
         },
         pxu::Component::Xp,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -985,7 +860,6 @@ fn fig_xm_two_particle_bs_0(
             height: 8.0,
         },
         pxu::Component::Xm,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1015,7 +889,6 @@ fn fig_u_two_particle_bs_0(
             height: 8.0,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1045,7 +918,6 @@ fn fig_u_bs_1_4_same_energy(
             height: 8.0,
         },
         pxu::Component::U,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1071,7 +943,7 @@ fn draw_p_region_plot(
     let mut xp_scallion_path = {
         let mut xp_scallions = pxu
             .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Long, 0)
+            .get_visible_cuts(&pxu, pxu::Component::P, 0)
             .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
             .map(|cut| cut.path.clone())
             .collect::<Vec<_>>();
@@ -1099,7 +971,7 @@ fn draw_p_region_plot(
 
         let mut e_cuts = pxu
             .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Long, 0)
+            .get_visible_cuts(&pxu, pxu::Component::P, 0)
             .filter(|cut| {
                 matches!(cut.typ, pxu::CutType::E)
                     && cut.path[0].im < 0.0
@@ -1147,7 +1019,7 @@ fn draw_p_region_plot(
     let mut xp_kidney_path = {
         let mut xp_kidneys = pxu
             .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Long, 0)
+            .get_visible_cuts(&pxu, pxu::Component::P, 0)
             .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
             .map(|cut| cut.path.clone())
             .filter(|path| path[0].re > 0.0 || path[0].im < 0.2)
@@ -1174,7 +1046,7 @@ fn draw_p_region_plot(
 
         let mut e_cut = pxu
             .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, pxu::UCutType::Long, 0)
+            .get_visible_cuts(&pxu, pxu::Component::P, 0)
             .filter(|cut| {
                 matches!(cut.typ, pxu::CutType::E)
                     && cut.path[0].im > 0.0
@@ -1301,7 +1173,6 @@ fn fig_p_short_cut_regions_e_plus(
             height: 7.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1324,7 +1195,6 @@ fn fig_p_short_cut_regions_e_min(
             height: 7.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1469,7 +1339,6 @@ fn fig_p_physical_region_e_plus(
             height: 4.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1507,7 +1376,6 @@ fn fig_p_physical_region_e_minus(
             height: 4.0,
         },
         pxu::Component::P,
-        pxu::UCutType::Short,
         settings,
         pb,
     )?;
@@ -1536,9 +1404,7 @@ fn fig_p_physical_region_e_minus(
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_xpl_preimage,
     fig_xpl_cover,
-    fig_p_plane_long_cuts_regions,
     fig_p_plane_short_cuts,
-    fig_p_plane_long_cuts,
     fig_xp_cuts_1,
     fig_u_band_between_outside,
     fig_u_band_between_inside,
