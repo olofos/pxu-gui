@@ -501,7 +501,7 @@ impl Plot {
 
             ui.fonts(|f| {
                 let text_shape = egui::epaint::Shape::text(
-                    &f,
+                    f,
                     rect.right_top() + vec2(-10.0, 10.0),
                     egui::Align2::RIGHT_TOP,
                     text,
