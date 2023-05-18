@@ -3,17 +3,18 @@ use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
 use pxu_plot::{Plot, PlotState};
 
-type FrameSetupFunction = fn(&mut PresentationApp);
+use egui_extras::RetainedImage;
+
+type FrameSetupFunction = fn(&mut PlotData);
 
 enum Frame {
     Images,
     Plot(FrameSetupFunction),
 }
 
-/// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-pub struct PresentationApp {
+struct PlotData {
     pxu: pxu::Pxu,
     p_plot: Plot,
     xp_plot: Plot,
@@ -21,10 +22,21 @@ pub struct PresentationApp {
     u_plot: Plot,
     #[serde(skip)]
     plot_state: PlotState,
-    size: f32,
 }
 
-impl Default for PresentationApp {
+/// We derive Deserialize/Serialize so we can persist app state on shutdown.
+#[derive(Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)] // if we add new fields, give them default values when deserializing old state
+pub struct PresentationApp {
+    plot_data: PlotData,
+    #[serde(skip)]
+    images: Vec<Vec<RetainedImage>>,
+    image_index: (usize, usize),
+    #[serde(skip)]
+    frames: Vec<Frame>,
+}
+
+impl Default for PlotData {
     fn default() -> Self {
         let bound_state_number = 1;
 
@@ -61,7 +73,6 @@ impl Default for PresentationApp {
                 origin: Pos2::ZERO,
             },
             plot_state: Default::default(),
-            size: 0.0,
         }
     }
 }
@@ -79,7 +90,39 @@ impl PresentationApp {
         //     return app;
         // }
 
-        Default::default()
+        let mut app: PresentationApp = Default::default();
+
+        let mut paths = std::fs::read_dir("./presentation/images")
+            .unwrap()
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        paths.sort_by_key(|p| p.file_name());
+
+        let mut images = vec![];
+        for path in paths {
+            log::info!("Name: {}", path.path().display());
+
+            let image_buffer = image::open(path.path()).unwrap().to_rgba8();
+            let pixels = image_buffer.as_flat_samples();
+
+            if pixels.as_slice().iter().all(|p| *p == 0xFF) {
+                log::info!("Empty image");
+                if !images.is_empty() {
+                    app.images.push(images);
+                    images = vec![];
+                }
+            } else {
+                let size = [image_buffer.width() as _, image_buffer.height() as _];
+                let img = egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
+                let img = egui_extras::RetainedImage::from_color_image(
+                    path.path().display().to_string(),
+                    img,
+                );
+                images.push(img);
+            }
+        }
+
+        app
     }
 }
 
@@ -108,9 +151,9 @@ impl eframe::App for PresentationApp {
             while (chrono::Utc::now() - start).num_milliseconds()
                 < (1000.0 / 20.0f64).floor() as i64
             {
-                if self.pxu.contours.update(
-                    self.pxu.state.points[0].p.re.floor() as i32,
-                    self.pxu.consts,
+                if self.plot_data.pxu.contours.update(
+                    self.plot_data.pxu.state.points[0].p.re.floor() as i32,
+                    self.plot_data.pxu.consts,
                 ) {
                     break;
                 }
@@ -118,51 +161,112 @@ impl eframe::App for PresentationApp {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            let rect = ui.available_rect_before_wrap();
+        // let mut style: egui::Style = (*ctx.style()).clone();
+        // style.spacing.item_spacing = vec2(0.0, 0.0);
+        // ctx.set_style(style.clone());
 
-            let mut plots = {
-                use egui::Rect;
-                const GAP: f32 = 8.0;
-                let w = (rect.width() - GAP) / 2.0;
-                let h = (rect.height() - GAP) / 2.0;
-                let size = vec2(w, h);
+        egui::CentralPanel::default()
+            .frame(
+                egui::Frame::central_panel(&ctx.style())
+                    .inner_margin(egui::Margin::same(0.0))
+                    .outer_margin(egui::Margin::same(0.0)),
+            )
+            .show(ctx, |ui| {
+                let rect = ui.available_rect_before_wrap();
 
-                let top_left = rect.left_top();
+                let mut plots = {
+                    use egui::Rect;
+                    const GAP: f32 = 8.0;
+                    let w = (rect.width() - 3.0 * GAP) / 2.0;
+                    let h = (rect.height() - 3.0 * GAP) / 2.0;
+                    let size = vec2(w, h);
 
-                let t = ctx.input(|i| i.time);
-                let x = 0.5 + 0.5 * (t.cos() * t.cos()) as f32;
-                ctx.request_repaint_after(std::time::Duration::from_millis((1000.0 / 20.0) as u64));
+                    let top_left = rect.left_top();
 
-                vec![
-                    (
-                        &mut self.u_plot,
-                        Rect::from_min_size(top_left + vec2(w + GAP, 0.0), size),
-                    ),
-                    (
-                        &mut self.xp_plot,
-                        Rect::from_min_size(top_left + vec2(0.0, h + GAP), size),
-                    ),
-                    (
-                        &mut self.xm_plot,
-                        Rect::from_min_size(top_left + vec2(w + GAP, h + GAP), size),
-                    ),
-                    (
-                        &mut self.p_plot,
-                        Rect::from_min_size(top_left, rect.size() * x),
-                    ),
-                ]
-            };
+                    vec![
+                        (
+                            &mut self.plot_data.u_plot,
+                            Rect::from_min_size(top_left + vec2(w + 2.0 * GAP, GAP), size),
+                        ),
+                        (
+                            &mut self.plot_data.xp_plot,
+                            Rect::from_min_size(top_left + vec2(GAP, h + 2.0 * GAP), size),
+                        ),
+                        (
+                            &mut self.plot_data.xm_plot,
+                            Rect::from_min_size(
+                                top_left + vec2(w + 2.0 * GAP, h + 2.0 * GAP),
+                                size,
+                            ),
+                        ),
+                        (
+                            &mut self.plot_data.p_plot,
+                            Rect::from_min_size(top_left + vec2(GAP, GAP), size),
+                        ),
+                    ]
+                };
 
-            self.plot_state.reset();
+                if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                    let (mut group_index, mut image_index) = self.image_index;
 
-            for (plot, rect) in plots.iter_mut() {
-                plot.interact(ui, *rect, &mut self.pxu, &mut self.plot_state);
-            }
+                    image_index += 1;
+                    if image_index >= self.images[group_index].len() {
+                        image_index = 0;
+                        group_index += 1;
+                        if group_index >= self.images.len() {
+                            group_index = self.images.len() - 1;
+                            image_index = self.images[group_index].len() - 1;
+                        }
+                    }
 
-            for (plot, rect) in plots {
-                plot.show(ui, rect, &mut self.pxu, &mut self.plot_state);
-            }
-        });
+                    self.image_index = (group_index, image_index);
+                }
+                if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                    let (mut group_index, mut image_index) = self.image_index;
+
+                    if image_index > 0 {
+                        image_index -= 1;
+                    } else {
+                        if group_index > 0 {
+                            group_index -= 1;
+                            image_index = self.images[group_index].len() - 1;
+                        } else {
+                            group_index = 0;
+                            image_index = 0;
+                        }
+                    }
+
+                    self.image_index = (group_index, image_index);
+                }
+
+                if ctx.input(|i| i.key_down(egui::Key::Space)) {
+                    self.plot_data.plot_state.reset();
+
+                    for (plot, rect) in plots.iter_mut() {
+                        plot.interact(
+                            ui,
+                            *rect,
+                            &mut self.plot_data.pxu,
+                            &mut self.plot_data.plot_state,
+                        );
+                    }
+
+                    for (plot, rect) in plots {
+                        plot.show(
+                            ui,
+                            rect,
+                            &mut self.plot_data.pxu,
+                            &mut self.plot_data.plot_state,
+                        );
+                    }
+                } else {
+                    ui.vertical_centered(|ui| {
+                        let image = &self.images[self.image_index.0][self.image_index.1];
+                        // let image_size = image.size_vec2();
+                        // image.show_size(ui, image_size * (rect.height() / image_size.y));
+                        image.show_size(ui, rect.size());
+                    });
+                }
+            });
     }
 }
