@@ -5,12 +5,12 @@ use pxu_plot::{Plot, PlotState};
 
 use egui_extras::RetainedImage;
 
-type FrameSetupFunction = fn(&mut PlotData);
+// type FrameSetupFunction = fn(&mut PlotData);
 
-enum Frame {
-    Images,
-    Plot(FrameSetupFunction),
-}
+// enum Frame {
+//     Images,
+//     Plot(FrameSetupFunction),
+// }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -32,8 +32,8 @@ pub struct PresentationApp {
     #[serde(skip)]
     images: Vec<Vec<RetainedImage>>,
     image_index: (usize, usize),
-    #[serde(skip)]
-    frames: Vec<Frame>,
+    // #[serde(skip)]
+    // frames: Vec<Frame>,
 }
 
 impl Default for PlotData {
@@ -226,14 +226,12 @@ impl eframe::App for PresentationApp {
 
                     if image_index > 0 {
                         image_index -= 1;
+                    } else if group_index > 0 {
+                        group_index -= 1;
+                        image_index = self.images[group_index].len() - 1;
                     } else {
-                        if group_index > 0 {
-                            group_index -= 1;
-                            image_index = self.images[group_index].len() - 1;
-                        } else {
-                            group_index = 0;
-                            image_index = 0;
-                        }
+                        group_index = 0;
+                        image_index = 0;
                     }
 
                     self.image_index = (group_index, image_index);

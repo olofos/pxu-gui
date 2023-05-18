@@ -14,9 +14,11 @@ fn main() -> Result<(), eframe::Error> {
         .without_time()
         .init();
 
-    let mut native_options = eframe::NativeOptions::default();
-    native_options.fullscreen = true;
-    native_options.vsync = true;
+    let native_options = eframe::NativeOptions {
+        fullscreen: true,
+        vsync: true,
+        ..Default::default()
+    };
 
     eframe::run_native(
         "presentation",
