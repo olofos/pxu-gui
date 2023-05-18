@@ -12,7 +12,6 @@ eframe = { version = "0.21.3", default-features = false, features = [
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
 ] }
 num = "0.4.0"
-
 # You only need serde if you want app persistence:
 serde = { version = "1", features = ["derive"] }
 log = "0.4.6"
@@ -31,6 +30,8 @@ serde_urlencoded = "0.7.1"
 base64 = "0.21.0"
 flate2 = "1.0.25"
 ron = "0.8.0"
+image = { version = "0.24.6", default-features = false, features = ["png"] }
+egui_extras = { version = "0.21.0", features = ["image"] }
 
 
 # native:
