@@ -84,6 +84,7 @@ struct PresentationDescription {
 struct Frame {
     pub image: RetainedImage,
     pub plot: HashMap<pxu::Component, PlotDescription>,
+    pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
 }
 
 impl TryFrom<FrameDescription> for Frame {
@@ -103,8 +104,13 @@ impl TryFrom<FrameDescription> for Frame {
         let image = egui_extras::RetainedImage::from_color_image(value.image, color_image);
 
         let plot = value.plot;
+        let relativistic_plot = value.relativistic_plot;
 
-        Ok(Self { image, plot })
+        Ok(Self {
+            image,
+            plot,
+            relativistic_plot,
+        })
     }
 }
 
@@ -200,56 +206,8 @@ impl PresentationApp {
 
         let mut app: PresentationApp = Default::default();
 
-        let toml = r#"[[frame]]
-        image = "presentation-01.png"
-        
-        [[frame]]
-        image = "presentation-02.png"
-        plot.Xp.rect = [[8,4.75],[11.25,8]]
-        plot.P.rect = [[8,1],[15,4.25]]
-        plot.P.origin = [0,0]
-        plot.Xm.rect = [[11.75,4.75],[15,8]]
-        
-        [[frame]]
-        image = "presentation-03.png"
-        
-        [[frame]]
-        image = "presentation-04.png"
-        
-        [[frame]]
-        image = "presentation-05.png"
-        
-        [[frame]]
-        image = "presentation-06.png"
-        
-        [[frame]]
-        image = "presentation-07.png"
-        
-        [[frame]]
-        image = "presentation-08.png"
-        
-        [[frame]]
-        image = "presentation-09.png"
-        
-        [[frame]]
-        image = "presentation-10.png"
-        
-        [[frame]]
-        image = "presentation-11.png"
-        
-        [[frame]]
-        image = "presentation-12.png"
-        
-        [[frame]]
-        image = "presentation-13.png"
-        
-        [[frame]]
-        image = "presentation-14.png"
-        
-        [[frame]]
-        image = "presentation-15.png"
-        
-        "#;
+        let path = std::path::Path::new("./presentation/images/presentation.toml");
+        let toml = std::fs::read_to_string(path).unwrap();
 
         let presentation: Result<PresentationDescription, _> = toml::from_str(&toml);
         log::info!("{presentation:?}");
@@ -358,21 +316,40 @@ impl eframe::App for PresentationApp {
 
                     let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
-                    // plot.show(
-                    //     ui,
-                    //     plot_rect,
-                    //     &mut self.plot_data.pxu,
-                    //     &mut self.plot_data.plot_state,
-                    // );
+                    plot.show(
+                        ui,
+                        plot_rect,
+                        &mut self.plot_data.pxu,
+                        &mut self.plot_data.plot_state,
+                    );
+                }
 
-                    self.show_relativistic_plot_theta(ui, plot_rect);
+                for (component, descr) in frame.relativistic_plot.iter() {
+                    let plot_func: fn(&mut egui::Ui, egui::Rect) = match component {
+                        RelativisticComponent::P => Self::show_relativistic_plot_p,
+                        RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
+                        _ => unimplemented!(),
+                    };
+
+                    let w = rect.width();
+                    let h = rect.height();
+
+                    let x1 = descr.rect[0][0] * w / 16.0;
+                    let x2 = descr.rect[1][0] * w / 16.0;
+
+                    let y1 = descr.rect[0][1] * h / 9.0;
+                    let y2 = descr.rect[1][1] * h / 9.0;
+
+                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                    plot_func(ui, plot_rect);
                 }
             });
     }
 }
 
 impl PresentationApp {
-    fn show_relativistic_plot_p(&self, ui: &mut egui::Ui, rect: egui::Rect) {
+    fn show_relativistic_plot_p(ui: &mut egui::Ui, rect: egui::Rect) {
         let to_screen = egui::emath::RectTransform::from_to(
             egui::Rect::from_two_pos(pos2(0.0, 0.0), pos2(1.0, 1.0)),
             rect,
@@ -408,7 +385,7 @@ impl PresentationApp {
         ));
     }
 
-    fn show_relativistic_plot_theta(&self, ui: &mut egui::Ui, rect: egui::Rect) {
+    fn show_relativistic_plot_theta(ui: &mut egui::Ui, rect: egui::Rect) {
         let to_screen = egui::emath::RectTransform::from_to(
             egui::Rect::from_two_pos(pos2(0.0, -0.125), pos2(1.0, 1.125)),
             rect,
