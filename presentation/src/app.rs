@@ -209,62 +209,83 @@ impl eframe::App for PresentationApp {
                 if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
                     let (mut group_index, mut image_index) = self.image_index;
 
-                    image_index += 1;
-                    if image_index >= self.images[group_index].len() {
-                        image_index = 0;
-                        group_index += 1;
-                        if group_index >= self.images.len() {
-                            group_index = self.images.len() - 1;
-                            image_index = self.images[group_index].len() - 1;
-                        }
-                    }
+    }
+}
 
-                    self.image_index = (group_index, image_index);
-                }
-                if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
-                    let (mut group_index, mut image_index) = self.image_index;
+impl PresentationApp {
+    fn show_relativistic_plot_p(&self, ui: &mut egui::Ui, rect: egui::Rect) {
+        let to_screen = egui::emath::RectTransform::from_to(
+            egui::Rect::from_two_pos(pos2(0.0, 0.0), pos2(1.0, 1.0)),
+            rect,
+        );
 
-                    if image_index > 0 {
-                        image_index -= 1;
-                    } else if group_index > 0 {
-                        group_index -= 1;
-                        image_index = self.images[group_index].len() - 1;
-                    } else {
-                        group_index = 0;
-                        image_index = 0;
-                    }
+        let old_clip_rect = ui.clip_rect();
+        ui.set_clip_rect(rect);
 
-                    self.image_index = (group_index, image_index);
-                }
+        let mut shapes = vec![
+            egui::Shape::line_segment(
+                [to_screen * pos2(0.0, 0.5), to_screen * pos2(1.0, 0.5)],
+                egui::Stroke::new(0.75, egui::Color32::DARK_GRAY),
+            ),
+            egui::Shape::line_segment(
+                [to_screen * pos2(0.5, 1.0), to_screen * pos2(0.5, 0.75)],
+                egui::Stroke::new(3.0, egui::Color32::BLACK),
+            ),
+            egui::Shape::line_segment(
+                [to_screen * pos2(0.5, 0.0), to_screen * pos2(0.5, 0.25)],
+                egui::Stroke::new(3.0, egui::Color32::BLACK),
+            ),
+            egui::Shape::circle_filled(to_screen * pos2(0.5, 0.25), 3.5, egui::Color32::BLACK),
+            egui::Shape::circle_filled(to_screen * pos2(0.5, 0.75), 3.5, egui::Color32::BLACK),
+        ];
 
-                if ctx.input(|i| i.key_down(egui::Key::Space)) {
-                    self.plot_data.plot_state.reset();
+        ui.painter().extend(shapes);
 
-                    for (plot, rect) in plots.iter_mut() {
-                        plot.interact(
-                            ui,
-                            *rect,
-                            &mut self.plot_data.pxu,
-                            &mut self.plot_data.plot_state,
-                        );
-                    }
+        ui.set_clip_rect(old_clip_rect);
+        ui.painter().add(egui::epaint::Shape::rect_stroke(
+            rect,
+            egui::epaint::Rounding::same(4.0),
+            egui::Stroke::new(1.0, egui::Color32::DARK_GRAY),
+        ));
+    }
 
-                    for (plot, rect) in plots {
-                        plot.show(
-                            ui,
-                            rect,
-                            &mut self.plot_data.pxu,
-                            &mut self.plot_data.plot_state,
-                        );
-                    }
-                } else {
-                    ui.vertical_centered(|ui| {
-                        let image = &self.images[self.image_index.0][self.image_index.1];
-                        // let image_size = image.size_vec2();
-                        // image.show_size(ui, image_size * (rect.height() / image_size.y));
-                        image.show_size(ui, rect.size());
-                    });
-                }
-            });
+    fn show_relativistic_plot_theta(&self, ui: &mut egui::Ui, rect: egui::Rect) {
+        let to_screen = egui::emath::RectTransform::from_to(
+            egui::Rect::from_two_pos(pos2(0.0, -0.125), pos2(1.0, 1.125)),
+            rect,
+        );
+
+        let old_clip_rect = ui.clip_rect();
+        ui.set_clip_rect(rect);
+
+        let mut shapes = vec![];
+
+        for y in [0.25, 0.75] {
+            shapes.push(egui::Shape::line_segment(
+                [to_screen * pos2(0.0, y), to_screen * pos2(1.0, y)],
+                egui::Stroke::new(0.75, egui::Color32::DARK_GRAY),
+            ));
+        }
+
+        for y in [0.0, 0.5, 1.0] {
+            shapes.push(egui::Shape::line_segment(
+                [to_screen * pos2(0.0, y), to_screen * pos2(1.0, y)],
+                egui::Stroke::new(3.0, egui::Color32::BLACK),
+            ));
+            shapes.push(egui::Shape::circle_filled(
+                to_screen * pos2(0.5, y),
+                3.5,
+                egui::Color32::BLACK,
+            ));
+        }
+
+        ui.painter().extend(shapes);
+
+        ui.set_clip_rect(old_clip_rect);
+        ui.painter().add(egui::epaint::Shape::rect_stroke(
+            rect,
+            egui::epaint::Rounding::same(4.0),
+            egui::Stroke::new(1.0, egui::Color32::DARK_GRAY),
+        ));
     }
 }
