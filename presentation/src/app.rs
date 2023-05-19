@@ -375,6 +375,31 @@ impl PresentationApp {
             egui::Shape::circle_filled(to_screen * pos2(0.5, 0.75), 3.5, egui::Color32::BLACK),
         ];
 
+        let text = "p";
+
+        ui.fonts(|f| {
+            let text_shape = egui::epaint::Shape::text(
+                f,
+                rect.right_top() + vec2(-10.0, 10.0),
+                egui::Align2::RIGHT_TOP,
+                text,
+                egui::TextStyle::Monospace.resolve(ui.style()),
+                egui::Color32::BLACK,
+            );
+
+            shapes.push(egui::epaint::Shape::rect_filled(
+                text_shape.visual_bounding_rect().expand(6.0),
+                egui::Rounding::none(),
+                egui::Color32::WHITE,
+            ));
+            shapes.push(egui::epaint::Shape::rect_stroke(
+                text_shape.visual_bounding_rect().expand(4.0),
+                egui::Rounding::none(),
+                egui::Stroke::new(0.5, egui::Color32::BLACK),
+            ));
+            shapes.push(text_shape);
+        });
+
         ui.painter().extend(shapes);
 
         ui.set_clip_rect(old_clip_rect);
@@ -414,6 +439,31 @@ impl PresentationApp {
                 egui::Color32::BLACK,
             ));
         }
+
+        let text = "θ";
+
+        ui.fonts(|f| {
+            let text_shape = egui::epaint::Shape::text(
+                f,
+                rect.right_top() + vec2(-10.0, 10.0),
+                egui::Align2::RIGHT_TOP,
+                text,
+                egui::TextStyle::Monospace.resolve(ui.style()),
+                egui::Color32::BLACK,
+            );
+
+            shapes.push(egui::epaint::Shape::rect_filled(
+                text_shape.visual_bounding_rect().expand(6.0),
+                egui::Rounding::none(),
+                egui::Color32::WHITE,
+            ));
+            shapes.push(egui::epaint::Shape::rect_stroke(
+                text_shape.visual_bounding_rect().expand(4.0),
+                egui::Rounding::none(),
+                egui::Stroke::new(0.5, egui::Color32::BLACK),
+            ));
+            shapes.push(text_shape);
+        });
 
         ui.painter().extend(shapes);
 
