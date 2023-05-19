@@ -13,7 +13,7 @@ const P_RANGE_MAX: i32 = 3;
 
 const INFINITY: f64 = 100.0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Component {
     P,
     Xp,
@@ -31,6 +31,35 @@ impl Component {
             Self::U => Self::U,
             Self::X => Self::X,
         }
+    }
+}
+
+impl std::str::FromStr for Component {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "P" => Ok(Self::P),
+            "Xp" => Ok(Self::Xp),
+            "Xm" => Ok(Self::Xm),
+            "U" => Ok(Self::U),
+            _ => Err("Unexpected component".to_owned()),
+        }
+    }
+}
+
+impl std::fmt::Display for Component {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::P => "P",
+                Self::Xp => "Xp",
+                Self::Xm => "Xm",
+                Self::U => "U",
+                Self::X => "X",
+            }
+        )
     }
 }
 

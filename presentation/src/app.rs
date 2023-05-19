@@ -1,16 +1,10 @@
-use egui::{vec2, Pos2};
+use egui::{pos2, vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
 use pxu_plot::{Plot, PlotState};
+use std::collections::HashMap;
 
 use egui_extras::RetainedImage;
-
-// type FrameSetupFunction = fn(&mut PlotData);
-
-// enum Frame {
-//     Images,
-//     Plot(FrameSetupFunction),
-// }
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -24,16 +18,130 @@ struct PlotData {
     plot_state: PlotState,
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
+enum RelativisticComponent {
+    P,
+    Theta,
+}
+
+impl std::str::FromStr for RelativisticComponent {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "P" => Ok(Self::P),
+            "Theta" => Ok(Self::Theta),
+            _ => Err("Could not parse component".to_owned()),
+        }
+    }
+}
+
+impl std::fmt::Display for RelativisticComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                Self::P => "P",
+                Self::Theta => "Theta",
+            },
+        )
+    }
+}
+
+#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+struct PlotDescription {
+    pub rect: [[f32; 2]; 2],
+    pub origin: Option<[f32; 2]>,
+    pub height: Option<f32>,
+}
+
+#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+struct RelativisticPlotDescription {
+    pub rect: [[f32; 2]; 2],
+}
+
+use serde_with::{serde_as, DisplayFromStr};
+
+#[serde_as]
+#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
+struct FrameDescription {
+    pub image: String,
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
+    pub plot: HashMap<pxu::Component, PlotDescription>,
+    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
+    pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+struct PresentationDescription {
+    pub frame: Vec<FrameDescription>,
+}
+
+struct Frame {
+    pub image: RetainedImage,
+    pub plot: HashMap<pxu::Component, PlotDescription>,
+}
+
+impl TryFrom<FrameDescription> for Frame {
+    type Error = String;
+
+    fn try_from(value: FrameDescription) -> Result<Self, Self::Error> {
+        let path = std::path::Path::new("./presentation/images/").join(&value.image);
+
+        let image_buffer = image::open(path.clone())
+            .map_err(|_| format!("Could not open image {}", path.display()))?
+            .to_rgba8();
+        let rgba = image_buffer.as_flat_samples();
+        let rgba = rgba.as_slice();
+
+        let size = [image_buffer.width() as _, image_buffer.height() as _];
+        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba);
+        let image = egui_extras::RetainedImage::from_color_image(value.image, color_image);
+
+        let plot = value.plot;
+
+        Ok(Self { image, plot })
+    }
+}
+
+impl Frame {
+    fn start(&self, plot_data: &mut PlotData) {
+        for (component, descr) in self.plot.iter() {
+            let plot = match component {
+                pxu::Component::P => &mut plot_data.p_plot,
+                pxu::Component::Xp => &mut plot_data.xp_plot,
+                pxu::Component::Xm => &mut plot_data.xm_plot,
+                pxu::Component::U => &mut plot_data.u_plot,
+                _ => unimplemented!(),
+            };
+
+            if let Some(origin) = descr.origin {
+                plot.origin = egui::Pos2::from(origin);
+            }
+
+            if let Some(height) = descr.height {
+                plot.height = height;
+            }
+        }
+    }
+}
+
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct PresentationApp {
     plot_data: PlotData,
-    #[serde(skip)]
-    images: Vec<Vec<RetainedImage>>,
-    image_index: (usize, usize),
     // #[serde(skip)]
-    // frames: Vec<Frame>,
+    // images: Vec<Vec<RetainedImage>>,
+    // image_index: (usize, usize),
+    #[serde(skip)]
+    frames: Vec<Frame>,
+    #[serde(skip)]
+    frame_index: usize,
 }
 
 impl Default for PlotData {
@@ -92,35 +200,66 @@ impl PresentationApp {
 
         let mut app: PresentationApp = Default::default();
 
-        let mut paths = std::fs::read_dir("./presentation/images")
+        let toml = r#"[[frame]]
+        image = "presentation-01.png"
+        
+        [[frame]]
+        image = "presentation-02.png"
+        plot.Xp.rect = [[8,4.75],[11.25,8]]
+        plot.P.rect = [[8,1],[15,4.25]]
+        plot.P.origin = [0,0]
+        plot.Xm.rect = [[11.75,4.75],[15,8]]
+        
+        [[frame]]
+        image = "presentation-03.png"
+        
+        [[frame]]
+        image = "presentation-04.png"
+        
+        [[frame]]
+        image = "presentation-05.png"
+        
+        [[frame]]
+        image = "presentation-06.png"
+        
+        [[frame]]
+        image = "presentation-07.png"
+        
+        [[frame]]
+        image = "presentation-08.png"
+        
+        [[frame]]
+        image = "presentation-09.png"
+        
+        [[frame]]
+        image = "presentation-10.png"
+        
+        [[frame]]
+        image = "presentation-11.png"
+        
+        [[frame]]
+        image = "presentation-12.png"
+        
+        [[frame]]
+        image = "presentation-13.png"
+        
+        [[frame]]
+        image = "presentation-14.png"
+        
+        [[frame]]
+        image = "presentation-15.png"
+        
+        "#;
+
+        let presentation: Result<PresentationDescription, _> = toml::from_str(&toml);
+        log::info!("{presentation:?}");
+
+        app.frames = presentation
             .unwrap()
-            .collect::<Result<Vec<_>, _>>()
-            .unwrap();
-        paths.sort_by_key(|p| p.file_name());
-
-        let mut images = vec![];
-        for path in paths {
-            log::info!("Name: {}", path.path().display());
-
-            let image_buffer = image::open(path.path()).unwrap().to_rgba8();
-            let pixels = image_buffer.as_flat_samples();
-
-            if pixels.as_slice().iter().all(|p| *p == 0xFF) {
-                log::info!("Empty image");
-                if !images.is_empty() {
-                    app.images.push(images);
-                    images = vec![];
-                }
-            } else {
-                let size = [image_buffer.width() as _, image_buffer.height() as _];
-                let img = egui::ColorImage::from_rgba_unmultiplied(size, pixels.as_slice());
-                let img = egui_extras::RetainedImage::from_color_image(
-                    path.path().display().to_string(),
-                    img,
-                );
-                images.push(img);
-            }
-        }
+            .frame
+            .into_iter()
+            .map(|f| Frame::try_from(f).unwrap())
+            .collect();
 
         app
     }
@@ -173,42 +312,62 @@ impl eframe::App for PresentationApp {
             )
             .show(ctx, |ui| {
                 let rect = ui.available_rect_before_wrap();
+                // log::info!("{:?}", rect.size());
 
-                let mut plots = {
-                    use egui::Rect;
-                    const GAP: f32 = 8.0;
-                    let w = (rect.width() - 3.0 * GAP) / 2.0;
-                    let h = (rect.height() - 3.0 * GAP) / 2.0;
-                    let size = vec2(w, h);
-
-                    let top_left = rect.left_top();
-
-                    vec![
-                        (
-                            &mut self.plot_data.u_plot,
-                            Rect::from_min_size(top_left + vec2(w + 2.0 * GAP, GAP), size),
-                        ),
-                        (
-                            &mut self.plot_data.xp_plot,
-                            Rect::from_min_size(top_left + vec2(GAP, h + 2.0 * GAP), size),
-                        ),
-                        (
-                            &mut self.plot_data.xm_plot,
-                            Rect::from_min_size(
-                                top_left + vec2(w + 2.0 * GAP, h + 2.0 * GAP),
-                                size,
-                            ),
-                        ),
-                        (
-                            &mut self.plot_data.p_plot,
-                            Rect::from_min_size(top_left + vec2(GAP, GAP), size),
-                        ),
-                    ]
-                };
+                let prev_frame_index = self.frame_index;
 
                 if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
-                    let (mut group_index, mut image_index) = self.image_index;
+                    if self.frame_index < self.frames.len() - 1 {
+                        self.frame_index += 1;
+                    }
+                }
+                if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                    if self.frame_index > 0 {
+                        self.frame_index -= 1;
+                    }
+                }
 
+                if self.frame_index != prev_frame_index {
+                    self.frames[self.frame_index].start(&mut self.plot_data);
+                }
+
+                let frame = &self.frames[self.frame_index];
+                ui.vertical_centered(|ui| {
+                    // let image_size = image.size_vec2();
+                    // image.show_size(ui, image_size * (rect.height() / image_size.y));
+                    frame.image.show_size(ui, rect.size());
+                });
+
+                for (component, descr) in frame.plot.iter() {
+                    let plot = match component {
+                        pxu::Component::P => &mut self.plot_data.p_plot,
+                        pxu::Component::Xp => &mut self.plot_data.xp_plot,
+                        pxu::Component::Xm => &mut self.plot_data.xm_plot,
+                        pxu::Component::U => &mut self.plot_data.u_plot,
+                        _ => unimplemented!(),
+                    };
+
+                    let w = rect.width();
+                    let h = rect.height();
+
+                    let x1 = descr.rect[0][0] * w / 16.0;
+                    let x2 = descr.rect[1][0] * w / 16.0;
+
+                    let y1 = descr.rect[0][1] * h / 9.0;
+                    let y2 = descr.rect[1][1] * h / 9.0;
+
+                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                    // plot.show(
+                    //     ui,
+                    //     plot_rect,
+                    //     &mut self.plot_data.pxu,
+                    //     &mut self.plot_data.plot_state,
+                    // );
+
+                    self.show_relativistic_plot_theta(ui, plot_rect);
+                }
+            });
     }
 }
 
