@@ -257,10 +257,10 @@ impl eframe::App for PresentationApp {
                     false
                 };
 
-                if next || ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
-                    if self.frame_index < self.frames.len() - 1 {
-                        self.frame_index += 1;
-                    }
+                if (next || ui.input(|i| i.key_pressed(egui::Key::ArrowRight)))
+                    && self.frame_index < self.frames.len() - 1
+                {
+                    self.frame_index += 1;
                 }
                 if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
                     loop {

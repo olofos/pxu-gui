@@ -878,12 +878,12 @@ impl Contours {
             MirrorCut => {
                 if let Some(ref path) = self.rctx.cut_data.path {
                     let q1 = path
-                        .into_iter()
+                        .iter()
                         .cloned()
                         .filter(|z| z.re > 0.0 && z.im > 0.0)
                         .collect::<Vec<_>>();
                     let q4 = path
-                        .into_iter()
+                        .iter()
                         .cloned()
                         .filter(|z| z.re > 0.0 && z.im < 0.0)
                         .collect::<Vec<_>>();
