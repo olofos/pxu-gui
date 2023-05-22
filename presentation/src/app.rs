@@ -9,6 +9,7 @@ use egui_extras::RetainedImage;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 struct PlotData {
+    #[serde(skip)]
     pxu: pxu::Pxu,
     p_plot: Plot,
     xp_plot: Plot,
@@ -18,73 +19,17 @@ struct PlotData {
     plot_state: PlotState,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, serde::Deserialize, serde::Serialize)]
-enum RelativisticComponent {
-    P,
-    Theta,
-}
-
-impl std::str::FromStr for RelativisticComponent {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "P" => Ok(Self::P),
-            "Theta" => Ok(Self::Theta),
-            _ => Err("Could not parse component".to_owned()),
-        }
-    }
-}
-
-impl std::fmt::Display for RelativisticComponent {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}",
-            match self {
-                Self::P => "P",
-                Self::Theta => "Theta",
-            },
-        )
-    }
-}
-
-#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
-#[serde(default)]
-struct PlotDescription {
-    pub rect: [[f32; 2]; 2],
-    pub origin: Option<[f32; 2]>,
-    pub height: Option<f32>,
-}
-
-#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
-#[serde(default)]
-struct RelativisticPlotDescription {
-    pub rect: [[f32; 2]; 2],
-}
-
-use serde_with::{serde_as, DisplayFromStr};
-
-#[serde_as]
-#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
-#[serde(default)]
-struct FrameDescription {
-    pub image: String,
-    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
-    pub plot: HashMap<pxu::Component, PlotDescription>,
-    #[serde_as(as = "HashMap<DisplayFromStr, _>")]
-    pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
-}
-
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
-struct PresentationDescription {
-    pub frame: Vec<FrameDescription>,
-}
-
+use crate::presentation_description::{
+    FrameDescription, PlotDescription, PresentationDescription, RelativisticComponent,
+    RelativisticPlotDescription, Value,
+};
 struct Frame {
     pub image: RetainedImage,
     pub plot: HashMap<pxu::Component, PlotDescription>,
     pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
+    pub start_time: f64,
+    pub duration: Option<f64>,
+    pub consts: Option<CouplingConstants>,
 }
 
 impl TryFrom<FrameDescription> for Frame {
@@ -103,19 +48,30 @@ impl TryFrom<FrameDescription> for Frame {
         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba);
         let image = egui_extras::RetainedImage::from_color_image(value.image, color_image);
 
-        let plot = value.plot;
-        let relativistic_plot = value.relativistic_plot;
+        let consts = value
+            .consts
+            .map(|[h, k]| CouplingConstants::new(h, k as i32));
+
+        let FrameDescription {
+            plot,
+            relativistic_plot,
+            duration,
+            ..
+        } = value;
 
         Ok(Self {
             image,
             plot,
             relativistic_plot,
+            start_time: 0.0,
+            duration,
+            consts,
         })
     }
 }
 
 impl Frame {
-    fn start(&self, plot_data: &mut PlotData) {
+    fn start(&mut self, plot_data: &mut PlotData, start_time: f64) {
         for (component, descr) in self.plot.iter() {
             let plot = match component {
                 pxu::Component::P => &mut plot_data.p_plot,
@@ -129,10 +85,15 @@ impl Frame {
                 plot.origin = egui::Pos2::from(origin);
             }
 
-            if let Some(height) = descr.height {
+            if let Some(Value::Const(height)) = descr.height {
                 plot.height = height;
             }
+
+            if let Some(consts) = self.consts {
+                plot_data.pxu.consts = consts;
+            }
         }
+        self.start_time = start_time;
     }
 }
 
@@ -148,6 +109,8 @@ pub struct PresentationApp {
     frames: Vec<Frame>,
     #[serde(skip)]
     frame_index: usize,
+    #[serde(skip)]
+    frame_start: f64,
 }
 
 impl Default for PlotData {
@@ -207,10 +170,8 @@ impl PresentationApp {
         let mut app: PresentationApp = Default::default();
 
         let path = std::path::Path::new("./presentation/images/presentation.toml");
-        let toml = std::fs::read_to_string(path).unwrap();
-
-        let presentation: Result<PresentationDescription, _> = toml::from_str(&toml);
-        log::info!("{presentation:?}");
+        let presentation_toml = std::fs::read_to_string(path).unwrap();
+        let presentation: Result<PresentationDescription, _> = toml::from_str(&presentation_toml);
 
         app.frames = presentation
             .unwrap()
@@ -219,7 +180,7 @@ impl PresentationApp {
             .map(|f| Frame::try_from(f).unwrap())
             .collect();
 
-        app.frames[0].start(&mut app.plot_data);
+        app.frames[0].start(&mut app.plot_data, 0.0);
 
         app
     }
@@ -276,22 +237,44 @@ impl eframe::App for PresentationApp {
 
                 let prev_frame_index = self.frame_index;
 
-                if ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
+                if self.frames[self.frame_index].start_time == 0.0 {
+                    self.frames[self.frame_index].start_time = ui.input(|i| i.time);
+                }
+
+                let next = if let Some(duration) = self.frames[self.frame_index].duration {
+                    let frame_end = self.frames[self.frame_index].start_time + duration;
+                    let now = ui.input(|i| i.time);
+                    now > frame_end
+                } else {
+                    false
+                };
+
+                if next || ui.input(|i| i.key_pressed(egui::Key::ArrowRight)) {
                     if self.frame_index < self.frames.len() - 1 {
                         self.frame_index += 1;
                     }
                 }
                 if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
-                    if self.frame_index > 0 {
-                        self.frame_index -= 1;
+                    loop {
+                        if self.frame_index > 0 {
+                            self.frame_index -= 1;
+                        } else {
+                            break;
+                        }
+                        if self.frames[self.frame_index].duration.is_none() {
+                            break;
+                        }
                     }
                 }
 
                 if self.frame_index != prev_frame_index {
-                    self.frames[self.frame_index].start(&mut self.plot_data);
+                    self.frames[self.frame_index].start(&mut self.plot_data, ui.input(|i| i.time));
                 }
 
                 let frame = &self.frames[self.frame_index];
+
+                let frame_time = ui.input(|i| i.time - frame.start_time);
+
                 ui.vertical_centered(|ui| {
                     // let image_size = image.size_vec2();
                     // image.show_size(ui, image_size * (rect.height() / image_size.y));
@@ -327,32 +310,59 @@ impl eframe::App for PresentationApp {
                 }
 
                 for (component, descr) in frame.relativistic_plot.iter() {
-                    let plot_func: fn(&mut egui::Ui, egui::Rect) = match component {
-                        RelativisticComponent::P => Self::show_relativistic_plot_p,
-                        RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
-                    };
+                    let plot_func: fn(&mut egui::Ui, egui::Rect, f32, f32, Option<[f32; 2]>) =
+                        match component {
+                            RelativisticComponent::P => Self::show_relativistic_plot_p,
+                            RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
+                        };
 
                     let w = rect.width();
                     let h = rect.height();
 
-                    let x1 = descr.rect[0][0] * w / 16.0;
-                    let x2 = descr.rect[1][0] * w / 16.0;
+                    let drect = descr.rect.get(frame_time);
 
-                    let y1 = descr.rect[0][1] * h / 9.0;
-                    let y2 = descr.rect[1][1] * h / 9.0;
+                    let x1 = drect[0][0] * w / 16.0;
+                    let x2 = drect[1][0] * w / 16.0;
+
+                    let y1 = drect[0][1] * h / 9.0;
+                    let y2 = drect[1][1] * h / 9.0;
 
                     let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
-                    plot_func(ui, plot_rect);
+                    let height = if let Some(ref height) = descr.height {
+                        height.get(frame_time)
+                    } else {
+                        match component {
+                            RelativisticComponent::P => 4.0,
+                            RelativisticComponent::Theta => 1.25,
+                        }
+                    };
+
+                    let m = descr.m.get(frame_time);
+                    plot_func(
+                        ui,
+                        plot_rect,
+                        height,
+                        m,
+                        descr.point.clone().map(|p| p.get(frame_time)),
+                    );
                 }
             });
+        ctx.request_repaint();
     }
 }
 
 impl PresentationApp {
-    fn show_relativistic_plot_p(ui: &mut egui::Ui, rect: egui::Rect) {
+    fn show_relativistic_plot_p(
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        height: f32,
+        m: f32,
+        point: Option<[f32; 2]>,
+    ) {
+        let width = height * rect.aspect_ratio();
         let to_screen = egui::emath::RectTransform::from_to(
-            egui::Rect::from_two_pos(pos2(0.0, 0.0), pos2(1.0, 1.0)),
+            egui::Rect::from_center_size(pos2(0.0, 0.0), vec2(width, height)),
             rect,
         );
 
@@ -361,20 +371,45 @@ impl PresentationApp {
 
         let mut shapes = vec![
             egui::Shape::line_segment(
-                [to_screen * pos2(0.0, 0.5), to_screen * pos2(1.0, 0.5)],
+                [
+                    to_screen * pos2(-width / 2.0, 0.0),
+                    to_screen * pos2(width / 2.0, 0.0),
+                ],
                 egui::Stroke::new(0.75, egui::Color32::DARK_GRAY),
             ),
             egui::Shape::line_segment(
-                [to_screen * pos2(0.5, 1.0), to_screen * pos2(0.5, 0.75)],
+                [
+                    to_screen * pos2(0.0, m),
+                    to_screen * pos2(0.0, height / 2.0),
+                ],
                 egui::Stroke::new(3.0, egui::Color32::BLACK),
             ),
             egui::Shape::line_segment(
-                [to_screen * pos2(0.5, 0.0), to_screen * pos2(0.5, 0.25)],
+                [
+                    to_screen * pos2(0.0, -m),
+                    to_screen * pos2(0.0, -height / 2.0),
+                ],
                 egui::Stroke::new(3.0, egui::Color32::BLACK),
             ),
-            egui::Shape::circle_filled(to_screen * pos2(0.5, 0.25), 3.5, egui::Color32::BLACK),
-            egui::Shape::circle_filled(to_screen * pos2(0.5, 0.75), 3.5, egui::Color32::BLACK),
+            egui::Shape::circle_filled(to_screen * pos2(0.0, m), 3.5, egui::Color32::BLACK),
+            egui::Shape::circle_filled(to_screen * pos2(0.0, -m), 3.5, egui::Color32::BLACK),
         ];
+
+        if let Some(point) = point {
+            use std::f32::consts::PI;
+
+            let x = point[0] * (point[1] * 2.0 * PI).cos();
+            let y = point[0] * (point[1] * 2.0 * PI).sin();
+
+            let center = to_screen * pos2(x, -y);
+
+            shapes.push(egui::epaint::Shape::Circle(egui::epaint::CircleShape {
+                center,
+                radius: 5.0,
+                fill: egui::Color32::BLUE,
+                stroke: egui::Stroke::NONE,
+            }));
+        }
 
         let text = "p";
 
@@ -411,9 +446,17 @@ impl PresentationApp {
         ));
     }
 
-    fn show_relativistic_plot_theta(ui: &mut egui::Ui, rect: egui::Rect) {
+    fn show_relativistic_plot_theta(
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        height: f32,
+        _m: f32,
+        point: Option<[f32; 2]>,
+    ) {
+        let width = 4.0 * height * rect.aspect_ratio();
+
         let to_screen = egui::emath::RectTransform::from_to(
-            egui::Rect::from_two_pos(pos2(0.0, -0.125), pos2(1.0, 1.125)),
+            egui::Rect::from_center_size(pos2(0.0, 0.0), vec2(width, height)),
             rect,
         );
 
@@ -422,23 +465,44 @@ impl PresentationApp {
 
         let mut shapes = vec![];
 
-        for y in [0.25, 0.75] {
+        for i in 0..=(4 * height.ceil() as i32) {
+            let y = -height.ceil() + 0.5 * i as f32;
+
             shapes.push(egui::Shape::line_segment(
-                [to_screen * pos2(0.0, y), to_screen * pos2(1.0, y)],
+                [
+                    to_screen * pos2(-width / 2.0, y),
+                    to_screen * pos2(width / 2.0, y),
+                ],
                 egui::Stroke::new(0.75, egui::Color32::DARK_GRAY),
             ));
         }
 
-        for y in [0.0, 0.5, 1.0] {
+        for i in 0..=(4 * height.ceil() as i32) {
+            let y = -height.ceil() - 0.25 + 0.5 * i as f32;
+
             shapes.push(egui::Shape::line_segment(
-                [to_screen * pos2(0.0, y), to_screen * pos2(1.0, y)],
+                [
+                    to_screen * pos2(-width / 2.0, y),
+                    to_screen * pos2(width / 2.0, y),
+                ],
                 egui::Stroke::new(3.0, egui::Color32::BLACK),
             ));
             shapes.push(egui::Shape::circle_filled(
-                to_screen * pos2(0.5, y),
+                to_screen * pos2(0.0, y),
                 3.5,
                 egui::Color32::BLACK,
             ));
+        }
+
+        if let Some(point) = point {
+            let center = to_screen * pos2(point[0], -point[1]);
+
+            shapes.push(egui::epaint::Shape::Circle(egui::epaint::CircleShape {
+                center,
+                radius: 5.0,
+                fill: egui::Color32::BLUE,
+                stroke: egui::Stroke::NONE,
+            }));
         }
 
         let text = "θ";
