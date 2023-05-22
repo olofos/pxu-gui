@@ -219,6 +219,8 @@ impl PresentationApp {
             .map(|f| Frame::try_from(f).unwrap())
             .collect();
 
+        app.frames[0].start(&mut app.plot_data);
+
         app
     }
 }
@@ -328,7 +330,6 @@ impl eframe::App for PresentationApp {
                     let plot_func: fn(&mut egui::Ui, egui::Rect) = match component {
                         RelativisticComponent::P => Self::show_relativistic_plot_p,
                         RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
-                        _ => unimplemented!(),
                     };
 
                     let w = rect.width();
