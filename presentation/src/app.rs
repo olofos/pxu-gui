@@ -1,6 +1,5 @@
 use egui::{pos2, vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
-use pxu::Pxu;
 use pxu_plot::{Plot, PlotState};
 use std::collections::HashMap;
 
@@ -9,8 +8,7 @@ use egui_extras::RetainedImage;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 struct PlotData {
-    #[serde(skip)]
-    pxu: pxu::Pxu,
+    consts: CouplingConstants,
     p_plot: Plot,
     xp_plot: Plot,
     xm_plot: Plot,
@@ -90,7 +88,7 @@ impl Frame {
             }
 
             if let Some(consts) = self.consts {
-                plot_data.pxu.consts = consts;
+                plot_data.consts = consts;
             }
         }
         self.start_time = start_time;
@@ -100,11 +98,14 @@ impl Frame {
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
+
 pub struct PresentationApp {
     plot_data: PlotData,
     // #[serde(skip)]
     // images: Vec<Vec<RetainedImage>>,
     // image_index: (usize, usize),
+    #[serde(skip)]
+    pxu: Vec<pxu::Pxu>,
     #[serde(skip)]
     frames: Vec<Frame>,
     #[serde(skip)]
@@ -115,16 +116,10 @@ pub struct PresentationApp {
 
 impl Default for PlotData {
     fn default() -> Self {
-        let bound_state_number = 1;
-
         let consts = CouplingConstants::new(2.0, 5);
 
-        let mut pxu = Pxu::new(consts);
-
-        pxu.state = pxu::State::new(bound_state_number, consts);
-
         Self {
-            pxu,
+            consts,
             p_plot: Plot {
                 component: pxu::Component::P,
                 height: 0.75,
@@ -203,6 +198,19 @@ impl eframe::App for PresentationApp {
         //         });
         //     });
         // });
+        let pxu = if let Some(i) = self
+            .pxu
+            .iter()
+            .position(|pxu| pxu.consts == self.plot_data.consts)
+        {
+            &mut self.pxu[i]
+        } else {
+            let mut pxu = pxu::Pxu::new(self.plot_data.consts);
+            pxu.state = pxu::State::new(1, pxu.consts);
+            self.pxu.push(pxu);
+            self.pxu.last_mut().unwrap()
+        };
+
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
             _frame.close();
         }
@@ -211,10 +219,10 @@ impl eframe::App for PresentationApp {
             while (chrono::Utc::now() - start).num_milliseconds()
                 < (1000.0 / 20.0f64).floor() as i64
             {
-                if self.plot_data.pxu.contours.update(
-                    self.plot_data.pxu.state.points[0].p.re.floor() as i32,
-                    self.plot_data.pxu.consts,
-                ) {
+                if pxu
+                    .contours
+                    .update(pxu.state.points[0].p.re.floor() as i32, pxu.consts)
+                {
                     break;
                 }
                 ctx.request_repaint();
@@ -301,12 +309,7 @@ impl eframe::App for PresentationApp {
 
                     let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
-                    plot.show(
-                        ui,
-                        plot_rect,
-                        &mut self.plot_data.pxu,
-                        &mut self.plot_data.plot_state,
-                    );
+                    plot.show(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
                 }
 
                 for (component, descr) in frame.relativistic_plot.iter() {
