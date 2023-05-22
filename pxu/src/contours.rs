@@ -192,6 +192,10 @@ enum GeneratorCommand {
     PGotoM(f64),
     PGotoIm(f64),
     PGotoRe(f64),
+
+    MirrorBranchPoint,
+    MirrorCut,
+    ReverseCut,
 }
 
 #[derive(Default, Clone)]
@@ -863,6 +867,40 @@ impl Contours {
                 self.cuts.swap(len - 4, len - 2);
                 self.cuts.swap(len - 3, len - 1);
             }
+
+            MirrorBranchPoint => {
+                if let Some(bp) = self.rctx.cut_data.branch_point {
+                    self.rctx.cut_data.branch_point = Some(-bp.conj());
+                    self.rctx.cut_data.path = Some(vec![]);
+                }
+            }
+
+            MirrorCut => {
+                if let Some(ref path) = self.rctx.cut_data.path {
+                    let q1 = path
+                        .into_iter()
+                        .cloned()
+                        .filter(|z| z.re > 0.0 && z.im > 0.0)
+                        .collect::<Vec<_>>();
+                    let q4 = path
+                        .into_iter()
+                        .cloned()
+                        .filter(|z| z.re > 0.0 && z.im < 0.0)
+                        .collect::<Vec<_>>();
+                    let mut path = q1.clone();
+                    path.extend(q1.into_iter().rev().map(|z| -z.conj()));
+                    path.extend(q4.iter().rev().map(|z| -z.conj()));
+                    path.extend(q4);
+
+                    self.rctx.cut_data.path = Some(path);
+                }
+            }
+
+            ReverseCut => {
+                if let Some(ref mut path) = self.rctx.cut_data.path {
+                    path.reverse();
+                }
+            }
         }
     }
 }
@@ -1382,7 +1420,143 @@ impl ContourCommandGenerator {
         self
     }
 
+    fn generate_cuts_h0(&mut self, p_range: i32, consts: CouplingConstants) {
+        let p_start = p_range as f64;
+
+        self.e_start(p_range);
+
+        self.compute_cut_e_p()
+            .create_cut(Component::P, CutType::E)
+            .push_cut(p_range);
+
+        self.compute_cut_e_xp();
+
+        self.create_cut(Component::Xp, CutType::E)
+            .log_branch(p_range)
+            .xm_outside()
+            .push_cut(p_range);
+
+        self.compute_cut_e_xm();
+
+        self.create_cut(Component::Xm, CutType::E)
+            .log_branch(p_range)
+            .xp_between()
+            .push_cut(p_range);
+
+        self.compute_cut_e_u();
+
+        self.create_cut(Component::U, CutType::E)
+            .log_branch(p_range)
+            .xp_between()
+            .xm_outside()
+            .push_cut(p_range);
+
+        self.create_cut(Component::U, CutType::E)
+            .log_branch(p_range)
+            .xp_outside()
+            .xm_between()
+            .push_cut(p_range);
+
+        {
+            // Scallion
+            self.clear_cut()
+                .compute_cut_path_x_full(XCut::Scallion)
+                .add(GeneratorCommand::MirrorCut)
+                .create_cut(Component::Xp, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            self.add(GeneratorCommand::MirrorBranchPoint)
+                .create_cut(Component::Xp, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            self.clear_cut()
+                .compute_branch_point(p_range, BranchPointType::XpPositiveAxisImXmPositive)
+                .compute_cut_path_x(CutDirection::Negative)
+                .add(GeneratorCommand::MirrorCut);
+
+            self.create_cut(Component::Xm, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            self.add(GeneratorCommand::MirrorBranchPoint)
+                .create_cut(Component::Xm, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            self.clear_cut()
+                .compute_branch_point(p_range, BranchPointType::XpPositiveAxisImXmNegative)
+                .compute_cut_path_x(CutDirection::Negative)
+                .add(GeneratorCommand::ReverseCut)
+                .add(GeneratorCommand::MirrorCut);
+            self.create_cut(Component::Xm, CutType::UShortScallion(Component::Xp))
+                .push_cut(p_range);
+            self.add(GeneratorCommand::MirrorBranchPoint)
+                .create_cut(Component::Xm, CutType::UShortScallion(Component::Xp))
+                .push_cut(p_range);
+
+            self.clear_cut().set_cut_path(
+                vec![
+                    Complex64::new(-2.0, -1.0 / consts.h),
+                    Complex64::new(2.0, -1.0 / consts.h),
+                ],
+                Some(Complex64::new(-2.0, -1.0 / consts.h)),
+            );
+
+            self.create_cut(Component::U, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            self.add(GeneratorCommand::MirrorBranchPoint)
+                .create_cut(Component::U, CutType::UShortScallion(Component::Xp))
+                .log_branch(p_range)
+                .push_cut(p_range);
+
+            let p0 = p_start + 1.0 / 8.0;
+            self.clear_cut();
+
+            self.p_start_xp(p0)
+                .goto_m(-(p_range * consts.k()) as f64)
+                .compute_cut_path_p_rev();
+
+            self.p_start_xp(p0)
+                .goto_xm(p0, 1.0)
+                .goto_m(-(p_range * consts.k()) as f64)
+                .compute_cut_path_p();
+
+            self.p_start_xp(p0)
+                .goto_m((p_range * consts.k() + 1) as f64)
+                .goto_im(0.0)
+                .goto_re(consts.s())
+                .compute_branch_point_p();
+
+            self.create_cut(Component::P, CutType::UShortScallion(Component::Xp))
+                .e_branch(1)
+                .push_cut(p_range);
+
+            self.create_cut(Component::P, CutType::UShortScallion(Component::Xm))
+                .e_branch(-1)
+                .push_cut(p_range);
+
+            self.add(GeneratorCommand::MirrorBranchPoint);
+
+            self.create_cut(Component::P, CutType::UShortScallion(Component::Xp))
+                .e_branch(1)
+                .push_cut(p_range);
+
+            self.create_cut(Component::P, CutType::UShortScallion(Component::Xm))
+                .e_branch(-1)
+                .push_cut(p_range);
+        }
+    }
+
     fn generate_cuts(&mut self, p_range: i32, consts: CouplingConstants) {
+        if consts.k() == 0 {
+            self.generate_cuts_h0(p_range, consts);
+            return;
+        }
+
         let p_start = p_range as f64;
         let k = consts.k() as f64;
         let s = consts.s();
