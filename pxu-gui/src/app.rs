@@ -122,15 +122,15 @@ impl eframe::App for PxuGuiApp {
         });
 
         if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
-            self.ui_state.show_side_panel = !self.ui_state.show_side_panel;
+            self.ui_state.hide_side_panel = !self.ui_state.hide_side_panel;
         }
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             self.ui_state.plot_state.close_fullscreen();
-            self.ui_state.show_side_panel = true;
+            self.ui_state.hide_side_panel = false;
         }
 
-        if self.ui_state.show_side_panel {
+        if !self.ui_state.hide_side_panel {
             self.draw_side_panel(ctx);
         }
 

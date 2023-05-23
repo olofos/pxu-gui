@@ -1,10 +1,10 @@
 use crate::arguments::Arguments;
 
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct UiState {
     pub plot_state: pxu_plot::PlotState,
     #[serde(skip)]
-    pub show_side_panel: bool,
+    pub hide_side_panel: bool,
     #[serde(skip)]
     pub show_fps: bool,
     #[serde(skip)]
@@ -15,20 +15,6 @@ pub struct UiState {
     pub saved_paths_to_load: Option<Vec<pxu::path::SavedPath>>,
     #[serde(skip)]
     pub path_load_progress: Option<(usize, usize)>,
-}
-
-impl Default for UiState {
-    fn default() -> Self {
-        Self {
-            plot_state: Default::default(),
-            show_side_panel: true,
-            show_fps: false,
-            show_dev: false,
-            continuous_mode: false,
-            saved_paths_to_load: None,
-            path_load_progress: None,
-        }
-    }
 }
 
 impl UiState {
