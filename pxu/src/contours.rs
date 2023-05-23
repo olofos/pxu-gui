@@ -1420,7 +1420,7 @@ impl ContourCommandGenerator {
         self
     }
 
-    fn generate_cuts_h0(&mut self, p_range: i32, consts: CouplingConstants) {
+    fn generate_cuts_k0(&mut self, p_range: i32, consts: CouplingConstants) {
         let p_start = p_range as f64;
 
         self.e_start(p_range);
@@ -1553,7 +1553,7 @@ impl ContourCommandGenerator {
 
     fn generate_cuts(&mut self, p_range: i32, consts: CouplingConstants) {
         if consts.k() == 0 {
-            self.generate_cuts_h0(p_range, consts);
+            self.generate_cuts_k0(p_range, consts);
             return;
         }
 
