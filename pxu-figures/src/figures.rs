@@ -157,7 +157,11 @@ fn fig_xpl_cover(
     for contour in pxu.contours.get_grid(pxu::Component::Xp).iter().filter(
         |line| matches!(line.component, GridLineComponent::Xp(m) if (-8.0..=6.0).contains(&m)),
     ) {
-        figure.add_grid_line(contour, &["thin", "black"])?;
+        if contour.component == GridLineComponent::Xp(1.0) {
+            figure.add_grid_line(contour, &["thin", "blue"])?;
+        } else {
+            figure.add_grid_line(contour, &["thin", "black"])?;
+        }
     }
     figure.finish(cache, settings, pb)
 }

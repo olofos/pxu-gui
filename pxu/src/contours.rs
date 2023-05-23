@@ -224,7 +224,7 @@ struct ContourCommandGenerator {
     commands: VecDeque<GeneratorCommand>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum GridLineComponent {
     Real,
     Xp(f64),
