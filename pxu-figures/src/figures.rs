@@ -925,6 +925,84 @@ fn fig_p_two_particle_bs_0(
     draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
 }
 
+fn fig_xp_typical_bound_state(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "xp-typical-bound-states",
+        -3.5..6.5,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+    figure.no_component_indicator();
+
+    let state_strings = [
+        "(points:[(p:(-0.01281836032081622,-0.03617430043713721),xp:(-0.5539661576009564,4.096675591673073),xm:(-0.7024897294980745,3.2176928460399083),u:(-1.7157735474931681,1.9999999999999996),x:(-0.6278118911147218,3.651492613118212),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.019778339646048883,-0.041578695061571934),xp:(-0.7024897294980745,3.2176928460399083),xm:(-0.8439501836107429,2.391751872316718),u:(-1.7157735474931681,0.9999999999999993),x:(-0.7756824568522961,2.7972312015320973),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.6079768155592542,-0.000000000000000025609467106049815),xp:(-0.8439501836107431,2.3917518723167186),xm:(-0.8439501836107433,-2.3917518723167186),u:(-1.7157735474931681,-0.0000000000000004440892098500626),x:(-0.9025872691909044,-2.0021375758700994),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.019778339646048887,0.04157869506157193),xp:(-0.8439501836107434,-2.391751872316718),xm:(-0.7024897294980749,-3.217692846039909),u:(-1.7157735474931686,-0.9999999999999991),x:(-0.7756824568522963,-2.7972312015320973),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.01281836032081622,0.0361743004371372),xp:(-0.7024897294980751,-3.217692846039909),xm:(-0.5539661576009569,-4.0966755916730735),u:(-1.7157735474931686,-1.9999999999999998),x:(-0.6278118911147222,-3.651492613118212),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))])",
+        "(points:[(p:(0.0369899543404076,-0.029477676458957484),xp:(3.725975442509692,2.6128313499217866),xm:(3.5128286480709265,1.3995994557612454),u:(2.7000494004152316,1.5000010188076138),x:(3.6217633112309158,2.022895894514536),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.06034321575136616,-0.018323213928633217),xp:(3.512828648070947,1.3995994557612081),xm:(3.3701632658975504,0.000001507484578833207),u:(2.700049400415252,0.5000010188075885),x:(3.4147970768250535,0.7263861464447217),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.06034326215107557,0.018323155770842862),xp:(3.370163265897615,0.0000015074845481910515),xm:(3.5128282084799323,-1.3995968258500417),u:(2.700049400415295,-0.49999898119243236),x:(3.4147967471340466,-0.7263832822620354),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.03698999112227798,0.029477675660386345),xp:(3.5128282084799114,-1.3995968258500804),xm:(3.7259750341536533,-2.6128289961240028),u:(2.700049400415274,-1.4999989811924586),x:(3.621762872183573,-2.0228934323008243),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))])"
+    ];
+
+    let states: Vec<pxu::State> = state_strings
+        .iter()
+        .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
+        .collect::<Result<Vec<_>>>()?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state = states[0].clone();
+
+    figure.add_grid_lines(&pxu, &[])?;
+
+    figure.add_plot(
+        &["very thin", "lightgray"],
+        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+    )?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, figure.component, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+    {
+        figure.add_cut(cut, &[], pxu.consts)?;
+    }
+
+    for state in states {
+        let mut points = state
+            .points
+            .iter()
+            .map(|pt| pt.get(pxu::Component::Xp))
+            .collect::<Vec<_>>();
+        points.push(state.points.last().unwrap().get(pxu::Component::Xm));
+
+        for (i, pos) in points.iter().enumerate() {
+            let text = if i == 0 {
+                "$\\scriptstyle x_1^+$".to_owned()
+            } else if i == points.len() - 1 {
+                format!("$ x_{}^-$", i + 1)
+            } else {
+                format!("$\\scriptstyle x_{}^- = x_{}^+$", i + 1, i + 2)
+            };
+            let anchor = if pos.re < 0.0 {
+                "anchor=east"
+            } else {
+                "anchor=west"
+            };
+            figure.add_node(&text, *pos, &[anchor])?;
+        }
+
+        figure.add_plot_all(&["only marks", "Blue", "mark size=0.075cm"], points)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xp_two_particle_bs_0(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -948,7 +1026,6 @@ fn fig_xp_two_particle_bs_0(
         "(points:[(p:(0.049906029903425714,-0.011317561918482518),xp:(4.075425564166025,1.3215262509273769),xm:(3.990254347756956,-0.00000000000008060219158778636),u:(3.139628139566713,0.49999999999994027),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.04990602990342423,0.011317561918484643),xp:(3.990254347756972,-0.00000000000007505107646466058),xm:(4.075425564166056,-1.321526250927521),u:(3.1396281395667245,-0.5000000000000554),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1)))])",
         "(points:[(p:(0.004107548537993523,-0.07848376696376784),xp:(1.5017763385170317,2.066585116519383),xm:(0.9494180269531781,1.238002479091183),u:(0.9855333457443732,0.4999999999459174),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,1))),(p:(0.29586076213838275,0.07848376697071423),xp:(0.9494180269531776,1.2380024790911828),xm:(1.5017763385645666,-2.0665851166226674),u:(0.9855333457443731,-0.5000000000540827),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,1)))])",
         "(points:[(p:(0.2955484673695275,-0.07853446096510001),xp:(1.503716303147816,2.0656922379697886),xm:(0.9506849827846514,-1.236725796907908),u:(0.9875645002911329,0.49999999999534983),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,1))),(p:(0.0041589403041424845,0.07853446096569741),xp:(0.9506849827846514,-1.2367257969079077),xm:(1.5037163031519056,-2.0656922379786726),u:(0.9875645002911335,-0.5000000000046495),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,1)))])",
-
     ];
 
     draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
@@ -1532,6 +1609,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_crossing_0,
     fig_xp_crossing_0,
     fig_xm_crossing_0,
+    fig_xp_typical_bound_state,
     fig_p_two_particle_bs_0,
     fig_xp_two_particle_bs_0,
     fig_xm_two_particle_bs_0,
