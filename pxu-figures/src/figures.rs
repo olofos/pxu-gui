@@ -21,7 +21,7 @@ fn fig_p_xpl_preimage(
         -2.6..2.6,
         0.0,
         Size {
-            width: 15.0,
+            width: 15.5,
             height: 6.0,
         },
         pxu::Component::P,
@@ -145,7 +145,7 @@ fn fig_p_plane_e_cuts(
         -2.6..2.6,
         0.0,
         Size {
-            width: 15.0,
+            width: 15.5,
             height: 6.0,
         },
         pxu::Component::P,
@@ -487,7 +487,7 @@ fn fig_p_band_between_outside(
         -2.6..2.6,
         0.0,
         Size {
-            width: 15.0,
+            width: 15.5,
             height: 6.0,
         },
         pxu::Component::P,
@@ -516,7 +516,7 @@ fn fig_p_band_between_inside(
         -2.6..2.6,
         0.0,
         Size {
-            width: 15.0,
+            width: 15.5,
             height: 6.0,
         },
         pxu::Component::P,
@@ -1311,13 +1311,13 @@ fn draw_p_region_plot(
             "rounded corners",
         ];
         figure.add_node(
-            &format!("\\scriptsize\\sffamily {text1}/{text2}"),
+            &format!("\\tiny\\sffamily {text1}/{text2}"),
             Complex64::new(x, y),
             options,
         )?;
         if text1 != text2 {
             figure.add_node(
-                &format!("\\scriptsize\\sffamily {text2}/{text1}"),
+                &format!("\\tiny\\sffamily {text2}/{text1}"),
                 Complex64::new(x, -y),
                 options,
             )?;
@@ -1355,8 +1355,8 @@ fn fig_p_short_cut_regions_e_plus(
         -2.6..2.6,
         0.0,
         Size {
-            width: 18.0,
-            height: 7.0,
+            width: 15.5,
+            height: 6.0,
         },
         pxu::Component::P,
         settings,
@@ -1377,8 +1377,8 @@ fn fig_p_short_cut_regions_e_min(
         -2.6..2.6,
         0.0,
         Size {
-            width: 18.0,
-            height: 7.0,
+            width: 15.5,
+            height: 6.0,
         },
         pxu::Component::P,
         settings,
@@ -1521,7 +1521,7 @@ fn fig_p_physical_region_e_plus(
         -2.6..2.6,
         0.0,
         Size {
-            width: 18.0,
+            width: 15.5,
             height: 4.0,
         },
         pxu::Component::P,
@@ -1558,7 +1558,7 @@ fn fig_p_physical_region_e_minus(
         -2.6..2.6,
         0.0,
         Size {
-            width: 18.0,
+            width: 15.5,
             height: 4.0,
         },
         pxu::Component::P,
