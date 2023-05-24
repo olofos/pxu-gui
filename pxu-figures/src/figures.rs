@@ -166,6 +166,38 @@ fn fig_xpl_cover(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_xml_cover(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "xmL-cover",
+        -5.0..5.0,
+        -1.9,
+        Size {
+            width: 6.0,
+            height: 3.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+
+    figure.add_axis()?;
+    for contour in pxu.contours.get_grid(pxu::Component::Xm).iter().filter(
+        |line| matches!(line.component, GridLineComponent::Xm(m) if (-8.0..=6.0).contains(&m)),
+    ) {
+        if contour.component == GridLineComponent::Xm(1.0) {
+            figure.add_grid_line(contour, &["thin", "blue"])?;
+        } else {
+            figure.add_grid_line(contour, &["thin", "black"])?;
+        }
+    }
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_p_plane_short_cuts(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -1408,6 +1440,7 @@ fn fig_p_physical_region_e_minus(
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_xpl_preimage,
     fig_xpl_cover,
+    fig_xml_cover,
     fig_p_plane_short_cuts,
     fig_xp_cuts_1,
     fig_u_band_between_outside,
