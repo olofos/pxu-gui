@@ -57,6 +57,7 @@ pub struct FigureWriter {
     pub plot_count: u64,
     pub component: pxu::Component,
     y_shift: Option<f64>,
+    no_component_indicator: bool,
 }
 
 impl FigureWriter {
@@ -146,7 +147,12 @@ progress_file=io.open(""#;
             component,
             y_shift: None,
             caption: String::new(),
+            no_component_indicator: false,
         })
+    }
+
+    pub fn no_component_indicator(&mut self) {
+        self.no_component_indicator = true;
     }
 
     fn format_coordinate(&self, p: Complex64) -> String {
@@ -404,17 +410,21 @@ progress_file=io.open(""#;
         pb: &ProgressBar,
     ) -> std::io::Result<FigureCompiler> {
         writeln!(self.writer, "\\end{{axis}}\n")?;
-        let component_name = match self.component {
-            pxu::Component::P => "p",
-            pxu::Component::Xp => "x^+",
-            pxu::Component::Xm => "x^-",
-            pxu::Component::X => "x",
-            pxu::Component::U => "u",
-        };
-        writeln!(
-            self.writer,
-            "\\node at (current bounding box.north east) [anchor=north east,fill=white,outer sep=0.1cm,draw,thin] {{$\\scriptstyle {component_name}$}};"
-        )?;
+
+        if !self.no_component_indicator {
+            let component_name = match self.component {
+                pxu::Component::P => "p",
+                pxu::Component::Xp => "x^+",
+                pxu::Component::Xm => "x^-",
+                pxu::Component::X => "x",
+                pxu::Component::U => "u",
+            };
+            writeln!(
+                self.writer,
+                "\\node at (current bounding box.north east) [anchor=north east,fill=white,outer sep=0.1cm,draw,thin] {{$\\scriptstyle {component_name}$}};"
+            )?;
+        }
+
         self.writer.write_all(Self::FILE_END.as_bytes())?;
         self.writer.flush()?;
 

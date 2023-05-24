@@ -152,6 +152,7 @@ fn fig_xpl_cover(
         settings,
         pb,
     )?;
+    figure.no_component_indicator();
 
     figure.add_axis()?;
     for contour in pxu.contours.get_grid(pxu::Component::Xp).iter().filter(
@@ -184,6 +185,7 @@ fn fig_xml_cover(
         settings,
         pb,
     )?;
+    figure.no_component_indicator();
 
     figure.add_axis()?;
     for contour in pxu.contours.get_grid(pxu::Component::Xm).iter().filter(
