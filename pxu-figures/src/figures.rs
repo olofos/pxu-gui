@@ -168,6 +168,11 @@ fn fig_p_plane_e_cuts(
         &vec![Complex64::from(-5.0), Complex64::from(5.0)],
     )?;
 
+    figure.add_plot(
+        &["black"],
+        &vec![Complex64::new(0.0, -5.0), Complex64::new(0.0, 5.0)],
+    )?;
+
     for i in 0..=(2 * 5) {
         let x = -5.0 + i as f64;
         figure.add_plot(
