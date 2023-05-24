@@ -187,7 +187,7 @@ impl eframe::App for PresentationApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
+        // #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
         // egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
         //     // The top panel is often a good place for a menu bar:
         //     egui::menu::bar(ui, |ui| {
@@ -207,6 +207,13 @@ impl eframe::App for PresentationApp {
         } else {
             let mut pxu = pxu::Pxu::new(self.plot_data.consts);
             pxu.state = pxu::State::new(1, pxu.consts);
+
+            pxu.state
+                .update(0, pxu::Component::P, 0.1.into(), &pxu.contours, pxu.consts);
+
+            pxu.state
+                .update(0, pxu::Component::P, 0.15.into(), &pxu.contours, pxu.consts);
+
             self.pxu.push(pxu);
             self.pxu.last_mut().unwrap()
         };
