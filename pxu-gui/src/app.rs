@@ -440,7 +440,10 @@ impl PxuGuiApp {
             ui.label(format!("x+: {:.3}", active_point.xp));
             ui.label(format!("x-: {:.3}", active_point.xm));
             ui.label(format!("u: {:.3}", active_point.u));
-            ui.label(format!("x: {:.3}", active_point.x));
+
+            if self.ui_state.plot_state.show_x {
+                ui.label(format!("x: {:.3}", active_point.x));
+            }
 
             ui.add_space(10.0);
             ui.label("Branch info:");
