@@ -134,6 +134,72 @@ fn fig_p_xpl_preimage(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_plane_e_cuts(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "p-plane-e-cuts",
+        -2.6..2.6,
+        0.0,
+        Size {
+            width: 15.0,
+            height: 6.0,
+        },
+        pxu::Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&pxu, &[])?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::E))
+    {
+        figure.add_cut(cut, &[], pxu.consts)?;
+    }
+
+    figure.add_plot(
+        &["black"],
+        &vec![Complex64::from(-5.0), Complex64::from(5.0)],
+    )?;
+
+    for i in 0..=(2 * 5) {
+        let x = -5.0 + i as f64;
+        figure.add_plot(
+            &["black"],
+            &vec![Complex64::new(x, -0.03), Complex64::new(x, 0.03)],
+        )?;
+        figure.add_plot(
+            &["black"],
+            &vec![
+                Complex64::new(x + 0.25, -0.015),
+                Complex64::new(x + 0.25, 0.015),
+            ],
+        )?;
+        figure.add_plot(
+            &["black"],
+            &vec![
+                Complex64::new(x + 0.5, -0.015),
+                Complex64::new(x + 0.5, 0.015),
+            ],
+        )?;
+        figure.add_plot(
+            &["black"],
+            &vec![
+                Complex64::new(x + 0.75, -0.015),
+                Complex64::new(x + 0.75, 0.015),
+            ],
+        )?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xpl_cover(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -1441,6 +1507,7 @@ fn fig_p_physical_region_e_minus(
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_xpl_preimage,
+    fig_p_plane_e_cuts,
     fig_xpl_cover,
     fig_xml_cover,
     fig_p_plane_short_cuts,
