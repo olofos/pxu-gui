@@ -493,7 +493,7 @@ impl Node for PInterpolatorMut {
             _ => unreachable!(),
         };
 
-        writeln!(figure.writer,"\\node[scale=0.5,anchor={anchor},inner sep=0.4pt,rotate={rotation:.1},{color}] at ({:.3}, {:.3}) {{$\\scriptscriptstyle {}$}};",
+        writeln!(figure.writer,"\\node[scale=0.5,anchor={anchor},inner sep=0.4pt,rotate={rotation:.1},{color}] at ({:.3}, {:.3}) {{$\\scriptstyle {}$}};",
                  self.p().re,
                  self.p().im,
                  m)
