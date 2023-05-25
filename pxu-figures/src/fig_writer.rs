@@ -242,6 +242,12 @@ progress_file=io.open(""#;
         for contour in pxu.contours.get_grid(self.component).iter() {
             self.add_grid_line(contour, options)?;
         }
+        if matches!(self.component, pxu::Component::Xp | pxu::Component::Xm) {
+            self.add_plot(
+                options,
+                &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+            )?;
+        }
         Ok(())
     }
 
