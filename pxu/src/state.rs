@@ -5,8 +5,10 @@ use crate::point::Point;
 use num::complex::Complex64;
 
 #[derive(Debug, Clone, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+#[serde(default)]
 pub struct State {
     pub points: Vec<Point>,
+    pub unlocked: bool,
 }
 
 impl State {
@@ -53,7 +55,10 @@ impl State {
             points.push(pt);
         }
 
-        Self { points }
+        Self {
+            points,
+            unlocked: false,
+        }
     }
 
     fn update_point(
@@ -90,7 +95,7 @@ impl State {
     }
 
     pub fn update_points(
-        points: &mut Vec<Point>,
+        &mut self,
         active_point: usize,
         component: Component,
         new_value: Complex64,
@@ -100,23 +105,45 @@ impl State {
         let mut result = true;
 
         result &= Self::update_point(
-            &mut points[active_point],
+            &mut self.points[active_point],
             component,
             new_value,
             contours,
             consts,
         );
 
-        for i in (active_point + 1)..points.len() {
-            let new_value = xm_on_sheet(points[i - 1].p, 1.0, consts, &points[i - 1].sheet_data);
-            result &=
-                Self::update_point(&mut points[i], Component::Xp, new_value, contours, consts);
-        }
+        if !self.unlocked {
+            for i in (active_point + 1)..self.points.len() {
+                let new_value = xm_on_sheet(
+                    self.points[i - 1].p,
+                    1.0,
+                    consts,
+                    &self.points[i - 1].sheet_data,
+                );
+                result &= Self::update_point(
+                    &mut self.points[i],
+                    Component::Xp,
+                    new_value,
+                    contours,
+                    consts,
+                );
+            }
 
-        for i in (0..active_point).rev() {
-            let new_value = xp_on_sheet(points[i + 1].p, 1.0, consts, &points[i + 1].sheet_data);
-            result &=
-                Self::update_point(&mut points[i], Component::Xm, new_value, contours, consts);
+            for i in (0..active_point).rev() {
+                let new_value: num::Complex<f64> = xp_on_sheet(
+                    self.points[i + 1].p,
+                    1.0,
+                    consts,
+                    &self.points[i + 1].sheet_data,
+                );
+                result &= Self::update_point(
+                    &mut self.points[i],
+                    Component::Xm,
+                    new_value,
+                    contours,
+                    consts,
+                );
+            }
         }
         result
     }
@@ -129,14 +156,7 @@ impl State {
         contours: &Contours,
         consts: CouplingConstants,
     ) -> bool {
-        Self::update_points(
-            &mut self.points,
-            active_point,
-            component,
-            new_value,
-            contours,
-            consts,
-        )
+        self.update_points(active_point, component, new_value, contours, consts)
     }
 
     pub fn p(&self) -> Complex64 {

@@ -509,6 +509,8 @@ impl PxuGuiApp {
                 self.anim_data.stop();
             }
 
+            ui.checkbox(&mut self.pxu.state.unlocked, "Unlock bound state");
+
             self.draw_state_information(ui);
 
             if !self.pxu.paths.is_empty() {
