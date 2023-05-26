@@ -1061,6 +1061,44 @@ impl ContourCommandGenerator {
         let k = consts.k() as f64;
         const M_MAX: i32 = 60;
         const M_MIN: i32 = 20;
+
+        if k == 0.0 {
+            // if false {
+            let p0 = p_start + 1.0 / 16.0;
+            let p1 = p_start + 1.0 / 2.0;
+            let p2 = p_start + 15.0 / 16.0;
+
+            self.p_start_xp(p0).goto_m(0.0).p_grid_line();
+
+            self.p_start_xp(p0)
+                .goto_xm(p0, 1.0)
+                .goto_m(0.0)
+                .p_grid_line();
+
+            self.p_start_xp(p0);
+
+            for m in 3..=M_MAX {
+                self.goto_m(m as f64).p_grid_line();
+            }
+
+            self.p_start_xp(p1).goto_m(3.0);
+
+            for m in 3..=M_MAX {
+                self.goto_m(m as f64).p_grid_line();
+            }
+
+            {
+                // Real positive line
+                self.p_start_xp(p0).goto_im(0.0).p_grid_line();
+            }
+            {
+                // Real negative line
+                self.p_start_xp(p2).goto_im(0.0).p_grid_line();
+            }
+
+            return;
+        }
+
         {
             let p0 = p_start + 1.0 / 16.0;
             let p2 = p_start + 15.0 / 16.0;
@@ -1124,22 +1162,14 @@ impl ContourCommandGenerator {
                 self.goto_xp(p0, m as f64).p_grid_line();
             }
 
-            if k > 0.0 {
-                self.p_start_xp(p2).goto_xp(p2, p_start * k + 3.0);
+            self.p_start_xp(p2).goto_xp(p2, p_start * k + 3.0);
 
-                for m in (p_range * consts.k() + 3)..=((p_range + 1) * consts.k() + 1) {
-                    self.goto_xp(p0, m as f64).p_grid_line();
-                }
+            for m in (p_range * consts.k() + 3)..=((p_range + 1) * consts.k() + 1) {
+                self.goto_xp(p0, m as f64).p_grid_line();
+            }
 
-                for m in ((p_range + 1) * consts.k() + 3)..=M_MAX {
-                    self.goto_xp(p0, m as f64).p_grid_line();
-                }
-            } else {
-                self.p_start_xp((p0 + p2) / 2.0).goto_m(3.0);
-
-                for m in 3..=M_MAX {
-                    self.goto_m(m as f64).p_grid_line();
-                }
+            for m in ((p_range + 1) * consts.k() + 3)..=M_MAX {
+                self.goto_xp(p0, m as f64).p_grid_line();
             }
 
             self.p_start_xp(p0)
