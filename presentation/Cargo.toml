@@ -34,6 +34,9 @@ image = { version = "0.24.6", default-features = false, features = ["png"] }
 egui_extras = { version = "0.21.0", features = ["image"] }
 toml = "0.7.4"
 serde_with = "3.0.0"
+clap = { version = "4.2.2", features = ["derive"] }
+thiserror = "1.0.40"
+md5 = "0.7.0"
 
 
 # native:

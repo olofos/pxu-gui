@@ -4,9 +4,42 @@
 mod app;
 mod presentation_description;
 
+#[cfg(not(target_arch = "wasm32"))]
+mod build;
+
+use clap::Parser;
+
+#[derive(Parser, Clone)]
+#[command(author, version, about, long_about = None)]
+struct Arguments {
+    #[arg(short, long)]
+    pub rebuild: bool,
+}
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("eframe error: {0}")]
+    EFrame(#[from] eframe::Error),
+
+    #[error("io error: {0}")]
+    IO(#[from] std::io::Error),
+
+    #[error("Presentation error: {0}")]
+    Presentation(String),
+    #[error("Toml deserialization error: {0}")]
+    TomlDe(#[from] toml::de::Error),
+
+    #[error("Toml serialization error: {0}")]
+    TomlSer(#[from] toml::ser::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
-fn main() -> Result<(), eframe::Error> {
+fn main() -> Result<()> {
+    let arguments = Arguments::parse();
+
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
@@ -14,6 +47,8 @@ fn main() -> Result<(), eframe::Error> {
         .with_line_number(true)
         .without_time()
         .init();
+
+    build::check_presentation("./presentation/images/", arguments.rebuild)?;
 
     let native_options = eframe::NativeOptions {
         fullscreen: true,
@@ -32,7 +67,9 @@ fn main() -> Result<(), eframe::Error> {
             cc.egui_ctx.set_style(style);
             Box::new(app::PresentationApp::new(cc))
         }),
-    )
+    )?;
+
+    Ok(())
 }
 
 // when compiling to web using trunk.

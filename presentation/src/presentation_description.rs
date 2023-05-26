@@ -126,7 +126,8 @@ pub struct FrameDescription {
     pub consts: Option<[f64; 2]>,
 }
 
-#[derive(Debug, serde::Deserialize, serde::Serialize)]
+#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 pub struct PresentationDescription {
     pub frame: Vec<FrameDescription>,
 }
