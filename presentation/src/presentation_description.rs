@@ -7,6 +7,12 @@ pub enum Value<T> {
     Transition(T, T, f64),
 }
 
+impl<T> Value<T> {
+    pub fn is_animated(&self) -> bool {
+        matches!(self, Self::Transition(_, _, _))
+    }
+}
+
 fn ease(s: f64) -> f64 {
     s * s * (3.0 - 2.0 * s)
 }
@@ -94,12 +100,18 @@ impl std::fmt::Display for RelativisticComponent {
     }
 }
 
-#[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
-#[serde(default)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct PlotDescription {
-    pub rect: [[f32; 2]; 2],
-    pub origin: Option<[f32; 2]>,
+    pub rect: Value<[[f32; 2]; 2]>,
+    pub origin: Option<Value<[f32; 2]>>,
     pub height: Option<Value<f32>>,
+}
+
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+pub enum RelativisticCrossingPath {
+    Upper,
+    Full,
+    Periodic,
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
@@ -109,6 +121,7 @@ pub struct RelativisticPlotDescription {
     pub m: Value<f32>,
     pub point: Option<Value<[f32; 2]>>,
     pub height: Option<Value<f32>>,
+    pub path: Option<RelativisticCrossingPath>,
 }
 
 use serde_with::{serde_as, DisplayFromStr};

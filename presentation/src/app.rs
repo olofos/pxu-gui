@@ -19,7 +19,7 @@ struct PlotData {
 
 use crate::presentation_description::{
     FrameDescription, PlotDescription, PresentationDescription, RelativisticComponent,
-    RelativisticPlotDescription, Value,
+    RelativisticCrossingPath, RelativisticPlotDescription, Value,
 };
 struct Frame {
     pub image: RetainedImage,
@@ -79,7 +79,7 @@ impl Frame {
                 _ => unimplemented!(),
             };
 
-            if let Some(origin) = descr.origin {
+            if let Some(Value::Const(origin)) = descr.origin {
                 plot.origin = egui::Pos2::from(origin);
             }
 
@@ -90,6 +90,10 @@ impl Frame {
             if let Some(consts) = self.consts {
                 plot_data.consts = consts;
             }
+        }
+
+        if let Some(consts) = self.consts {
+            plot_data.consts = consts;
         }
         self.start_time = start_time;
     }
@@ -305,26 +309,45 @@ impl eframe::App for PresentationApp {
                         _ => unimplemented!(),
                     };
 
+                    if let Some(ref height) = descr.height {
+                        if height.is_animated() {
+                            plot.height = height.get(frame_time);
+                        }
+                    }
+
+                    if let Some(ref origin) = descr.origin {
+                        if origin.is_animated() {
+                            plot.origin = egui::Pos2::from(origin.get(frame_time));
+                        }
+                    }
+
                     let w = rect.width();
                     let h = rect.height();
 
-                    let x1 = descr.rect[0][0] * w / 16.0;
-                    let x2 = descr.rect[1][0] * w / 16.0;
+                    let descr_rect = descr.rect.get(frame_time);
 
-                    let y1 = descr.rect[0][1] * h / 9.0;
-                    let y2 = descr.rect[1][1] * h / 9.0;
+                    let x1 = descr_rect[0][0] * w / 16.0;
+                    let x2 = descr_rect[1][0] * w / 16.0;
+
+                    let y1 = descr_rect[0][1] * h / 9.0;
+                    let y2 = descr_rect[1][1] * h / 9.0;
 
                     let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
+                    plot.interact(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
                     plot.show(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
                 }
 
                 for (component, descr) in frame.relativistic_plot.iter() {
-                    let plot_func: fn(&mut egui::Ui, egui::Rect, f32, f32, Option<[f32; 2]>) =
-                        match component {
-                            RelativisticComponent::P => Self::show_relativistic_plot_p,
-                            RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
-                        };
+                    let plot_func: fn(
+                        &mut egui::Ui,
+                        egui::Rect,
+                        &RelativisticPlotDescription,
+                        f64,
+                    ) = match component {
+                        RelativisticComponent::P => Self::show_relativistic_plot_p,
+                        RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
+                    };
 
                     let w = rect.width();
                     let h = rect.height();
@@ -339,23 +362,7 @@ impl eframe::App for PresentationApp {
 
                     let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
-                    let height = if let Some(ref height) = descr.height {
-                        height.get(frame_time)
-                    } else {
-                        match component {
-                            RelativisticComponent::P => 4.0,
-                            RelativisticComponent::Theta => 1.25,
-                        }
-                    };
-
-                    let m = descr.m.get(frame_time);
-                    plot_func(
-                        ui,
-                        plot_rect,
-                        height,
-                        m,
-                        descr.point.clone().map(|p| p.get(frame_time)),
-                    );
+                    plot_func(ui, plot_rect, descr, frame_time);
                 }
             });
         ctx.request_repaint();
@@ -366,10 +373,20 @@ impl PresentationApp {
     fn show_relativistic_plot_p(
         ui: &mut egui::Ui,
         rect: egui::Rect,
-        height: f32,
-        m: f32,
-        point: Option<[f32; 2]>,
+        description: &RelativisticPlotDescription,
+        frame_time: f64, // height: f32,
+                         // m: f32,
+                         // point: Option<[f32; 2]>,
     ) {
+        let height = if let Some(ref height) = description.height {
+            height.get(frame_time)
+        } else {
+            4.0
+            // RelativisticComponent::Theta => 1.25,
+        };
+        let m = description.m.get(frame_time);
+        let point = description.point.clone().map(|p| p.get(frame_time));
+
         let width = height * rect.aspect_ratio();
         let to_screen = egui::emath::RectTransform::from_to(
             egui::Rect::from_center_size(pos2(0.0, 0.0), vec2(width, height)),
@@ -419,6 +436,51 @@ impl PresentationApp {
                 fill: egui::Color32::BLUE,
                 stroke: egui::Stroke::NONE,
             }));
+
+            if let Some(ref path) = description.path {
+                let (start, mid, end) = match path {
+                    RelativisticCrossingPath::Upper => (0, 1, 2),
+                    RelativisticCrossingPath::Full | RelativisticCrossingPath::Periodic => {
+                        (-1, 1, 3)
+                    }
+                };
+
+                let steps = 16;
+
+                let points_right = (0..=steps * (mid - start))
+                    .map(|i| {
+                        let theta = (start * steps + i) as f32 * PI / 2.0 / steps as f32;
+                        let z = num::complex::Complex32::from_polar(point[0], theta);
+                        to_screen * pos2(z.re, -z.im)
+                    })
+                    .collect::<Vec<_>>();
+
+                let points_left = (0..=steps * (end - mid))
+                    .map(|i| {
+                        let theta = (mid * steps + i) as f32 * PI / 2.0 / steps as f32;
+                        let z = num::complex::Complex32::from_polar(point[0], theta);
+                        to_screen * pos2(z.re, -z.im)
+                    })
+                    .collect::<Vec<_>>();
+
+                let (straight_points, dashed_points) = if x >= 0.0 {
+                    (points_right, points_left)
+                } else {
+                    (points_left, points_right)
+                };
+
+                shapes.push(egui::epaint::Shape::line(
+                    straight_points,
+                    egui::Stroke::new(2.0, egui::Color32::BLUE),
+                ));
+
+                shapes.extend(egui::epaint::Shape::dashed_line(
+                    &dashed_points,
+                    egui::Stroke::new(2.0, egui::Color32::BLUE),
+                    2.5,
+                    5.0,
+                ));
+            }
         }
 
         let text = "p";
@@ -459,10 +521,18 @@ impl PresentationApp {
     fn show_relativistic_plot_theta(
         ui: &mut egui::Ui,
         rect: egui::Rect,
-        height: f32,
-        _m: f32,
-        point: Option<[f32; 2]>,
+        description: &RelativisticPlotDescription,
+        frame_time: f64, // height: f32,
+                         // _m: f32,
+                         // point: Option<[f32; 2]>,
     ) {
+        let height = if let Some(ref height) = description.height {
+            height.get(frame_time)
+        } else {
+            1.25
+        };
+        let point = description.point.clone().map(|p| p.get(frame_time));
+
         let width = 4.0 * height * rect.aspect_ratio();
 
         let to_screen = egui::emath::RectTransform::from_to(
@@ -513,6 +583,22 @@ impl PresentationApp {
                 fill: egui::Color32::BLUE,
                 stroke: egui::Stroke::NONE,
             }));
+
+            if let Some(ref path) = description.path {
+                let (start, end) = match path {
+                    RelativisticCrossingPath::Upper => (0.0, 0.5),
+                    RelativisticCrossingPath::Full => (-0.5, 0.5),
+                    RelativisticCrossingPath::Periodic => (-2.0, 2.0),
+                };
+
+                shapes.push(egui::epaint::Shape::line(
+                    vec![
+                        to_screen * pos2(point[0], -start),
+                        to_screen * pos2(point[0], -end),
+                    ],
+                    egui::Stroke::new(2.0, egui::Color32::BLUE),
+                ));
+            }
         }
 
         let text = "θ";
