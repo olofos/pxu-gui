@@ -153,7 +153,7 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
 
     let cache_toml = toml::to_string(&cache)?;
 
-    std::fs::write(cache_path.clone(), cache_toml)?;
+    std::fs::write(cache_path, cache_toml)?;
 
     Ok(())
 }
