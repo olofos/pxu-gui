@@ -10,6 +10,18 @@ use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch, Pxu};
 use std::io::Result;
 use std::sync::Arc;
 
+fn load_state(s: &str) -> Result<pxu::State> {
+    ron::from_str(s).map_err(|_| error("Could not load state"))
+}
+
+fn load_states(state_strings: &[&str]) -> Result<Vec<pxu::State>> {
+    state_strings
+        .iter()
+        .map(|s| load_state(s))
+        .collect::<Result<Vec<_>>>()
+}
+
+
 fn fig_p_xpl_preimage(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -858,10 +870,7 @@ fn draw_state_figure(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let states: Vec<pxu::State> = state_strings
-        .iter()
-        .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
-        .collect::<Result<Vec<_>>>()?;
+    let states = load_states(state_strings)?;
 
     let mut pxu = (*pxu).clone();
     pxu.state = states[0].clone();
@@ -886,13 +895,7 @@ fn draw_state_figure(
         colors.into_iter().cycle(),
         marks.into_iter().cycle(),
     ) {
-        let points = state
-            .points
-            .iter()
-            .map(|pt| pt.get(figure.component))
-            .collect::<Vec<_>>();
-
-        figure.add_plot_all(&["only marks", color, mark, "mark size=0.075cm"], points)?;
+        figure.add_state(&state, &["only marks", color, mark, "mark size=0.075cm"])?;
     }
     figure.finish(cache, settings, pb)
 }
@@ -1587,6 +1590,363 @@ fn fig_p_physical_region_e_minus(
     figure.finish(cache, settings, pb)
 }
 
+fn draw_singlet(
+    mut figure: FigureWriter, 
+    pxu: Arc<Pxu>, 
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+    state_string: &str,
+    marked_indices: &[usize]
+) -> Result<FigureCompiler> {
+    let state = load_state(state_string)?;
+    let mut pxu = (*pxu).clone();
+    pxu.state = state.clone();
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_cuts(&pxu, &[])?;
+
+    for (i,point) in state.points.into_iter().enumerate() {
+        let color = if marked_indices.contains(&i) {
+            "Black"
+        } else {
+            "Blue"
+        };
+        figure.add_point(&point, &[color, "mark size=0.075cm"])?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xp_singlet_41(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xp-singlet-41",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.06481769289200064,-0.04632014396084205),xp:(0.6773737156527935,0.24101679937073833),xm:(0.39355556208794307,0.3659765169104283),u:(2.2503158561824144,-0.9972640693939946),x:(0.5207960049771001,0.3382736317263967),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134065179824,-0.04287934452264521),xp:(0.3935555620861755,0.3659765169090202),xm:(0.22233500515739787,0.34507249230177073),u:(2.250315856189289,-1.997264069401408),x:(0.29603586257460585,0.36274180923791544),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216060976681002,0.042633420284661425),xp:(0.22233500515775476,0.34507249230145126),xm:(0.3923377926330045,-0.3660664539125623),u:(2.2503158561923926,-2.9972640693996655),x:(0.16710333623086243,0.3211911819475663),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.0645947551037885,0.04632338280244304),xp:(0.3923377926336257,-0.36606645391208686),xm:(0.6755998929977572,-0.24272408911183854),u:(2.2503158561943186,-3.9972640694026023),x:(0.5192267118211283,-0.33884808844761033),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.10930011368445881,0.00024268539559447655),xp:(0.6755998929977572,-0.2427240891118387),xm:(0.6773737156462706,0.24101679936958165),u:(2.2503158561943186,0.002735930597398628),x:(0.7857319077395628,-0.0016758790700285356),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[0,1,2,3])
+}
+
+fn fig_xm_singlet_41(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xm-singlet-41",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.06481769289200064,-0.04632014396084205),xp:(0.6773737156527935,0.24101679937073833),xm:(0.39355556208794307,0.3659765169104283),u:(2.2503158561824144,-0.9972640693939946),x:(0.5207960049771001,0.3382736317263967),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134065179824,-0.04287934452264521),xp:(0.3935555620861755,0.3659765169090202),xm:(0.22233500515739787,0.34507249230177073),u:(2.250315856189289,-1.997264069401408),x:(0.29603586257460585,0.36274180923791544),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216060976681002,0.042633420284661425),xp:(0.22233500515775476,0.34507249230145126),xm:(0.3923377926330045,-0.3660664539125623),u:(2.2503158561923926,-2.9972640693996655),x:(0.16710333623086243,0.3211911819475663),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.0645947551037885,0.04632338280244304),xp:(0.3923377926336257,-0.36606645391208686),xm:(0.6755998929977572,-0.24272408911183854),u:(2.2503158561943186,-3.9972640694026023),x:(0.5192267118211283,-0.33884808844761033),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.10930011368445881,0.00024268539559447655),xp:(0.6755998929977572,-0.2427240891118387),xm:(0.6773737156462706,0.24101679936958165),u:(2.2503158561943186,0.002735930597398628),x:(0.7857319077395628,-0.0016758790700285356),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[0,1,2,3])
+
+}
+
+fn fig_u_singlet_41(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-singlet-41",
+        -3.1..4.6,
+        -1.5,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let state_string = "(points:[(p:(-0.06481769289200064,-0.04632014396084205),xp:(0.6773737156527935,0.24101679937073833),xm:(0.39355556208794307,0.3659765169104283),u:(2.2503158561824144,-0.9972640693939946),x:(0.5207960049771001,0.3382736317263967),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134065179824,-0.04287934452264521),xp:(0.3935555620861755,0.3659765169090202),xm:(0.22233500515739787,0.34507249230177073),u:(2.250315856189289,-1.997264069401408),x:(0.29603586257460585,0.36274180923791544),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216060976681002,0.042633420284661425),xp:(0.22233500515775476,0.34507249230145126),xm:(0.3923377926330045,-0.3660664539125623),u:(2.2503158561923926,-2.9972640693996655),x:(0.16710333623086243,0.3211911819475663),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.0645947551037885,0.04632338280244304),xp:(0.3923377926336257,-0.36606645391208686),xm:(0.6755998929977572,-0.24272408911183854),u:(2.2503158561943186,-3.9972640694026023),x:(0.5192267118211283,-0.33884808844761033),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.10930011368445881,0.00024268539559447655),xp:(0.6755998929977572,-0.2427240891118387),xm:(0.6773737156462706,0.24101679936958165),u:(2.2503158561943186,0.002735930597398628),x:(0.7857319077395628,-0.0016758790700285356),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)";
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[0,1,2,3])
+}
+
+fn fig_xp_singlet_32(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xp-singlet-32",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2,3])
+}
+
+fn fig_xm_singlet_32(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xm-singlet-32",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+    
+    let state_string = 
+        "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2,3])
+}
+
+fn fig_u_singlet_32(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-singlet-32",
+        -3.1..4.6,
+        -1.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2,3])
+}
+
+fn fig_xp_singlet_23(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xp-singlet-23",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2])
+}
+
+fn fig_xm_singlet_23(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xm-singlet-23",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+    
+    let state_string = 
+        "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2])
+}
+
+fn fig_u_singlet_23(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-singlet-23",
+        -3.1..4.6,
+        -1.5,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1,2])
+}
+
+fn fig_xp_singlet_14(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xp-singlet-14",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+}
+
+fn fig_xm_singlet_14(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xm-singlet-14",
+        -1.1..1.9,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+    
+    let state_string = 
+        "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+}
+
+fn fig_u_singlet_14(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-singlet-14",
+        -3.1..4.6,
+        -1.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let state_string = 
+        "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ;
+
+
+
+    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+}
+
+// Intereseting states:
+// m = 5, p = -1, E = C = 0
+// (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
+
+// singlet 1 + 4
+// (points:[(p:(-0.06481769289200064,-0.04632014396084205),xp:(0.6773737156527935,0.24101679937073833),xm:(0.39355556208794307,0.3659765169104283),u:(2.2503158561824144,-0.9972640693939946),x:(0.5207960049771001,0.3382736317263967),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134065179824,-0.04287934452264521),xp:(0.3935555620861755,0.3659765169090202),xm:(0.22233500515739787,0.34507249230177073),u:(2.250315856189289,-1.997264069401408),x:(0.29603586257460585,0.36274180923791544),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216060976681002,0.042633420284661425),xp:(0.22233500515775476,0.34507249230145126),xm:(0.3923377926330045,-0.3660664539125623),u:(2.2503158561923926,-2.9972640693996655),x:(0.16710333623086243,0.3211911819475663),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.0645947551037885,0.04632338280244304),xp:(0.3923377926336257,-0.36606645391208686),xm:(0.6755998929977572,-0.24272408911183854),u:(2.2503158561943186,-3.9972640694026023),x:(0.5192267118211283,-0.33884808844761033),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.10930011368445881,0.00024268539559447655),xp:(0.6755998929977572,-0.2427240891118387),xm:(0.6773737156462706,0.24101679936958165),u:(2.2503158561943186,0.002735930597398628),x:(0.7857319077395628,-0.0016758790700285356),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)
+// singlet 2 + 3
+// (points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)
+// singlet 3 + 2
+// (points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)
+// singlet 4 + 1
+// (points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)
+
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_xpl_preimage,
     fig_p_plane_e_cuts,
@@ -1619,4 +1979,16 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_short_cut_regions_e_min,
     fig_p_physical_region_e_plus,
     fig_p_physical_region_e_minus,
+    fig_xp_singlet_14,
+    fig_xm_singlet_14,
+    fig_u_singlet_14,
+    fig_xp_singlet_23,
+    fig_xm_singlet_23,
+    fig_u_singlet_23,
+    fig_xp_singlet_32,
+    fig_xm_singlet_32,
+    fig_u_singlet_32,
+    fig_xp_singlet_41,
+    fig_xm_singlet_41,
+    fig_u_singlet_41,
 ];

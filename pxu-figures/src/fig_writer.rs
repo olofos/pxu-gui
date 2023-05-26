@@ -45,6 +45,18 @@ impl Bounds {
             || (z1.im < self.y_range.start) && (z2.im > self.y_range.end)
             || (z2.im < self.y_range.start) && (z1.im > self.y_range.end)
     }
+
+    fn expand(self) -> Self {
+        let Range { start, end } = self.x_range;
+        let d = 1.1 * (end - start);
+        let x_range = (start - d)..(end + d);
+
+        let Range { start, end } = self.y_range;
+        let d = 1.1 * (end - start);
+        let y_range = (start - d)..(end + d);
+
+        Self { x_range, y_range }
+    }
 }
 
 #[derive(Debug)]
@@ -181,10 +193,12 @@ progress_file=io.open(""#;
 
         let y_shift = Complex64::new(0.0, self.y_shift.unwrap_or_default());
 
+        let bounds = self.bounds.clone().expand();
+
         let include = |z1, z2| {
             let z1 = z1 + y_shift;
             let z2 = z2 + y_shift;
-            self.bounds.inside(&z1) || self.bounds.inside(&z2) || self.bounds.crosses(&z1, &z2)
+            bounds.inside(&z1) || bounds.inside(&z2) || bounds.crosses(&z1, &z2)
         };
 
         if let [z1, z2] = &contour[0..=1] {
@@ -407,6 +421,22 @@ progress_file=io.open(""#;
             "\\node at {coord} [{}] {{{text}}};",
             options.join(",")
         )
+    }
+
+    pub fn add_point(&mut self, point: &pxu::Point, options: &[&str]) -> Result<()> {
+        let points = vec![point.get(self.component)];
+        self.add_plot_all(&[&["only marks"], options].concat(), points)?;
+        Ok(())
+    }
+
+    pub fn add_state(&mut self, state: &pxu::State, options: &[&str]) -> Result<()> {
+        let points = state
+            .points
+            .iter()
+            .map(|pt| pt.get(self.component))
+            .collect::<Vec<_>>();
+        self.add_plot_all(&[&["only marks"], options].concat(), points)?;
+        Ok(())
     }
 
     pub fn finish(
