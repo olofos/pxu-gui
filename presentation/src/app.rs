@@ -222,6 +222,7 @@ impl eframe::App for PresentationApp {
             self.pxu.last_mut().unwrap()
         };
 
+        #[cfg(not(target_arch = "wasm32"))]
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
             _frame.close();
         }
