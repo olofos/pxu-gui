@@ -70,16 +70,13 @@ impl TryFrom<FrameDescription> for Frame {
         let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba);
         let image = egui_extras::RetainedImage::from_color_image(value.image, color_image);
 
-        let consts = value
-            .consts
-            .map(|[h, k]| CouplingConstants::new(h, k as i32));
-
         let FrameDescription {
             plot,
             relativistic_plot,
             duration,
             disp_rel_plot,
             cut_filter,
+            consts,
             ..
         } = value;
 

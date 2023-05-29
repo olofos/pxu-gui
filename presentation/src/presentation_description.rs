@@ -180,7 +180,7 @@ pub struct FrameDescription {
     pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
     pub disp_rel_plot: Option<DispRelPlotDescription>,
     pub duration: Option<f64>,
-    pub consts: Option<[f64; 2]>,
+    pub consts: Option<pxu::CouplingConstants>,
     pub cut_filter: Option<pxu_plot::CutFilter>,
 }
 
