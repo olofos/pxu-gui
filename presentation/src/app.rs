@@ -429,26 +429,37 @@ impl PresentationApp {
             0.0
         };
 
-        let y_max = 6.0;
-        let y_min = -0.5;
-
-        let height = y_max - y_min;
-
         let x_min = origin - width / 2.0;
         let x_max = origin + width / 2.0;
 
+        let mut values = vec![];
+        let steps = 512;
+
+        for i in 0..((x_max - x_min) * steps as f32).ceil() as u32 {
+            let p = x_min as f64 + i as f64 / steps as f64;
+            let e = pxu::kinematics::en(num::complex::Complex64::from(p), 1.0, consts);
+            values.push(pos2(p as f32, e.re as f32));
+        }
+
+        let y_min = -0.5;
+
+        let y_max = 1.0
+            + values
+                .iter()
+                .map(|pos| pos.y)
+                .max_by(|a, b| a.partial_cmp(b).unwrap())
+                .unwrap();
+
+        let height = y_max - y_min;
         let to_screen = egui::emath::RectTransform::from_to(
             egui::Rect::from_center_size(pos2(origin, -(y_min + y_max) / 2.0), vec2(width, height)),
             rect,
         );
 
-        let mut points = vec![];
-        let steps = 512;
-        for i in 0..((x_max - x_min) * steps as f32).ceil() as u32 {
-            let p = x_min as f64 + i as f64 / steps as f64;
-            let e = pxu::kinematics::en(num::complex::Complex64::from(p), 1.0, consts);
-            points.push(to_screen * pos2(p as f32, -e.re as f32));
-        }
+        let points = values
+            .into_iter()
+            .map(|z| to_screen * pos2(z.x, -z.y))
+            .collect::<Vec<_>>();
 
         let old_clip_rect = ui.clip_rect();
         ui.set_clip_rect(rect);
@@ -463,6 +474,20 @@ impl PresentationApp {
                 egui::Stroke::new(1.0, egui::Color32::BLACK),
             ),
         ];
+
+        shapes.extend(
+            (y_min.floor() as i32..=y_max.ceil() as i32)
+                .filter(|y| *y != 0)
+                .map(|y| {
+                    egui::Shape::line(
+                        vec![
+                            to_screen * pos2(x_min, -y as f32),
+                            to_screen * pos2(x_max, -y as f32),
+                        ],
+                        egui::Stroke::new(1.0, egui::Color32::LIGHT_GRAY),
+                    )
+                }),
+        );
 
         shapes.extend((x_min.ceil() as i32..=-1).map(|x| {
             egui::Shape::line(
