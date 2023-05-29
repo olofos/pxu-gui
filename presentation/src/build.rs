@@ -90,6 +90,11 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
         return Ok(());
     }
 
+    if rebuild_pdf {
+        log::info!("Rebuilding images");
+    } else {
+        log::info!("Rebuilding");
+    }
 
     let start = std::time::SystemTime::now();
 
