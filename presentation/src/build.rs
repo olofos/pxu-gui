@@ -9,8 +9,6 @@ const TOML_NAME: &str = "presentation.toml";
 const PDF_NAME: &str = "presentation.pdf";
 const CACHE_NAME: &str = "cache.toml";
 
-const Y_RESOLUTION: usize = 1024;
-
 fn calculate_md5(path: &Path) -> Result<String> {
     let mut file = File::open(path)?;
     let mut data = Vec::new();
@@ -40,7 +38,7 @@ fn read_cache(path: &Path) -> Result<PresentationCache> {
     Ok(cache)
 }
 
-pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
+pub fn check_presentation(dirname: &str, force_rebuild: bool, y_resolution: usize) -> Result<()> {
     use std::{collections::BTreeMap, process::Command};
 
     let mut rebuild = force_rebuild;
@@ -75,7 +73,7 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
             rebuild_pdf = true;
         }
 
-        if Y_RESOLUTION != cache.y_resulution {
+        if y_resolution != cache.y_resulution {
             log::info!("Y resolution does not match.");
             rebuild = true;
             rebuild_pdf = true;
@@ -121,7 +119,7 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
             "-scale-to-x",
             "-1",
             "-scale-to-y",
-            &format!("{Y_RESOLUTION}"),
+            &format!("{y_resolution}"),
         ])
         .args([presentation_pdf_name, presentation_image_template_name]);
 
@@ -171,7 +169,7 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
     let cache = PresentationCache {
         toml_hash,
         pdf_hash,
-        y_resulution: Y_RESOLUTION,
+        y_resulution: y_resolution,
     };
 
     let cache_toml = toml::to_string(&cache)?;

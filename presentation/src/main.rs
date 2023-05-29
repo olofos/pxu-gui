@@ -14,6 +14,8 @@ use clap::Parser;
 struct Arguments {
     #[arg(short, long)]
     pub rebuild: bool,
+    #[arg(short, long, default_value = "1024")]
+    pub y_resolution: usize,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -48,7 +50,11 @@ fn main() -> Result<()> {
         .without_time()
         .init();
 
-    build::check_presentation("./presentation/images/", arguments.rebuild)?;
+    build::check_presentation(
+        "./presentation/images/",
+        arguments.rebuild,
+        arguments.y_resolution,
+    )?;
 
     let native_options = eframe::NativeOptions {
         fullscreen: true,
