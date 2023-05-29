@@ -9,6 +9,8 @@ const TOML_NAME: &str = "presentation.toml";
 const PDF_NAME: &str = "presentation.pdf";
 const CACHE_NAME: &str = "cache.toml";
 
+const Y_RESOLUTION: usize = 1024;
+
 fn calculate_md5(path: &Path) -> Result<String> {
     let mut file = File::open(path)?;
     let mut data = Vec::new();
@@ -25,9 +27,11 @@ fn read_presentation(path: &Path) -> Result<PresentationDescription> {
 }
 
 #[derive(Debug, Default, serde::Deserialize, serde::Serialize)]
+#[serde(default)]
 struct PresentationCache {
     pdf_hash: String,
     toml_hash: String,
+    y_resulution: usize,
 }
 
 fn read_cache(path: &Path) -> Result<PresentationCache> {
@@ -70,6 +74,12 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
             rebuild = true;
             rebuild_pdf = true;
         }
+
+        if Y_RESOLUTION != cache.y_resulution {
+            log::info!("Y resolution does not match.");
+            rebuild = true;
+            rebuild_pdf = true;
+        }
     } else {
         log::info!("Cache not found");
         rebuild = true;
@@ -106,8 +116,14 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
         let presentation_image_template_name = presentation_image_template_path.as_os_str();
 
         let mut cmd = Command::new("pdftoppm");
-        cmd.args(["-png", "-scale-to-x", "-1", "-scale-to-y", "1024"])
-            .args([presentation_pdf_name, presentation_image_template_name]);
+        cmd.args([
+            "-png",
+            "-scale-to-x",
+            "-1",
+            "-scale-to-y",
+            &format!("{Y_RESOLUTION}"),
+        ])
+        .args([presentation_pdf_name, presentation_image_template_name]);
 
         log::info!("Running pdftoppm");
         if !cmd.spawn()?.wait()?.success() {
@@ -155,6 +171,7 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
     let cache = PresentationCache {
         toml_hash,
         pdf_hash,
+        y_resulution: Y_RESOLUTION,
     };
 
     let cache_toml = toml::to_string(&cache)?;
