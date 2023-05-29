@@ -7,9 +7,23 @@ pub enum Value<T> {
     Transition(T, T, f64),
 }
 
-impl<T> Value<T> {
-    pub fn is_animated(&self) -> bool {
+pub trait IsAnimated {
+    fn is_animated(&self) -> bool;
+}
+
+impl<T> IsAnimated for Value<T> {
+    fn is_animated(&self) -> bool {
         matches!(self, Self::Transition(_, _, _))
+    }
+}
+
+impl<T: IsAnimated> IsAnimated for Option<T> {
+    fn is_animated(&self) -> bool {
+        if let Some(ref v) = self {
+            v.is_animated()
+        } else {
+            false
+        }
     }
 }
 
@@ -107,6 +121,12 @@ pub struct PlotDescription {
     pub height: Option<Value<f32>>,
 }
 
+impl IsAnimated for PlotDescription {
+    fn is_animated(&self) -> bool {
+        return self.rect.is_animated() || self.origin.is_animated() || self.height.is_animated();
+    }
+}
+
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub enum RelativisticCrossingPath {
     Upper,
@@ -122,6 +142,15 @@ pub struct RelativisticPlotDescription {
     pub point: Option<Value<[f32; 2]>>,
     pub height: Option<Value<f32>>,
     pub path: Option<RelativisticCrossingPath>,
+}
+
+impl IsAnimated for RelativisticPlotDescription {
+    fn is_animated(&self) -> bool {
+        return self.rect.is_animated()
+            || self.m.is_animated()
+            || self.point.is_animated()
+            || self.height.is_animated();
+    }
 }
 
 use serde_with::{serde_as, DisplayFromStr};

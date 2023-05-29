@@ -19,7 +19,7 @@ struct PlotData {
 
 use crate::presentation_description::{
     FrameDescription, PlotDescription, PresentationDescription, RelativisticComponent,
-    RelativisticCrossingPath, RelativisticPlotDescription, Value,
+    RelativisticCrossingPath, RelativisticPlotDescription, Value, *,
 };
 struct Frame {
     pub image: RetainedImage,
@@ -28,6 +28,24 @@ struct Frame {
     pub start_time: f64,
     pub duration: Option<f64>,
     pub consts: Option<CouplingConstants>,
+}
+
+impl IsAnimated for Frame {
+    fn is_animated(&self) -> bool {
+        for description in self.plot.values() {
+            if description.is_animated() {
+                return true;
+            }
+        }
+
+        for description in self.relativistic_plot.values() {
+            if description.is_animated() {
+                return true;
+            }
+        }
+
+        false
+    }
 }
 
 impl TryFrom<FrameDescription> for Frame {
@@ -365,8 +383,11 @@ impl eframe::App for PresentationApp {
 
                     plot_func(ui, plot_rect, descr, frame_time);
                 }
+
+                if frame.is_animated() {
+                    ctx.request_repaint();
+                }
             });
-        ctx.request_repaint();
     }
 }
 
