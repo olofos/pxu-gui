@@ -281,6 +281,25 @@ impl eframe::App for PresentationApp {
             self.pxu.last_mut().unwrap()
         };
 
+        ctx.input(|i| {
+            for (key, num) in [
+                (egui::Key::Backspace, pxu.state.points.len()),
+                (egui::Key::Num1, 1),
+                (egui::Key::Num2, 2),
+                (egui::Key::Num3, 3),
+                (egui::Key::Num4, 4),
+                (egui::Key::Num5, 5),
+                (egui::Key::Num6, 6),
+                (egui::Key::Num7, 7),
+                (egui::Key::Num8, 8),
+                (egui::Key::Num9, 9),
+            ] {
+                if i.key_pressed(key) {
+                    pxu.state = pxu::State::new(num, pxu.consts);
+                }
+            }
+        });
+
         #[cfg(not(target_arch = "wasm32"))]
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
             _frame.close();
