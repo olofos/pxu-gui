@@ -140,7 +140,7 @@ pub struct PresentationApp {
     pxu: Vec<pxu::Pxu>,
     #[serde(skip)]
     frames: Vec<Frame>,
-    #[serde(skip)]
+    // #[serde(skip)]
     frame_index: usize,
     #[serde(skip)]
     frame_start: f64,
@@ -183,18 +183,17 @@ impl Default for PlotData {
 
 impl PresentationApp {
     /// Called once before the first frame.
-    pub fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        // if let Some(storage) = cc.storage {
-        //     let app: Self = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
-        //     return app;
-        // }
-
-        let mut app: PresentationApp = Default::default();
+        let mut app: Self = if let Some(storage) = cc.storage {
+            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+        } else {
+            Default::default()
+        };
 
         let path = std::path::Path::new("./presentation/images/presentation.toml");
         let presentation_toml = std::fs::read_to_string(path).unwrap();
@@ -207,7 +206,10 @@ impl PresentationApp {
             .map(|f| Frame::try_from(f).unwrap())
             .collect();
 
-        app.frames[0].start(&mut app.plot_data, 0.0);
+        if app.frame_index >= app.frames.len() {
+            app.frame_index = 0;
+        }
+        app.frames[app.frame_index].start(&mut app.plot_data, 0.0);
 
         app
     }
