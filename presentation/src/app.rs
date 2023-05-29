@@ -111,10 +111,6 @@ impl Frame {
             if let Some(Value::Const(height)) = descr.height {
                 plot.height = height;
             }
-
-            if let Some(consts) = self.consts {
-                plot_data.consts = consts;
-            }
         }
 
         if let Some(consts) = self.consts {
@@ -216,17 +212,48 @@ impl eframe::App for PresentationApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        // #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
-        // egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-        //     // The top panel is often a good place for a menu bar:
-        //     egui::menu::bar(ui, |ui| {
-        //         ui.menu_button("File", |ui| {
-        //             if ui.button("Quit").clicked() {
-        //                 frame.close();
-        //             }
-        //         });
-        //     });
-        // });
+        let frame = {
+            let prev_frame_index = self.frame_index;
+
+            if self.frames[self.frame_index].start_time == 0.0 {
+                self.frames[self.frame_index].start_time = ctx.input(|i| i.time);
+            }
+
+            let next = if let Some(duration) = self.frames[self.frame_index].duration {
+                let frame_end = self.frames[self.frame_index].start_time + duration;
+                let now = ctx.input(|i| i.time);
+                now > frame_end
+            } else {
+                false
+            };
+
+            if (next || ctx.input(|i| i.key_pressed(egui::Key::ArrowRight)))
+                && self.frame_index < self.frames.len() - 1
+            {
+                self.frame_index += 1;
+            }
+            if ctx.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                loop {
+                    if self.frame_index > 0 {
+                        self.frame_index -= 1;
+                    } else {
+                        break;
+                    }
+                    if self.frames[self.frame_index].duration.is_none() {
+                        break;
+                    }
+                }
+            }
+
+            if self.frame_index != prev_frame_index {
+                self.frames[self.frame_index].start(&mut self.plot_data, ctx.input(|i| i.time));
+            }
+
+            &self.frames[self.frame_index]
+        };
+
+        let frame_time = ctx.input(|i| i.time - frame.start_time);
+
         let pxu = if let Some(i) = self
             .pxu
             .iter()
@@ -279,46 +306,6 @@ impl eframe::App for PresentationApp {
             .show(ctx, |ui| {
                 let rect = ui.available_rect_before_wrap();
                 // log::info!("{:?}", rect.size());
-
-                let prev_frame_index = self.frame_index;
-
-                if self.frames[self.frame_index].start_time == 0.0 {
-                    self.frames[self.frame_index].start_time = ui.input(|i| i.time);
-                }
-
-                let next = if let Some(duration) = self.frames[self.frame_index].duration {
-                    let frame_end = self.frames[self.frame_index].start_time + duration;
-                    let now = ui.input(|i| i.time);
-                    now > frame_end
-                } else {
-                    false
-                };
-
-                if (next || ui.input(|i| i.key_pressed(egui::Key::ArrowRight)))
-                    && self.frame_index < self.frames.len() - 1
-                {
-                    self.frame_index += 1;
-                }
-                if ui.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
-                    loop {
-                        if self.frame_index > 0 {
-                            self.frame_index -= 1;
-                        } else {
-                            break;
-                        }
-                        if self.frames[self.frame_index].duration.is_none() {
-                            break;
-                        }
-                    }
-                }
-
-                if self.frame_index != prev_frame_index {
-                    self.frames[self.frame_index].start(&mut self.plot_data, ui.input(|i| i.time));
-                }
-
-                let frame = &self.frames[self.frame_index];
-
-                let frame_time = ui.input(|i| i.time - frame.start_time);
 
                 ui.vertical_centered(|ui| {
                     // let image_size = image.size_vec2();
