@@ -29,6 +29,7 @@ struct Frame {
     pub start_time: f64,
     pub duration: Option<f64>,
     pub consts: Option<CouplingConstants>,
+    pub cut_filter: Option<pxu_plot::CutFilter>,
 }
 
 impl IsAnimated for Frame {
@@ -78,6 +79,7 @@ impl TryFrom<FrameDescription> for Frame {
             relativistic_plot,
             duration,
             disp_rel_plot,
+            cut_filter,
             ..
         } = value;
 
@@ -89,6 +91,7 @@ impl TryFrom<FrameDescription> for Frame {
             duration,
             consts,
             disp_rel_plot,
+            cut_filter,
         })
     }
 }
@@ -115,6 +118,10 @@ impl Frame {
 
         if let Some(consts) = self.consts {
             plot_data.consts = consts;
+        }
+
+        if let Some(ref cut_filter) = self.cut_filter {
+            plot_data.plot_state.cut_filter = cut_filter.clone();
         }
         self.start_time = start_time;
     }
