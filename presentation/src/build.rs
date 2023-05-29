@@ -90,7 +90,8 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
         return Ok(());
     }
 
-    log::info!("Rebuilding");
+
+    let start = std::time::SystemTime::now();
 
     if rebuild_pdf {
         let presentation_pdf_path = dir.join(PDF_NAME);
@@ -154,6 +155,12 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool) -> Result<()> {
     let cache_toml = toml::to_string(&cache)?;
 
     std::fs::write(cache_path, cache_toml)?;
+
+    if let Ok(elapsed) = start.elapsed() {
+        log::info!("Finished build in {} ms", elapsed.as_millis())
+    } else {
+        log::warn!("Could not get elapsed time");
+    }
 
     Ok(())
 }
