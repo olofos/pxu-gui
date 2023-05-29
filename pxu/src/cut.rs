@@ -126,7 +126,7 @@ impl Cut {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
 pub enum CutType {
     E,
     DebugPath,

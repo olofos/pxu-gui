@@ -12,6 +12,14 @@ pub struct Plot {
     pub origin: Pos2,
 }
 
+#[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
+pub enum CutFilter {
+    #[default]
+    All,
+    None,
+    Only(Vec<pxu::CutType>),
+}
+
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 pub struct PlotState {
     pub active_point: usize,
@@ -29,6 +37,8 @@ pub struct PlotState {
     pub fullscreen_component: Option<pxu::Component>,
     #[serde(skip)]
     pub show_x: bool,
+    #[serde(skip)]
+    pub cut_filter: CutFilter,
 }
 
 impl PlotState {
@@ -234,6 +244,11 @@ impl Plot {
             let visible_cuts = pxu
                 .contours
                 .get_visible_cuts(pxu, self.component, plot_state.active_point)
+                .filter(|cut| match &plot_state.cut_filter {
+                    CutFilter::All => true,
+                    CutFilter::None => false,
+                    CutFilter::Only(v) => v.contains(&cut.typ),
+                })
                 .collect::<Vec<_>>();
 
             for cut in visible_cuts {
