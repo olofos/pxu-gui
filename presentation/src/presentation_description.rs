@@ -123,7 +123,7 @@ pub struct PlotDescription {
 
 impl IsAnimated for PlotDescription {
     fn is_animated(&self) -> bool {
-        return self.rect.is_animated() || self.origin.is_animated() || self.height.is_animated();
+        self.rect.is_animated() || self.origin.is_animated() || self.height.is_animated()
     }
 }
 
@@ -146,10 +146,10 @@ pub struct RelativisticPlotDescription {
 
 impl IsAnimated for RelativisticPlotDescription {
     fn is_animated(&self) -> bool {
-        return self.rect.is_animated()
+        self.rect.is_animated()
             || self.m.is_animated()
             || self.point.is_animated()
-            || self.height.is_animated();
+            || self.height.is_animated()
     }
 }
 
