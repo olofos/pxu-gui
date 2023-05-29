@@ -18,13 +18,14 @@ struct PlotData {
 }
 
 use crate::presentation_description::{
-    FrameDescription, PlotDescription, PresentationDescription, RelativisticComponent,
-    RelativisticCrossingPath, RelativisticPlotDescription, Value, *,
+    DispRelPlotDescription, FrameDescription, PlotDescription, PresentationDescription,
+    RelativisticComponent, RelativisticCrossingPath, RelativisticPlotDescription, Value, *,
 };
 struct Frame {
     pub image: RetainedImage,
     pub plot: HashMap<pxu::Component, PlotDescription>,
     pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
+    pub disp_rel_plot: Option<DispRelPlotDescription>,
     pub start_time: f64,
     pub duration: Option<f64>,
     pub consts: Option<CouplingConstants>,
@@ -42,6 +43,10 @@ impl IsAnimated for Frame {
             if description.is_animated() {
                 return true;
             }
+        }
+
+        if self.disp_rel_plot.is_animated() {
+            return true;
         }
 
         false
@@ -72,6 +77,7 @@ impl TryFrom<FrameDescription> for Frame {
             plot,
             relativistic_plot,
             duration,
+            disp_rel_plot,
             ..
         } = value;
 
@@ -82,6 +88,7 @@ impl TryFrom<FrameDescription> for Frame {
             start_time: 0.0,
             duration,
             consts,
+            disp_rel_plot,
         })
     }
 }
@@ -384,6 +391,29 @@ impl eframe::App for PresentationApp {
                     plot_func(ui, plot_rect, descr, frame_time);
                 }
 
+                if let Some(ref disp_rel_plot) = frame.disp_rel_plot {
+                    let w = rect.width();
+                    let h = rect.height();
+
+                    let drect = disp_rel_plot.rect.get(frame_time);
+
+                    let x1 = drect[0][0] * w / 16.0;
+                    let x2 = drect[1][0] * w / 16.0;
+
+                    let y1 = drect[0][1] * h / 9.0;
+                    let y2 = drect[1][1] * h / 9.0;
+
+                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                    Self::show_disp_rel_plot(
+                        ui,
+                        plot_rect,
+                        disp_rel_plot,
+                        self.plot_data.consts,
+                        frame_time,
+                    );
+                }
+
                 if frame.is_animated() {
                     ctx.request_repaint();
                 }
@@ -392,6 +422,121 @@ impl eframe::App for PresentationApp {
 }
 
 impl PresentationApp {
+    fn show_disp_rel_plot(
+        ui: &mut egui::Ui,
+        rect: egui::Rect,
+        description: &DispRelPlotDescription,
+        consts: CouplingConstants,
+        frame_time: f64,
+    ) {
+        let p_height = if let Some(ref p_height) = description.height {
+            p_height.get(frame_time)
+        } else {
+            4.0
+        };
+        let width = 1.5 * p_height * rect.aspect_ratio();
+
+        let origin = if let Some(ref origin) = description.origin {
+            origin.get(frame_time)
+        } else {
+            0.0
+        };
+
+        let y_max = 6.0;
+        let y_min = -0.5;
+
+        let height = y_max - y_min;
+
+        let x_min = origin - width / 2.0;
+        let x_max = origin + width / 2.0;
+
+        let to_screen = egui::emath::RectTransform::from_to(
+            egui::Rect::from_center_size(pos2(origin, -(y_min + y_max) / 2.0), vec2(width, height)),
+            rect,
+        );
+
+        let mut points = vec![];
+        let steps = 512;
+        for i in 0..((x_max - x_min) * steps as f32).ceil() as u32 {
+            let p = x_min as f64 + i as f64 / steps as f64;
+            let e = pxu::kinematics::en(num::complex::Complex64::from(p), 1.0, consts);
+            points.push(to_screen * pos2(p as f32, -e.re as f32));
+        }
+
+        let old_clip_rect = ui.clip_rect();
+        ui.set_clip_rect(rect);
+
+        let mut shapes = vec![
+            egui::Shape::line(
+                vec![to_screen * pos2(x_min, 0.0), to_screen * pos2(x_max, 0.0)],
+                egui::Stroke::new(1.0, egui::Color32::BLACK),
+            ),
+            egui::Shape::line(
+                vec![to_screen * pos2(0.0, -y_min), to_screen * pos2(0.0, -y_max)],
+                egui::Stroke::new(1.0, egui::Color32::BLACK),
+            ),
+        ];
+
+        shapes.extend((x_min.ceil() as i32..=-1).map(|x| {
+            egui::Shape::line(
+                vec![
+                    to_screen * pos2(x as f32, -y_min),
+                    to_screen * pos2(x as f32, -y_max),
+                ],
+                egui::Stroke::new(1.0, egui::Color32::GRAY),
+            )
+        }));
+
+        shapes.extend((1..=x_max.floor() as i32).map(|x| {
+            egui::Shape::line(
+                vec![
+                    to_screen * pos2(x as f32, -y_min),
+                    to_screen * pos2(x as f32, -y_max),
+                ],
+                egui::Stroke::new(1.0, egui::Color32::GRAY),
+            )
+        }));
+
+        shapes.push(egui::Shape::line(
+            points,
+            egui::Stroke::new(3.0, egui::Color32::BLUE),
+        ));
+
+        let text = "E";
+
+        ui.fonts(|f| {
+            let text_shape = egui::epaint::Shape::text(
+                f,
+                rect.right_top() + vec2(-10.0, 10.0),
+                egui::Align2::RIGHT_TOP,
+                text,
+                egui::TextStyle::Monospace.resolve(ui.style()),
+                egui::Color32::BLACK,
+            );
+
+            shapes.push(egui::epaint::Shape::rect_filled(
+                text_shape.visual_bounding_rect().expand(6.0),
+                egui::Rounding::none(),
+                egui::Color32::WHITE,
+            ));
+            shapes.push(egui::epaint::Shape::rect_stroke(
+                text_shape.visual_bounding_rect().expand(4.0),
+                egui::Rounding::none(),
+                egui::Stroke::new(0.5, egui::Color32::BLACK),
+            ));
+            shapes.push(text_shape);
+        });
+
+        ui.painter().extend(shapes);
+
+        ui.set_clip_rect(old_clip_rect);
+        ui.painter().add(egui::epaint::Shape::rect_stroke(
+            rect,
+            egui::epaint::Rounding::same(4.0),
+            egui::Stroke::new(1.0, egui::Color32::DARK_GRAY),
+        ));
+    }
+
     fn show_relativistic_plot_p(
         ui: &mut egui::Ui,
         rect: egui::Rect,

@@ -153,6 +153,20 @@ impl IsAnimated for RelativisticPlotDescription {
     }
 }
 
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
+// #[serde(default)]
+pub struct DispRelPlotDescription {
+    pub rect: Value<[[f32; 2]; 2]>,
+    pub height: Option<Value<f32>>,
+    pub origin: Option<Value<f32>>,
+}
+
+impl IsAnimated for DispRelPlotDescription {
+    fn is_animated(&self) -> bool {
+        self.rect.is_animated() || self.height.is_animated() || self.origin.is_animated()
+    }
+}
+
 use serde_with::{serde_as, DisplayFromStr};
 
 #[serde_as]
@@ -164,6 +178,7 @@ pub struct FrameDescription {
     pub plot: HashMap<pxu::Component, PlotDescription>,
     #[serde_as(as = "HashMap<DisplayFromStr, _>")]
     pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
+    pub disp_rel_plot: Option<DispRelPlotDescription>,
     pub duration: Option<f64>,
     pub consts: Option<[f64; 2]>,
 }
