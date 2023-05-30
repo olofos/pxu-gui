@@ -274,10 +274,6 @@ impl eframe::App for PresentationApp {
                 self.pxu.last_mut().unwrap()
             };
 
-            if self.plot_data.plot_state.active_point >= pxu.state.points.len() {
-                self.plot_data.plot_state.active_point = 0;
-            }
-
             ctx.input(|i| {
                 for (key, num) in [
                     (egui::Key::Backspace, pxu.state.points.len()),
@@ -296,6 +292,10 @@ impl eframe::App for PresentationApp {
                     }
                 }
             });
+
+            if self.plot_data.plot_state.active_point >= pxu.state.points.len() {
+                self.plot_data.plot_state.active_point = 0;
+            }
 
             {
                 let start = chrono::Utc::now();
