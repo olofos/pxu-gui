@@ -291,6 +291,10 @@ impl eframe::App for PresentationApp {
                         pxu.state = pxu::State::new(num, pxu.consts);
                     }
                 }
+
+                if i.key_pressed(egui::Key::Space) {
+                    pxu.state.unlocked = !pxu.state.unlocked;
+                }
             });
 
             if self.plot_data.plot_state.active_point >= pxu.state.points.len() {
