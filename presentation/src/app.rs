@@ -182,16 +182,17 @@ impl PresentationApp {
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
-        let mut app: Self = if let Some(storage) = cc.storage {
-            eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+
+        let mut app: Self = if dev {
+            if let Some(storage) = cc.storage {
+                eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+            } else {
+                Default::default()
+            }
         } else {
             Default::default()
         };
-
         app.dev = dev;
-        if !dev {
-            app.frame_index = 0;
-        }
 
         app
     }
