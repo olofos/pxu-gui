@@ -452,78 +452,96 @@ impl PresentationApp {
     }
 
     fn load(&mut self, ctx: &egui::Context) {
-        let loading_message: &str;
-        let loading_progress: (usize, usize);
+        let mut loading_message: &str = "";
+        let mut loading_progress: (usize, usize) = (0, 1);
 
-        if self.frames.is_empty() {
-            loading_message = "Loading presentation";
-            loading_progress = (0, 1);
+        let start = chrono::Utc::now();
+        while (chrono::Utc::now() - start).num_milliseconds() < (1000.0 / 10.0f64).floor() as i64 {
+            if self.frames.is_empty() {
+                loading_message = "Loading presentation";
+                loading_progress = (0, 1);
 
-            self.frames = Self::load_presentation_toml().unwrap();
+                self.frames = Self::load_presentation_toml().unwrap();
 
-            for frame in self.frames.iter() {
-                self.images.insert(frame.image_name.clone(), None);
-            }
-
-            if self.frame_index >= self.frames.len() {
-                self.frame_index = 0;
-            }
-            self.frames[self.frame_index].start(&mut self.plot_data, 0.0);
-        } else if let Some(image_name) = self
-            .images
-            .iter()
-            .filter_map(|(k, v)| if v.is_none() { Some(k) } else { None })
-            .next()
-        {
-            let count = self.images.values().filter(|v| v.is_some()).count();
-
-            loading_progress = (count, self.images.len());
-            loading_message = "Loading images";
-
-            log::info!("Loading {image_name}");
-            let image = Self::load_image(image_name).unwrap();
-            self.images.insert(image_name.clone(), Some(image));
-        } else if self.dev {
-            loading_progress = (1, 1);
-            loading_message = "";
-            self.loaded = true;
-        } else if self.pxu.is_empty() {
-            loading_progress = (0, 1);
-            loading_message = "Generating contours";
-
-            for consts in self.frames.iter().filter_map(|f| f.consts) {
-                if !self.pxu.iter().any(|p| p.consts == consts) {
-                    log::info!("Generating contours for ({},{})", consts.h, consts.k());
-                    let mut pxu = pxu::Pxu::new(consts);
-                    pxu.state = pxu::State::new(1, pxu.consts);
-                    pxu.contours.update(0, pxu.consts);
-                    self.pxu.push(pxu);
+                for frame in self.frames.iter() {
+                    self.images.insert(frame.image_name.clone(), None);
                 }
-            }
-        } else if let Some(pxu) = self.pxu.iter_mut().find(|pxu| !pxu.contours.is_loaded()) {
-            loading_message = "Generating contours";
 
-            let start = chrono::Utc::now();
-            while (chrono::Utc::now() - start).num_milliseconds()
-                < (1000.0 / 10.0f64).floor() as i64
+                if self.frame_index >= self.frames.len() {
+                    self.frame_index = 0;
+                }
+                self.frames[self.frame_index].start(&mut self.plot_data, 0.0);
+            } else if let Some(image_name) = self
+                .images
+                .iter()
+                .filter_map(|(k, v)| if v.is_none() { Some(k) } else { None })
+                .next()
             {
-                if pxu.contours.update(0, pxu.consts) {
-                    break;
+                let count = self.images.values().filter(|v| v.is_some()).count();
+
+                loading_progress = (count, self.images.len());
+                loading_message = "Loading images";
+
+                log::info!("Loading {image_name}");
+                let image = Self::load_image(image_name).unwrap();
+                self.images.insert(image_name.clone(), Some(image));
+            } else if self.dev {
+                loading_progress = (1, 1);
+                loading_message = "";
+                self.loaded = true;
+                break;
+            } else if self.pxu.is_empty() {
+                loading_progress = (0, 1);
+                loading_message = "Generating contours";
+
+                for consts in self.frames.iter().filter_map(|f| f.consts) {
+                    if !self.pxu.iter().any(|p| p.consts == consts) {
+                        log::info!("Generating contours for ({},{})", consts.h, consts.k());
+                        let mut pxu = pxu::Pxu::new(consts);
+                        pxu.state = pxu::State::new(1, pxu.consts);
+
+                        pxu.state.update(
+                            0,
+                            pxu::Component::P,
+                            0.1.into(),
+                            &pxu.contours,
+                            pxu.consts,
+                        );
+
+                        pxu.state.update(
+                            0,
+                            pxu::Component::P,
+                            0.15.into(),
+                            &pxu.contours,
+                            pxu.consts,
+                        );
+
+                        pxu.contours.update(0, pxu.consts);
+                        self.pxu.push(pxu);
+                    }
                 }
+            } else if let Some(pxu) = self.pxu.iter_mut().find(|pxu| !pxu.contours.is_loaded()) {
+                loading_message = "Generating contours";
+
+                while (chrono::Utc::now() - start).num_milliseconds()
+                    < (1000.0 / 10.0f64).floor() as i64
+                {
+                    if pxu.contours.update(0, pxu.consts) {
+                        break;
+                    }
+                }
+
+                let count: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().0).sum();
+                let total: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().1).sum();
+
+                loading_progress = (count, total);
+            } else {
+                loading_message = "";
+                loading_progress = (1, 1);
+
+                self.loaded = true;
+                break;
             }
-            for _ in 0..10 {
-                pxu.contours.update(0, pxu.consts);
-            }
-
-            let count: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().0).sum();
-            let total: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().1).sum();
-
-            loading_progress = (count, total);
-        } else {
-            loading_message = "";
-            loading_progress = (1, 1);
-
-            self.loaded = true;
         }
 
         egui::CentralPanel::default()
