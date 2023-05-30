@@ -137,6 +137,8 @@ pub struct PresentationApp {
     images: HashMap<String, Option<RetainedImage>>,
     #[serde(skip)]
     dev: bool,
+    #[serde(skip)]
+    force_last_page: bool,
 }
 
 impl Default for PlotData {
@@ -228,13 +230,13 @@ impl eframe::App for PresentationApp {
                 };
 
                 if (next || ctx.input(|i| i.key_pressed(egui::Key::ArrowRight)))
-                    && self.frame_index < self.frames.len() - 1
+                    && self.frame_index < self.frames.len() - 2
                 {
                     self.frame_index += 1;
                 }
                 if ctx.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
                     loop {
-                        if self.frame_index > 0 {
+                        if 0 < self.frame_index && self.frame_index < self.frames.len() - 1 {
                             self.frame_index -= 1;
                         } else {
                             break;
@@ -245,11 +247,19 @@ impl eframe::App for PresentationApp {
                     }
                 }
 
+                if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
+                    self.force_last_page = !self.force_last_page;
+                }
+
                 if self.frame_index != prev_frame_index {
                     self.frames[self.frame_index].start(&mut self.plot_data, ctx.input(|i| i.time));
                 }
 
-                &mut self.frames[self.frame_index]
+                if self.force_last_page {
+                    self.frames.last_mut().unwrap()
+                } else {
+                    &mut self.frames[self.frame_index]
+                }
             };
 
             let frame_time = ctx.input(|i| i.time - frame.start_time);
