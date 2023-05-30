@@ -16,6 +16,8 @@ struct Arguments {
     pub rebuild: bool,
     #[arg(short, long, default_value = "1024")]
     pub y_resolution: usize,
+    #[arg(short, long)]
+    pub dev: bool,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -33,6 +35,9 @@ pub enum Error {
 
     #[error("Toml serialization error: {0}")]
     TomlSer(#[from] toml::ser::Error),
+
+    #[error("Image error: {0}")]
+    Image(#[from] image::error::ImageError),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -62,16 +67,18 @@ fn main() -> Result<()> {
         ..Default::default()
     };
 
+    let dev = arguments.dev;
+
     eframe::run_native(
         "presentation",
         native_options,
-        Box::new(|cc| {
+        Box::new(move |cc| {
             let style = egui::Style {
                 visuals: egui::Visuals::light(),
                 ..egui::Style::default()
             };
             cc.egui_ctx.set_style(style);
-            Box::new(app::PresentationApp::new(cc))
+            Box::new(app::PresentationApp::new(cc, dev))
         }),
     )?;
 

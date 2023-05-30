@@ -356,6 +356,10 @@ impl Contours {
         Self::default()
     }
 
+    pub fn is_loaded(&self) -> bool {
+        self.loaded
+    }
+
     pub fn update(&mut self, p_range: i32, consts: CouplingConstants) -> bool {
         if self.num_commands == 0 {
             self.clear();

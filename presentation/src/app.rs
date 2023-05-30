@@ -17,12 +17,14 @@ struct PlotData {
     plot_state: PlotState,
 }
 
-use crate::presentation_description::{
-    DispRelPlotDescription, FrameDescription, PlotDescription, PresentationDescription,
-    RelativisticComponent, RelativisticCrossingPath, RelativisticPlotDescription, Value, *,
+use crate::{
+    presentation_description::{
+        DispRelPlotDescription, FrameDescription, PlotDescription, PresentationDescription,
+        RelativisticComponent, RelativisticCrossingPath, RelativisticPlotDescription, Value, *,
+    },
+    Error,
 };
 struct Frame {
-    pub image: RetainedImage,
     pub plot: HashMap<pxu::Component, PlotDescription>,
     pub relativistic_plot: HashMap<RelativisticComponent, RelativisticPlotDescription>,
     pub disp_rel_plot: Option<DispRelPlotDescription>,
@@ -30,6 +32,7 @@ struct Frame {
     pub duration: Option<f64>,
     pub consts: Option<CouplingConstants>,
     pub cut_filter: Option<pxu_plot::CutFilter>,
+    pub image_name: String,
 }
 
 impl IsAnimated for Frame {
@@ -54,21 +57,9 @@ impl IsAnimated for Frame {
     }
 }
 
-impl TryFrom<FrameDescription> for Frame {
-    type Error = String;
-
-    fn try_from(value: FrameDescription) -> Result<Self, Self::Error> {
-        let path = std::path::Path::new("./presentation/images/").join(&value.image);
-
-        let image_buffer = image::open(path.clone())
-            .map_err(|_| format!("Could not open image {}", path.display()))?
-            .to_rgba8();
-        let rgba = image_buffer.as_flat_samples();
-        let rgba = rgba.as_slice();
-
-        let size = [image_buffer.width() as _, image_buffer.height() as _];
-        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba);
-        let image = egui_extras::RetainedImage::from_color_image(value.image, color_image);
+impl From<FrameDescription> for Frame {
+    fn from(value: FrameDescription) -> Self {
+        let image_name = value.image;
 
         let FrameDescription {
             plot,
@@ -80,8 +71,7 @@ impl TryFrom<FrameDescription> for Frame {
             ..
         } = value;
 
-        Ok(Self {
-            image,
+        Self {
             plot,
             relativistic_plot,
             start_time: 0.0,
@@ -89,7 +79,8 @@ impl TryFrom<FrameDescription> for Frame {
             consts,
             disp_rel_plot,
             cut_filter,
-        })
+            image_name,
+        }
     }
 }
 
@@ -127,7 +118,6 @@ impl Frame {
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Default, serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
-
 pub struct PresentationApp {
     plot_data: PlotData,
     // #[serde(skip)]
@@ -141,6 +131,12 @@ pub struct PresentationApp {
     frame_index: usize,
     #[serde(skip)]
     frame_start: f64,
+    #[serde(skip)]
+    loaded: bool,
+    #[serde(skip)]
+    images: HashMap<String, Option<RetainedImage>>,
+    #[serde(skip)]
+    dev: bool,
 }
 
 impl Default for PlotData {
@@ -180,7 +176,7 @@ impl Default for PlotData {
 
 impl PresentationApp {
     /// Called once before the first frame.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, dev: bool) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
 
@@ -192,21 +188,10 @@ impl PresentationApp {
             Default::default()
         };
 
-        let path = std::path::Path::new("./presentation/images/presentation.toml");
-        let presentation_toml = std::fs::read_to_string(path).unwrap();
-        let presentation: Result<PresentationDescription, _> = toml::from_str(&presentation_toml);
-
-        app.frames = presentation
-            .unwrap()
-            .frame
-            .into_iter()
-            .map(|f| Frame::try_from(f).unwrap())
-            .collect();
-
-        if app.frame_index >= app.frames.len() {
+        app.dev = dev;
+        if !dev {
             app.frame_index = 0;
         }
-        app.frames[app.frame_index].start(&mut app.plot_data, 0.0);
 
         app
     }
@@ -218,109 +203,324 @@ impl eframe::App for PresentationApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let frame = {
-            let prev_frame_index = self.frame_index;
-
-            if self.frames[self.frame_index].start_time == 0.0 {
-                self.frames[self.frame_index].start_time = ctx.input(|i| i.time);
-            }
-
-            let next = if let Some(duration) = self.frames[self.frame_index].duration {
-                let frame_end = self.frames[self.frame_index].start_time + duration;
-                let now = ctx.input(|i| i.time);
-                now > frame_end
-            } else {
-                false
-            };
-
-            if (next || ctx.input(|i| i.key_pressed(egui::Key::ArrowRight)))
-                && self.frame_index < self.frames.len() - 1
-            {
-                self.frame_index += 1;
-            }
-            if ctx.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
-                loop {
-                    if self.frame_index > 0 {
-                        self.frame_index -= 1;
-                    } else {
-                        break;
-                    }
-                    if self.frames[self.frame_index].duration.is_none() {
-                        break;
-                    }
-                }
-            }
-
-            if self.frame_index != prev_frame_index {
-                self.frames[self.frame_index].start(&mut self.plot_data, ctx.input(|i| i.time));
-            }
-
-            &self.frames[self.frame_index]
-        };
-
-        let frame_time = ctx.input(|i| i.time - frame.start_time);
-
-        let pxu = if let Some(i) = self
-            .pxu
-            .iter()
-            .position(|pxu| pxu.consts == self.plot_data.consts)
-        {
-            &mut self.pxu[i]
-        } else {
-            let mut pxu = pxu::Pxu::new(self.plot_data.consts);
-            pxu.state = pxu::State::new(1, pxu.consts);
-
-            pxu.state
-                .update(0, pxu::Component::P, 0.1.into(), &pxu.contours, pxu.consts);
-
-            pxu.state
-                .update(0, pxu::Component::P, 0.15.into(), &pxu.contours, pxu.consts);
-
-            self.pxu.push(pxu);
-            self.pxu.last_mut().unwrap()
-        };
-
-        ctx.input(|i| {
-            for (key, num) in [
-                (egui::Key::Backspace, pxu.state.points.len()),
-                (egui::Key::Num1, 1),
-                (egui::Key::Num2, 2),
-                (egui::Key::Num3, 3),
-                (egui::Key::Num4, 4),
-                (egui::Key::Num5, 5),
-                (egui::Key::Num6, 6),
-                (egui::Key::Num7, 7),
-                (egui::Key::Num8, 8),
-                (egui::Key::Num9, 9),
-            ] {
-                if i.key_pressed(key) {
-                    pxu.state = pxu::State::new(num, pxu.consts);
-                }
-            }
-        });
-
         #[cfg(not(target_arch = "wasm32"))]
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
             _frame.close();
         }
+
+        if !self.loaded {
+            self.load(ctx);
+        } else {
+            let frame = {
+                let prev_frame_index = self.frame_index;
+
+                if self.frames[self.frame_index].start_time == 0.0 {
+                    self.frames[self.frame_index].start_time = ctx.input(|i| i.time);
+                }
+
+                let next = if let Some(duration) = self.frames[self.frame_index].duration {
+                    let frame_end = self.frames[self.frame_index].start_time + duration;
+                    let now = ctx.input(|i| i.time);
+                    now > frame_end
+                } else {
+                    false
+                };
+
+                if (next || ctx.input(|i| i.key_pressed(egui::Key::ArrowRight)))
+                    && self.frame_index < self.frames.len() - 1
+                {
+                    self.frame_index += 1;
+                }
+                if ctx.input(|i| i.key_pressed(egui::Key::ArrowLeft)) {
+                    loop {
+                        if self.frame_index > 0 {
+                            self.frame_index -= 1;
+                        } else {
+                            break;
+                        }
+                        if self.frames[self.frame_index].duration.is_none() {
+                            break;
+                        }
+                    }
+                }
+
+                if self.frame_index != prev_frame_index {
+                    self.frames[self.frame_index].start(&mut self.plot_data, ctx.input(|i| i.time));
+                }
+
+                &self.frames[self.frame_index]
+            };
+
+            let frame_time = ctx.input(|i| i.time - frame.start_time);
+
+            let pxu = if let Some(i) = self
+                .pxu
+                .iter()
+                .position(|pxu| pxu.consts == self.plot_data.consts)
+            {
+                &mut self.pxu[i]
+            } else {
+                log::info!("Pxu {:?} not found", self.plot_data.consts);
+                let mut pxu = pxu::Pxu::new(self.plot_data.consts);
+                pxu.state = pxu::State::new(1, pxu.consts);
+
+                pxu.state
+                    .update(0, pxu::Component::P, 0.1.into(), &pxu.contours, pxu.consts);
+
+                pxu.state
+                    .update(0, pxu::Component::P, 0.15.into(), &pxu.contours, pxu.consts);
+
+                self.pxu.push(pxu);
+                self.pxu.last_mut().unwrap()
+            };
+
+            ctx.input(|i| {
+                for (key, num) in [
+                    (egui::Key::Backspace, pxu.state.points.len()),
+                    (egui::Key::Num1, 1),
+                    (egui::Key::Num2, 2),
+                    (egui::Key::Num3, 3),
+                    (egui::Key::Num4, 4),
+                    (egui::Key::Num5, 5),
+                    (egui::Key::Num6, 6),
+                    (egui::Key::Num7, 7),
+                    (egui::Key::Num8, 8),
+                    (egui::Key::Num9, 9),
+                ] {
+                    if i.key_pressed(key) {
+                        pxu.state = pxu::State::new(num, pxu.consts);
+                    }
+                }
+            });
+
+            {
+                let start = chrono::Utc::now();
+                while (chrono::Utc::now() - start).num_milliseconds()
+                    < (1000.0 / 20.0f64).floor() as i64
+                {
+                    if pxu
+                        .contours
+                        .update(pxu.state.points[0].p.re.floor() as i32, pxu.consts)
+                    {
+                        break;
+                    }
+                    ctx.request_repaint();
+                }
+            }
+
+            // let mut style: egui::Style = (*ctx.style()).clone();
+            // style.spacing.item_spacing = vec2(0.0, 0.0);
+            // ctx.set_style(style.clone());
+
+            egui::CentralPanel::default()
+                .frame(
+                    egui::Frame::central_panel(&ctx.style())
+                        .inner_margin(egui::Margin::same(0.0))
+                        .outer_margin(egui::Margin::same(0.0)),
+                )
+                .show(ctx, |ui| {
+                    let rect = ui.available_rect_before_wrap();
+
+                    ui.vertical_centered(|ui| {
+                        if let Some(ref image) = self.images[&frame.image_name] {
+                            image.show_size(ui, rect.size());
+                        }
+                    });
+
+                    for (component, descr) in frame.plot.iter() {
+                        let plot = match component {
+                            pxu::Component::P => &mut self.plot_data.p_plot,
+                            pxu::Component::Xp => &mut self.plot_data.xp_plot,
+                            pxu::Component::Xm => &mut self.plot_data.xm_plot,
+                            pxu::Component::U => &mut self.plot_data.u_plot,
+                            _ => unimplemented!(),
+                        };
+
+                        if let Some(ref height) = descr.height {
+                            if height.is_animated() {
+                                plot.height = height.get(frame_time);
+                            }
+                        }
+
+                        if let Some(ref origin) = descr.origin {
+                            if origin.is_animated() {
+                                plot.origin = egui::Pos2::from(origin.get(frame_time));
+                            }
+                        }
+
+                        let w = rect.width();
+                        let h = rect.height();
+
+                        let descr_rect = descr.rect.get(frame_time);
+
+                        let x1 = descr_rect[0][0] * w / 16.0;
+                        let x2 = descr_rect[1][0] * w / 16.0;
+
+                        let y1 = descr_rect[0][1] * h / 9.0;
+                        let y2 = descr_rect[1][1] * h / 9.0;
+
+                        let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                        plot.interact(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
+                        plot.show(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
+                    }
+
+                    for (component, descr) in frame.relativistic_plot.iter() {
+                        let plot_func: fn(
+                            &mut egui::Ui,
+                            egui::Rect,
+                            &RelativisticPlotDescription,
+                            f64,
+                        ) = match component {
+                            RelativisticComponent::P => Self::show_relativistic_plot_p,
+                            RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
+                        };
+
+                        let w = rect.width();
+                        let h = rect.height();
+
+                        let drect = descr.rect.get(frame_time);
+
+                        let x1 = drect[0][0] * w / 16.0;
+                        let x2 = drect[1][0] * w / 16.0;
+
+                        let y1 = drect[0][1] * h / 9.0;
+                        let y2 = drect[1][1] * h / 9.0;
+
+                        let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                        plot_func(ui, plot_rect, descr, frame_time);
+                    }
+
+                    if let Some(ref disp_rel_plot) = frame.disp_rel_plot {
+                        let w = rect.width();
+                        let h = rect.height();
+
+                        let drect = disp_rel_plot.rect.get(frame_time);
+
+                        let x1 = drect[0][0] * w / 16.0;
+                        let x2 = drect[1][0] * w / 16.0;
+
+                        let y1 = drect[0][1] * h / 9.0;
+                        let y2 = drect[1][1] * h / 9.0;
+
+                        let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
+
+                        Self::show_disp_rel_plot(
+                            ui,
+                            plot_rect,
+                            disp_rel_plot,
+                            self.plot_data.consts,
+                            frame_time,
+                        );
+                    }
+
+                    if frame.is_animated() {
+                        ctx.request_repaint();
+                    }
+                });
+        }
+    }
+}
+
+impl PresentationApp {
+    fn load_presentation_toml() -> Result<Vec<Frame>, Error> {
+        let path = std::path::Path::new("./presentation/images/presentation.toml");
+        let presentation_toml = std::fs::read_to_string(path)?;
+        let presentation: PresentationDescription = toml::from_str(&presentation_toml)?;
+
+        Ok(presentation.frame.into_iter().map(Frame::from).collect())
+    }
+
+    fn load_image(image_name: &String) -> Result<RetainedImage, Error> {
+        let path = std::path::Path::new("./presentation/images/").join(image_name);
+
+        let image_buffer = image::open(path)?.to_rgba8();
+        let rgba = image_buffer.as_flat_samples();
+        let rgba = rgba.as_slice();
+
+        let size = [image_buffer.width() as _, image_buffer.height() as _];
+        let color_image = egui::ColorImage::from_rgba_unmultiplied(size, rgba);
+        Ok(egui_extras::RetainedImage::from_color_image(
+            image_name.clone(),
+            color_image,
+        ))
+    }
+
+    fn load(&mut self, ctx: &egui::Context) {
+        let loading_message: &str;
+        let loading_progress: (usize, usize);
+
+        if self.frames.is_empty() {
+            loading_message = "Loading presentation";
+            loading_progress = (0, 1);
+
+            self.frames = Self::load_presentation_toml().unwrap();
+
+            for frame in self.frames.iter() {
+                self.images.insert(frame.image_name.clone(), None);
+            }
+
+            if self.frame_index >= self.frames.len() {
+                self.frame_index = 0;
+            }
+            self.frames[self.frame_index].start(&mut self.plot_data, 0.0);
+        } else if let Some(image_name) = self
+            .images
+            .iter()
+            .filter_map(|(k, v)| if v.is_none() { Some(k) } else { None })
+            .next()
         {
+            let count = self.images.values().filter(|v| v.is_some()).count();
+
+            loading_progress = (count, self.images.len());
+            loading_message = "Loading images";
+
+            log::info!("Loading {image_name}");
+            let image = Self::load_image(image_name).unwrap();
+            self.images.insert(image_name.clone(), Some(image));
+        } else if self.dev {
+            loading_progress = (1, 1);
+            loading_message = "";
+            self.loaded = true;
+        } else if self.pxu.is_empty() {
+            loading_progress = (0, 1);
+            loading_message = "Generating contours";
+
+            for consts in self.frames.iter().filter_map(|f| f.consts) {
+                if !self.pxu.iter().any(|p| p.consts == consts) {
+                    log::info!("Generating contours for ({},{})", consts.h, consts.k());
+                    let mut pxu = pxu::Pxu::new(consts);
+                    pxu.state = pxu::State::new(1, pxu.consts);
+                    pxu.contours.update(0, pxu.consts);
+                    self.pxu.push(pxu);
+                }
+            }
+        } else if let Some(pxu) = self.pxu.iter_mut().find(|pxu| !pxu.contours.is_loaded()) {
+            loading_message = "Generating contours";
+
             let start = chrono::Utc::now();
             while (chrono::Utc::now() - start).num_milliseconds()
-                < (1000.0 / 20.0f64).floor() as i64
+                < (1000.0 / 10.0f64).floor() as i64
             {
-                if pxu
-                    .contours
-                    .update(pxu.state.points[0].p.re.floor() as i32, pxu.consts)
-                {
+                if pxu.contours.update(0, pxu.consts) {
                     break;
                 }
-                ctx.request_repaint();
             }
-        }
+            for _ in 0..10 {
+                pxu.contours.update(0, pxu.consts);
+            }
 
-        // let mut style: egui::Style = (*ctx.style()).clone();
-        // style.spacing.item_spacing = vec2(0.0, 0.0);
-        // ctx.set_style(style.clone());
+            let count: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().0).sum();
+            let total: usize = self.pxu.iter().map(|pxu| pxu.contours.progress().1).sum();
+
+            loading_progress = (count, total);
+        } else {
+            loading_message = "";
+            loading_progress = (1, 1);
+
+            self.loaded = true;
+        }
 
         egui::CentralPanel::default()
             .frame(
@@ -330,110 +530,50 @@ impl eframe::App for PresentationApp {
             )
             .show(ctx, |ui| {
                 let rect = ui.available_rect_before_wrap();
-                // log::info!("{:?}", rect.size());
 
-                ui.vertical_centered(|ui| {
-                    // let image_size = image.size_vec2();
-                    // image.show_size(ui, image_size * (rect.height() / image_size.y));
-                    frame.image.show_size(ui, rect.size());
-                });
+                let shapes = vec![
+                    egui::Shape::rect_filled(rect, egui::Rounding::none(), egui::Color32::WHITE),
+                    ui.fonts(|f| {
+                        egui::epaint::Shape::text(
+                            f,
+                            rect.center() + vec2(0.0, 20.0),
+                            egui::Align2::CENTER_TOP,
+                            loading_message,
+                            egui::TextStyle::Heading.resolve(ui.style()),
+                            egui::Color32::BLACK,
+                        )
+                    }),
+                    egui::Shape::rect_filled(
+                        egui::Rect::from_two_pos(
+                            rect.center() + vec2(-rect.width() / 8.0, 0.0),
+                            rect.center()
+                                + vec2(
+                                    -rect.width() / 8.0
+                                        + (loading_progress.0 as f32 / loading_progress.1 as f32)
+                                            * rect.width()
+                                            / 4.0,
+                                    -20.0,
+                                ),
+                        ),
+                        4.0,
+                        egui::Color32::GRAY,
+                    ),
+                    egui::Shape::rect_stroke(
+                        egui::Rect::from_two_pos(
+                            rect.center() + vec2(-rect.width() / 8.0, 00.0),
+                            rect.center() + vec2(rect.width() / 8.0, -20.0),
+                        ),
+                        4.0,
+                        egui::Stroke::new(2.0, egui::Color32::BLACK),
+                    ),
+                ];
 
-                for (component, descr) in frame.plot.iter() {
-                    let plot = match component {
-                        pxu::Component::P => &mut self.plot_data.p_plot,
-                        pxu::Component::Xp => &mut self.plot_data.xp_plot,
-                        pxu::Component::Xm => &mut self.plot_data.xm_plot,
-                        pxu::Component::U => &mut self.plot_data.u_plot,
-                        _ => unimplemented!(),
-                    };
-
-                    if let Some(ref height) = descr.height {
-                        if height.is_animated() {
-                            plot.height = height.get(frame_time);
-                        }
-                    }
-
-                    if let Some(ref origin) = descr.origin {
-                        if origin.is_animated() {
-                            plot.origin = egui::Pos2::from(origin.get(frame_time));
-                        }
-                    }
-
-                    let w = rect.width();
-                    let h = rect.height();
-
-                    let descr_rect = descr.rect.get(frame_time);
-
-                    let x1 = descr_rect[0][0] * w / 16.0;
-                    let x2 = descr_rect[1][0] * w / 16.0;
-
-                    let y1 = descr_rect[0][1] * h / 9.0;
-                    let y2 = descr_rect[1][1] * h / 9.0;
-
-                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
-
-                    plot.interact(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
-                    plot.show(ui, plot_rect, pxu, &mut self.plot_data.plot_state);
-                }
-
-                for (component, descr) in frame.relativistic_plot.iter() {
-                    let plot_func: fn(
-                        &mut egui::Ui,
-                        egui::Rect,
-                        &RelativisticPlotDescription,
-                        f64,
-                    ) = match component {
-                        RelativisticComponent::P => Self::show_relativistic_plot_p,
-                        RelativisticComponent::Theta => Self::show_relativistic_plot_theta,
-                    };
-
-                    let w = rect.width();
-                    let h = rect.height();
-
-                    let drect = descr.rect.get(frame_time);
-
-                    let x1 = drect[0][0] * w / 16.0;
-                    let x2 = drect[1][0] * w / 16.0;
-
-                    let y1 = drect[0][1] * h / 9.0;
-                    let y2 = drect[1][1] * h / 9.0;
-
-                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
-
-                    plot_func(ui, plot_rect, descr, frame_time);
-                }
-
-                if let Some(ref disp_rel_plot) = frame.disp_rel_plot {
-                    let w = rect.width();
-                    let h = rect.height();
-
-                    let drect = disp_rel_plot.rect.get(frame_time);
-
-                    let x1 = drect[0][0] * w / 16.0;
-                    let x2 = drect[1][0] * w / 16.0;
-
-                    let y1 = drect[0][1] * h / 9.0;
-                    let y2 = drect[1][1] * h / 9.0;
-
-                    let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
-
-                    Self::show_disp_rel_plot(
-                        ui,
-                        plot_rect,
-                        disp_rel_plot,
-                        self.plot_data.consts,
-                        frame_time,
-                    );
-                }
-
-                if frame.is_animated() {
-                    ctx.request_repaint();
-                }
+                ui.painter().extend(shapes);
             });
-    }
-}
 
-impl PresentationApp {
+        ctx.request_repaint();
+    }
+
     fn show_disp_rel_plot(
         ui: &mut egui::Ui,
         rect: egui::Rect,
