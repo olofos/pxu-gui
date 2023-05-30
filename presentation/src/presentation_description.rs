@@ -154,16 +154,14 @@ impl IsAnimated for RelativisticPlotDescription {
 }
 
 #[derive(Debug, serde::Deserialize, serde::Serialize)]
-// #[serde(default)]
 pub struct DispRelPlotDescription {
     pub rect: Value<[[f32; 2]; 2]>,
-    pub height: Option<Value<f32>>,
-    pub origin: Option<Value<f32>>,
+    pub m: Option<Vec<f64>>,
 }
 
 impl IsAnimated for DispRelPlotDescription {
     fn is_animated(&self) -> bool {
-        self.rect.is_animated() || self.height.is_animated() || self.origin.is_animated()
+        self.rect.is_animated()
     }
 }
 

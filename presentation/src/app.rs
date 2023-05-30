@@ -249,7 +249,7 @@ impl eframe::App for PresentationApp {
                     self.frames[self.frame_index].start(&mut self.plot_data, ctx.input(|i| i.time));
                 }
 
-                &self.frames[self.frame_index]
+                &mut self.frames[self.frame_index]
             };
 
             let frame_time = ctx.input(|i| i.time - frame.start_time);
@@ -264,6 +264,7 @@ impl eframe::App for PresentationApp {
                 log::info!("Pxu {:?} not found", self.plot_data.consts);
                 let mut pxu = pxu::Pxu::new(self.plot_data.consts);
                 pxu.state = pxu::State::new(1, pxu.consts);
+                self.plot_data.plot_state.active_point = 0;
 
                 pxu.state
                     .update(0, pxu::Component::P, 0.1.into(), &pxu.contours, pxu.consts);
@@ -316,10 +317,6 @@ impl eframe::App for PresentationApp {
                     ctx.request_repaint();
                 }
             }
-
-            // let mut style: egui::Style = (*ctx.style()).clone();
-            // style.spacing.item_spacing = vec2(0.0, 0.0);
-            // ctx.set_style(style.clone());
 
             egui::CentralPanel::default()
                 .frame(
@@ -401,7 +398,7 @@ impl eframe::App for PresentationApp {
                         plot_func(ui, plot_rect, descr, frame_time);
                     }
 
-                    if let Some(ref disp_rel_plot) = frame.disp_rel_plot {
+                    if let Some(ref mut disp_rel_plot) = frame.disp_rel_plot {
                         let w = rect.width();
                         let h = rect.height();
 
@@ -415,12 +412,18 @@ impl eframe::App for PresentationApp {
 
                         let plot_rect = egui::Rect::from_two_pos(pos2(x1, y1), pos2(x2, y2));
 
+                        let point =
+                            pos2(pxu.state.p().re as f32, pxu.state.en(pxu.consts).re as f32);
+
                         Self::show_disp_rel_plot(
                             ui,
                             plot_rect,
+                            self.plot_data.p_plot.height,
+                            self.plot_data.p_plot.origin.x,
+                            point,
+                            pxu.state.points.len(),
                             disp_rel_plot,
                             self.plot_data.consts,
-                            frame_time,
                         );
                     }
 
@@ -601,36 +604,34 @@ impl PresentationApp {
         ctx.request_repaint();
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn show_disp_rel_plot(
         ui: &mut egui::Ui,
         rect: egui::Rect,
+        p_height: f32,
+        origin: f32,
+        point: Pos2,
+        state_m: usize,
         description: &DispRelPlotDescription,
         consts: CouplingConstants,
-        frame_time: f64,
     ) {
-        let p_height = if let Some(ref p_height) = description.height {
-            p_height.get(frame_time)
-        } else {
-            4.0
-        };
         let width = 1.5 * p_height * rect.aspect_ratio();
-
-        let origin = if let Some(ref origin) = description.origin {
-            origin.get(frame_time)
-        } else {
-            0.0
-        };
-
         let x_min = origin - width / 2.0;
         let x_max = origin + width / 2.0;
+
+        let ms = description.m.clone().unwrap_or_else(|| vec![1.0]);
 
         let mut values = vec![];
         let steps = 512;
 
-        for i in 0..((x_max - x_min) * steps as f32).ceil() as u32 {
-            let p = x_min as f64 + i as f64 / steps as f64;
-            let e = pxu::kinematics::en(num::complex::Complex64::from(p), 1.0, consts);
-            values.push(pos2(p as f32, e.re as f32));
+        for m in ms {
+            let mut points = vec![];
+            for i in 0..((x_max - x_min) * steps as f32).ceil() as u32 {
+                let p = x_min as f64 + i as f64 / steps as f64;
+                let e = pxu::kinematics::en(num::complex::Complex64::from(p), m, consts);
+                points.push(pos2(p as f32, e.re as f32));
+            }
+            values.push(points);
         }
 
         let y_min = -0.5;
@@ -638,6 +639,7 @@ impl PresentationApp {
         let y_max = 1.0
             + values
                 .iter()
+                .flatten()
                 .map(|pos| pos.y)
                 .max_by(|a, b| a.partial_cmp(b).unwrap())
                 .unwrap();
@@ -647,11 +649,6 @@ impl PresentationApp {
             egui::Rect::from_center_size(pos2(origin, -(y_min + y_max) / 2.0), vec2(width, height)),
             rect,
         );
-
-        let points = values
-            .into_iter()
-            .map(|z| to_screen * pos2(z.x, -z.y))
-            .collect::<Vec<_>>();
 
         let old_clip_rect = ui.clip_rect();
         ui.set_clip_rect(rect);
@@ -701,9 +698,25 @@ impl PresentationApp {
             )
         }));
 
-        shapes.push(egui::Shape::line(
-            points,
-            egui::Stroke::new(3.0, egui::Color32::BLUE),
+        let colors = [
+            egui::Color32::BLUE,
+            egui::Color32::RED,
+            egui::Color32::DARK_GREEN,
+            egui::Color32::GOLD,
+        ];
+
+        for (contour, color) in values.into_iter().zip(colors.iter().cycle()) {
+            let points = contour
+                .into_iter()
+                .map(|z| to_screen * pos2(z.x, -z.y))
+                .collect::<Vec<_>>();
+            shapes.push(egui::Shape::line(points, egui::Stroke::new(3.0, *color)));
+        }
+
+        shapes.push(egui::Shape::circle_filled(
+            to_screen * pos2(point.x, -point.y),
+            5.0,
+            colors[(state_m - 1) % colors.len()],
         ));
 
         let text = "E";
@@ -745,15 +758,12 @@ impl PresentationApp {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         description: &RelativisticPlotDescription,
-        frame_time: f64, // height: f32,
-                         // m: f32,
-                         // point: Option<[f32; 2]>,
+        frame_time: f64,
     ) {
         let height = if let Some(ref height) = description.height {
             height.get(frame_time)
         } else {
             4.0
-            // RelativisticComponent::Theta => 1.25,
         };
         let m = description.m.get(frame_time);
         let point = description.point.clone().map(|p| p.get(frame_time));
@@ -893,9 +903,7 @@ impl PresentationApp {
         ui: &mut egui::Ui,
         rect: egui::Rect,
         description: &RelativisticPlotDescription,
-        frame_time: f64, // height: f32,
-                         // _m: f32,
-                         // point: Option<[f32; 2]>,
+        frame_time: f64,
     ) {
         let height = if let Some(ref height) = description.height {
             height.get(frame_time)
