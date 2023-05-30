@@ -713,6 +713,8 @@ impl PresentationApp {
             egui::Color32::RED,
             egui::Color32::DARK_GREEN,
             egui::Color32::GOLD,
+            egui::Color32::BROWN,
+            egui::Color32::DARK_BLUE,
         ];
 
         for (contour, color) in values.into_iter().zip(colors.iter().cycle()) {
