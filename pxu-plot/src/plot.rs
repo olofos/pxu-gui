@@ -132,11 +132,11 @@ impl Plot {
 
                 let new_value = if ui.input(|i| i.key_pressed(egui::Key::R)) {
                     match self.component {
-                        pxu::Component::P => Complex64::from(new_value.re),
+                        pxu::Component::P => Complex64::new(new_value.re, 0.00001),
                         pxu::Component::U => {
                             let re = new_value.re;
                             let im = (pxu.consts.h * new_value.im).round() / pxu.consts.h;
-                            Complex64::new(re, im)
+                            Complex64::new(re, im + 0.0001)
                         }
                         _ => new_value,
                     }
