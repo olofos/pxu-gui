@@ -130,6 +130,52 @@ impl eframe::App for PxuGuiApp {
             self.ui_state.hide_side_panel = false;
         }
 
+        if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
+            self.pxu.state.unlocked = !self.pxu.state.unlocked;
+        }
+
+        if self.pxu.state.unlocked && ctx.input(|i| i.key_pressed(egui::Key::PlusEquals)) {
+            self.pxu
+                .state
+                .points
+                .push(pxu::Point::new(0.1, self.pxu.consts));
+        }
+
+        if self.pxu.state.unlocked
+            && self.pxu.state.points.len() > 1
+            && ctx.input(|i| i.key_pressed(egui::Key::Minus))
+        {
+            self.pxu
+                .state
+                .points
+                .remove(self.ui_state.plot_state.active_point);
+            self.ui_state.plot_state.active_point = self
+                .ui_state
+                .plot_state
+                .active_point
+                .min(self.pxu.state.points.len() - 1);
+        }
+
+        if self.pxu.state.unlocked
+            && self.pxu.state.points.len() > 1
+            && self.ui_state.plot_state.active_point < self.pxu.state.points.len() - 1
+            && ctx.input(|i| i.key_pressed(egui::Key::ArrowUp))
+        {
+            let i = self.ui_state.plot_state.active_point;
+            self.pxu.state.points.swap(i, i + 1);
+            self.ui_state.plot_state.active_point += 1;
+        }
+
+        if self.pxu.state.unlocked
+            && self.pxu.state.points.len() > 1
+            && self.ui_state.plot_state.active_point > 0
+            && ctx.input(|i| i.key_pressed(egui::Key::ArrowDown))
+        {
+            let i = self.ui_state.plot_state.active_point;
+            self.pxu.state.points.swap(i, i - 1);
+            self.ui_state.plot_state.active_point -= 1;
+        }
+
         if !self.ui_state.hide_side_panel {
             self.draw_side_panel(ctx);
         }
@@ -430,7 +476,10 @@ impl PxuGuiApp {
         ui.separator();
 
         {
-            ui.label("Active excitation:");
+            ui.label(format!(
+                "Active excitation (#{}):",
+                self.ui_state.plot_state.active_point
+            ));
 
             ui.label(format!("Momentum: {:.3}", active_point.p));
 
