@@ -1,5 +1,5 @@
 [workspace]
-
+resolver = "2"
 members = ["pxu", "pxu-figures", "pxu-gui", "make-paths", "pxu-plot", "presentation"]
 
 [workspace.package]
