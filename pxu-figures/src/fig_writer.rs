@@ -102,28 +102,9 @@ progress_file=io.open(""#;
 \end{document}
 "#;
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        name: &str,
-        x_range: Range<f64>,
-        y0: f64,
-        size: Size,
-        component: pxu::Component,
-        settings: &Settings,
-        pb: &ProgressBar,
-    ) -> std::io::Result<Self> {
+    fn open_tex_file(name: &str, settings: &Settings, pb: &ProgressBar) -> Result<BufWriter<File>> {
         let mut path = PathBuf::from(&settings.output_dir).join(name);
         path.set_extension(TEX_EXT);
-
-        let aspect_ratio = match component {
-            pxu::Component::P => 1.5,
-            _ => 1.0,
-        };
-
-        let y_size = (x_range.end - x_range.start) * size.height / size.width / aspect_ratio;
-        let y_range = (y0 - y_size / 2.0)..(y0 + y_size / 2.0);
-
-        let bounds = Bounds::new(x_range, y_range);
 
         log::info!("[{name}]: Creating file {}", path.to_string_lossy());
         pb.set_message(format!("generating {}", path.to_string_lossy()));
@@ -138,6 +119,31 @@ progress_file=io.open(""#;
         writer.write_all(Self::FILE_START_2.as_bytes())?;
 
         let _ = std::fs::remove_file(progress_path);
+
+        Ok(writer)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        name: &str,
+        x_range: Range<f64>,
+        y0: f64,
+        size: Size,
+        component: pxu::Component,
+        settings: &Settings,
+        pb: &ProgressBar,
+    ) -> std::io::Result<Self> {
+        let mut writer = Self::open_tex_file(name, settings, pb)?;
+
+        let aspect_ratio = match component {
+            pxu::Component::P => 1.5,
+            _ => 1.0,
+        };
+
+        let y_size = (x_range.end - x_range.start) * size.height / size.width / aspect_ratio;
+        let y_range = (y0 - y_size / 2.0)..(y0 + y_size / 2.0);
+
+        let bounds = Bounds::new(x_range, y_range);
 
         let x_min = bounds.x_range.start;
         let x_max = bounds.x_range.end;
@@ -160,6 +166,43 @@ progress_file=io.open(""#;
             y_shift: None,
             caption: String::new(),
             no_component_indicator: false,
+        })
+    }
+
+    pub fn custom_axis(
+        name: &str,
+        x_range: Range<f64>,
+        y_range: Range<f64>,
+        size: Size,
+        axis_options: &[&str],
+        settings: &Settings,
+        pb: &ProgressBar,
+    ) -> std::io::Result<Self> {
+        let mut writer = Self::open_tex_file(name, settings, pb)?;
+
+        let bounds = Bounds::new(x_range, y_range);
+
+        let x_min = bounds.x_range.start;
+        let x_max = bounds.x_range.end;
+
+        let y_min = bounds.y_range.start;
+        let y_max = bounds.y_range.end;
+
+        let width = size.width;
+        let height = size.height;
+
+        writeln!(writer, "\\begin{{axis}}[xmin={x_min},xmax={x_max},ymin={y_min},ymax={y_max},width={width}cm,height={height}cm,{}]", axis_options.join(","))?;
+
+        Ok(Self {
+            name: name.to_owned(),
+            writer,
+            bounds,
+            size,
+            plot_count: 0,
+            component: pxu::Component::P,
+            y_shift: None,
+            caption: String::new(),
+            no_component_indicator: true,
         })
     }
 
@@ -240,6 +283,14 @@ progress_file=io.open(""#;
             writeln!(self.writer, r#"\directlua{{progress_file:flush()}}"#)?;
             self.plot_count += 1;
         }
+        Ok(())
+    }
+
+    pub fn add_plot_custom(&mut self, options: &[&str], plot: &str) -> Result<()> {
+        writeln!(self.writer, "\\addplot [{}] {plot};", options.join(","),)?;
+        writeln!(self.writer, r#"\directlua{{progress_file:write(".")}}"#)?;
+        writeln!(self.writer, r#"\directlua{{progress_file:flush()}}"#)?;
+        self.plot_count += 1;
         Ok(())
     }
 

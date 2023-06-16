@@ -987,9 +987,9 @@ fn fig_xp_typical_bound_state(
             let text = if i == 0 {
                 "$\\scriptstyle x_1^+$".to_owned()
             } else if i == points.len() - 1 {
-                format!("$ x_{}^-$", i + 1)
+                format!("$\\scriptstyle x_{}^-$", i)
             } else {
-                format!("$\\scriptstyle x_{}^- = x_{}^+$", i + 1, i + 2)
+                format!("$\\scriptstyle x_{}^- = x_{}^+$", i, i + 1)
             };
             let anchor = if pos.re < 0.0 {
                 "anchor=east"
@@ -1950,6 +1950,172 @@ fn fig_u_singlet_14(
     draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
 }
 
+const BS_AXIS_OPTIONS: &[&str] = &[
+    "axis x line=bottom",
+    "axis y line=middle",
+    "xtick={-4,-3,-2,-1,0,1}",
+    "xticklabels={$-8\\pi$,$-6\\pi$,$-4\\pi$,$-2\\pi$,$0$,$2\\pi$}",
+    "ytick=\\empty",
+    "yticklabels=\\empty",
+    "axis line style={->}",
+    "xlabel={$p$}",
+    "ylabel={$E$}",
+    "axis line style={shorten >=-5pt, shorten <=-5pt}",
+    "every axis x label/.style={at={(ticklabel* cs:1)},anchor=west,xshift=5pt}",
+    "every axis y label/.style={at={(ticklabel* cs:1)},anchor=south,yshift=5pt}",
+    "clip=false",
+];
+
+fn fig_bs_disp_rel_large(
+    _pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let axis_options = [BS_AXIS_OPTIONS, &["restrict y to domain=0:22.4"]].concat();
+
+    let mut figure = FigureWriter::custom_axis(
+        "bs_disp_rel_large",
+        -4.35..1.25,
+        0.0..22.4,
+        Size {
+            width: 12.0,
+            height: 6.0,
+        },
+        &axis_options,
+        settings,
+        pb,
+    )?;
+
+    let colors = ["Black", "Blue", "Red", "Green"];
+    let mut color_it = colors.iter().cycle();
+
+    for m in 1..=43 {
+        let mut plot = format!("{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }}");
+        let mut options = vec!["domain=-4.35:1.25", "mark=none", "samples=400"];
+        if (m - 1) % 5 == 0 {
+            plot.push_str(&format!(" node [pos=0,left,black] {{$\\scriptstyle {m}$}}"));
+            options.extend(&[color_it.next().unwrap(), "thick"]);
+            if m <= 16 {
+                plot.push_str(&format!(
+                    " node [pos=1,right,black] {{$\\scriptstyle {m}$}}"
+                ));
+                figure.add_plot_custom(&options, &plot)?;
+            } else {
+                options.extend(&["dashed"]);
+                plot.push_str(&format!(
+                    " node [pos=1,above,black] {{$\\scriptstyle {m}$}}"
+                ));
+                figure.add_plot_custom(&options, &plot)?;
+            }
+        } else {
+            options.extend(&["thin", "gray"]);
+
+            figure.add_plot_custom(&options, &plot)?;
+        }
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_bs_disp_rel_small(
+    _pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let axis_options = BS_AXIS_OPTIONS;
+
+    let mut figure = FigureWriter::custom_axis(
+        "bs_disp_rel_small",
+        -1.75..0.75,
+        0.0..10.0,
+        Size {
+            width: 12.0,
+            height: 6.0,
+        },
+        &axis_options,
+        settings,
+        pb,
+    )?;
+
+    let colors = ["Black", "Blue", "Red", "Green", "DarkViolet"];
+    let mut color_it = colors.iter().cycle();
+
+    for m in 1..=5 {
+        let plot = format!(
+            "{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }} \
+             node [pos=0,left,black] {{$\\scriptstyle {m}$}} \
+             node [pos=1,right,black] {{$\\scriptstyle {m}$}}"
+        );
+
+        let options = [
+            "domain=-1.75:0.75",
+            "mark=none",
+            "samples=400",
+            "thick",
+            color_it.next().unwrap(),
+        ];
+
+        figure.add_plot_custom(&options, &plot)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_bs_disp_rel_lr0(
+    _pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let axis_options = [BS_AXIS_OPTIONS, &["restrict y to domain=0:18"]].concat();
+
+    let mut figure = FigureWriter::custom_axis(
+        "bs_disp_rel_lr0",
+        -2.25..2.25,
+        0.0..18.0,
+        Size {
+            width: 12.0,
+            height: 6.0,
+        },
+        &axis_options,
+        settings,
+        pb,
+    )?;
+
+    for m in 1..=29 {
+        let plot = format!("{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }}");
+        let options = [
+            "domain=-2.25:2.25",
+            "mark=none",
+            "samples=400",
+            "LightSlateBlue",
+        ];
+
+        figure.add_plot_custom(&options, &plot)?;
+    }
+
+    for m in -29..=-1 {
+        let plot = format!("{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }}");
+        let options = [
+            "domain=-2.25:2.25",
+            "mark=none",
+            "samples=400",
+            "LightCoral",
+        ];
+
+        figure.add_plot_custom(&options, &plot)?;
+    }
+
+    let plot = format!("{{ sqrt((5 * x)^2+4*4*(sin(x*180))^2) }}");
+    let options = ["domain=-2.25:2.25", "mark=none", "samples=400", "Black"];
+
+    figure.add_plot_custom(&options, &plot)?;
+
+    figure.finish(cache, settings, pb)
+}
+
 // Intereseting states:
 // m = 5, p = -1, E = C = 0
 // (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
@@ -2010,4 +2176,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xp_singlet_41,
     fig_xm_singlet_41,
     fig_u_singlet_41,
+    fig_bs_disp_rel_large,
+    fig_bs_disp_rel_small,
+    fig_bs_disp_rel_lr0,
 ];
