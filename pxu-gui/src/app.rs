@@ -348,7 +348,7 @@ impl PxuGuiApp {
                 .text("k"),
         );
         ui.add(
-            egui::Slider::from_get_set(1.0..=8.0, |n| {
+            egui::Slider::from_get_set(1.0..=20.0, |n| {
                 if let Some(n) = n {
                     let n = n as usize;
                     self.pxu.state = pxu::State::new(n, self.pxu.consts);
