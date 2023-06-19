@@ -1953,8 +1953,8 @@ fn fig_u_singlet_14(
 const BS_AXIS_OPTIONS: &[&str] = &[
     "axis x line=bottom",
     "axis y line=middle",
-    "xtick={-4,-3,-2,-1,0,1}",
-    "xticklabels={$-8\\pi$,$-6\\pi$,$-4\\pi$,$-2\\pi$,$0$,$2\\pi$}",
+    "xtick={-4,-3,-2,-1,0,1,2,3,4}",
+    "xticklabels={$-8\\pi$,$-6\\pi$,$-4\\pi$,$-2\\pi$,$0$,$2\\pi$,$4\\pi$,$6\\pi$,$8\\pi$}",
     "ytick=\\empty",
     "yticklabels=\\empty",
     "axis line style={->}",
@@ -1972,16 +1972,25 @@ fn fig_bs_disp_rel_large(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let axis_options = [BS_AXIS_OPTIONS, &["restrict y to domain=0:22.4"]].concat();
+    let width: f64 = 12.0;
+    let height: f64 = 6.0;
+
+    let x_min: f64 = -4.35;
+    let x_max: f64 = 1.25;
+    let y_min: f64 = 0.0;
+    let y_max: f64 = (x_max - x_min).abs() * 8.0 * height / width;
+
+    let x_range = x_min..x_max;
+    let y_range = y_min..y_max;
+
+    let restrict = format!("restrict y to domain={y_min:2}:{y_max:2}");
+    let axis_options = [BS_AXIS_OPTIONS, &[&restrict]].concat();
 
     let mut figure = FigureWriter::custom_axis(
         "bs_disp_rel_large",
-        -4.35..1.25,
-        0.0..22.4,
-        Size {
-            width: 12.0,
-            height: 6.0,
-        },
+        x_range,
+        y_range,
+        Size { width, height },
         &axis_options,
         settings,
         pb,
@@ -1990,9 +1999,11 @@ fn fig_bs_disp_rel_large(
     let colors = ["Black", "Blue", "Red", "Green"];
     let mut color_it = colors.iter().cycle();
 
+    let domain = format!("domain={x_min:.2}:{x_max:.2}");
+
     for m in 1..=43 {
         let mut plot = format!("{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }}");
-        let mut options = vec!["domain=-4.35:1.25", "mark=none", "samples=400"];
+        let mut options = vec![&domain, "mark=none", "samples=400"];
         if (m - 1) % 5 == 0 {
             plot.push_str(&format!(" node [pos=0,left,black] {{$\\scriptstyle {m}$}}"));
             options.extend(&[color_it.next().unwrap(), "thick"]);
@@ -2026,14 +2037,22 @@ fn fig_bs_disp_rel_small(
 ) -> Result<FigureCompiler> {
     let axis_options = BS_AXIS_OPTIONS;
 
+    let width: f64 = 12.0;
+    let height: f64 = 4.5;
+
+    let x_min: f64 = -2.25;
+    let x_max: f64 = 1.25;
+    let y_min: f64 = 0.0;
+    let y_max: f64 = (x_max - x_min).abs() * 8.0 * height / width;
+
+    let x_range = x_min..x_max;
+    let y_range = y_min..y_max;
+
     let mut figure = FigureWriter::custom_axis(
         "bs_disp_rel_small",
-        -1.75..0.75,
-        0.0..10.0,
-        Size {
-            width: 12.0,
-            height: 6.0,
-        },
+        x_range,
+        y_range,
+        Size { width, height },
         &axis_options,
         settings,
         pb,
@@ -2042,6 +2061,7 @@ fn fig_bs_disp_rel_small(
     let colors = ["Black", "Blue", "Red", "Green", "DarkViolet"];
     let mut color_it = colors.iter().cycle();
 
+    let domain = format!("domain={x_min:.2}:{x_max:.2}");
     for m in 1..=5 {
         let plot = format!(
             "{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }} \
@@ -2050,7 +2070,8 @@ fn fig_bs_disp_rel_small(
         );
 
         let options = [
-            "domain=-1.75:0.75",
+            // "domain=-1.75:0.75",
+            &domain,
             "mark=none",
             "samples=400",
             "thick",
@@ -2069,29 +2090,35 @@ fn fig_bs_disp_rel_lr0(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let axis_options = [BS_AXIS_OPTIONS, &["restrict y to domain=0:18"]].concat();
+    let width: f64 = 12.0;
+    let height: f64 = 6.0;
+
+    let x_min: f64 = -2.25;
+    let x_max: f64 = 2.25;
+    let y_min: f64 = 0.0;
+    let y_max: f64 = (x_max - x_min).abs() * 8.0 * height / width;
+
+    let x_range = x_min..x_max;
+    let y_range = y_min..y_max;
+
+    let restrict = format!("restrict y to domain={y_min:2}:{y_max:2}");
+    let axis_options = [BS_AXIS_OPTIONS, &[&restrict]].concat();
 
     let mut figure = FigureWriter::custom_axis(
         "bs_disp_rel_lr0",
-        -2.25..2.25,
-        0.0..18.0,
-        Size {
-            width: 12.0,
-            height: 6.0,
-        },
+        x_range,
+        y_range,
+        Size { width, height },
         &axis_options,
         settings,
         pb,
     )?;
 
+    let domain = format!("domain={x_min:.2}:{x_max:.2}");
+
     for m in 1..=29 {
         let plot = format!("{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }}");
-        let options = [
-            "domain=-2.25:2.25",
-            "mark=none",
-            "samples=400",
-            "LightSlateBlue",
-        ];
+        let options = [&domain, "mark=none", "samples=400", "LightSlateBlue"];
 
         figure.add_plot_custom(&options, &plot)?;
     }
@@ -2131,6 +2158,9 @@ fn fig_bs_disp_rel_lr0(
 
 // Singlet with a physical 4 particle bound state with p=0.2 and a single crossed excitation with p=-1.2
 // (points:[(p:(0.03697370701345617,-0.031054542242344985),xp:(3.6273956071620397,2.6302676553779873),xm:(3.4024312560818917,1.4187889153646274),u:(2.6145968437167793,1.49999978054477),x:(3.5185977035037714,2.04179131076382),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.06287718000079495,-0.020435255813501682),xp:(3.4024312560818943,1.4187889153646245),xm:(3.2421939150597834,-0.00000033279749789283386),u:(2.6145968437167824,0.49999978054476846),x:(3.2939078541224145,0.741134209511953),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.06287716823638237,0.020435269329719074),xp:(3.2421939150597887,-0.00000033279750100145833),xm:(3.4024313586416444,-1.4187894828446725),u:(2.614596843716786,-0.5000002194552335),x:(3.293907934922962,-0.741134834449078),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(0.036973698743170816,0.031054541890648338),xp:(3.4024313586416506,-1.4187894828446699),xm:(3.6273956983334217,-2.630268160991778),u:(2.614596843716791,-1.5000002194552322),x:(3.518597803076299,-2.0417918401049153),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-1.199701753993804,-0.000000013164520818520966),xp:(3.6273956983334235,-2.630268160991774),xm:(3.6273956071620557,2.6302676553779865),u:(2.614596843716793,-2.500000219455229),x:(3.72626001655586,-3.1968938333767136),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:-1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)
+
+// h=2, k=4, p=-1.4, m=11
+// (points:[(p:(-0.020683140974430327,-0.045520745607578246),xp:(-0.7328798041070045,2.9713029888519578),xm:(-0.8352053806655594,2.1420224467780176),u:(-1.523209095511133,5.00010006636237),x:(-0.7878029894955824,2.5490269820920988),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(-0.03136635310674252,-0.05424829064931387),xp:(-0.8352053806655592,2.142022446778017),xm:(-0.8807493082122642,1.377538188559913),u:(-1.5232090955111328,4.00010006636237),x:(-0.8690309426228984,1.7514712657655553),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:1,u_branch:(Outside,Between),im_x_sign:(-1,1))),(p:(-0.04474777771721691,-0.07327868330130795),xp:(-0.8807493082122642,1.3775381885599125),xm:(-0.775134383807947,0.6809095595993009),u:(-1.523209095511133,3.0001000663623696),x:(-0.85747892162112,1.019686731169598),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.008693981335154689,-0.11498443009542221),xp:(-0.7751343838079467,0.6809095595993008),xm:(-0.3938580812565977,0.30957475058111117),u:(-1.5232090955111324,2.000100066362369),x:(-0.674650218991303,3.40699219416618),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:0,e_branch:-1,u_branch:(Between,Inside),im_x_sign:(-1,-1))),(p:(0.028967391732394272,-0.06734733480397649),xp:(-0.39385808125659766,0.3095747505811114),xm:(-0.2170056023934792,0.24610829505720347),u:(-1.523209095511132,1.0001000663623696),x:(-0.8574600451888923,-1.0195467502199065),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,1))),(p:(-1.2699815160111105,-0.000010390643065416034),xp:(-0.21700560239347927,0.24610829505720358),xm:(-0.2169840620595849,-0.24609872926846416),u:(-1.523209095511131,0.00010006636237047672),x:(-0.869030942622897,1.7514712657655558),sheet_data:(log_branch_p:-1,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(-1,-1))),(p:(0.028965734929305424,0.06733932971579816),xp:(-0.21698406205958481,-0.24609872926846404),xm:(-0.3938000635227753,-0.30955486922799),u:(-1.523209095511131,-0.9998999336376291),x:(-0.8574789216211187,1.0196867311695992),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,1))),(p:(-0.00867770948721811,0.11498380150546404),xp:(-0.3938000635227753,-0.3095548692279899),xm:(-0.77508385488455,-0.6807802215522121),u:(-1.5232090955111313,-1.999899933637629),x:(-0.6746502189913016,3.406992194166181),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Between),im_x_sign:(-1,-1))),(p:(-0.04475004732130248,0.07328563453707682),xp:(-0.7750838548845497,-0.6807802215522117),xm:(-0.8807480746429597,-1.3773917672943192),u:(-1.5232090955111308,-2.999899933637628),x:(-0.8574600451888913,-1.019546750219905),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.031368835582754766,0.05425048662768747),xp:(-0.8807480746429598,-1.3773917672943194),xm:(-0.8352221105330633,-2.141862783519232),u:(-1.523209095511131,-3.9998999336376286),x:(-0.8690407290991615,-1.7513182937502383),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,-1))),(p:(-0.020684940245014834,0.04552223064426885),xp:(-0.8352221105330631,-2.1418627835192328),xm:(-0.7329026772950994,-2.9711311455501623),u:(-1.523209095511131,-4.9998999336376295),x:(-0.7878238045215702,-2.548860909727752),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1)))],unlocked:false)
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_xpl_preimage,
