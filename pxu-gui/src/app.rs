@@ -176,6 +176,20 @@ impl eframe::App for PxuGuiApp {
             self.ui_state.plot_state.active_point -= 1;
         }
 
+        if self.pxu.state.points.len() > 1
+            && self.ui_state.plot_state.active_point < self.pxu.state.points.len() - 1
+            && ctx.input(|i| i.key_pressed(egui::Key::ArrowRight))
+        {
+            self.ui_state.plot_state.active_point += 1;
+        }
+
+        if self.pxu.state.points.len() > 1
+            && self.ui_state.plot_state.active_point > 0
+            && ctx.input(|i| i.key_pressed(egui::Key::ArrowLeft))
+        {
+            self.ui_state.plot_state.active_point -= 1;
+        }
+
         if !self.ui_state.hide_side_panel {
             self.draw_side_panel(ctx);
         }
