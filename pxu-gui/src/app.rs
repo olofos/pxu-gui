@@ -24,6 +24,8 @@ pub struct PxuGuiApp {
     anim_data: Anim,
     #[serde(skip)]
     path_dialog_text: Option<String>,
+    #[serde(skip)]
+    state_dialog_text: Option<String>,
 }
 
 impl Default for PxuGuiApp {
@@ -72,6 +74,7 @@ impl Default for PxuGuiApp {
             anim_data: Default::default(),
             ui_state: Default::default(),
             path_dialog_text: None,
+            state_dialog_text: None,
         }
     }
 }
@@ -296,6 +299,7 @@ impl eframe::App for PxuGuiApp {
         });
 
         self.show_load_path_window(ctx);
+        self.show_save_state_window(ctx);
     }
 }
 
@@ -346,6 +350,38 @@ impl PxuGuiApp {
                 });
             if close_dialog {
                 self.path_dialog_text = None;
+            }
+        }
+    }
+
+    fn show_save_state_window(&mut self, ctx: &egui::Context) {
+        if let Some(ref mut s) = self.state_dialog_text {
+            let mut close_dialog = false;
+            egui::Window::new("Save state")
+                .default_height(500.0)
+                .show(ctx, |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(600.0)
+                        .show(ui, |ui| {
+                            ui.add(
+                                egui::TextEdit::multiline(s)
+                                    .font(egui::TextStyle::Monospace) // for cursor height
+                                    .code_editor()
+                                    .desired_rows(10)
+                                    .lock_focus(true)
+                                    .desired_width(f32::INFINITY),
+                            );
+                        });
+                    ui.add_space(10.0);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::LEFT), |ui| {
+                        ui.add_space(10.0);
+                        if ui.button("Close").clicked() {
+                            close_dialog = true;
+                        }
+                    });
+                });
+            if close_dialog {
+                self.state_dialog_text = None;
             }
         }
     }
@@ -468,9 +504,9 @@ impl PxuGuiApp {
                 self.path_dialog_text = Some(String::new());
             }
 
-            if ui.button("Print state").clicked() {
+            if ui.button("Save state").clicked() {
                 if let Ok(s) = ron::to_string(&self.pxu.state) {
-                    log::info!("{s}");
+                    self.state_dialog_text = Some(s);
                 } else {
                     log::info!("Could not print state");
                 }
