@@ -383,6 +383,31 @@ impl Plot {
             let is_dragged = is_interactive && plot_state.dragged;
             let is_active = plot_state.active_point == i;
 
+            if pxu.state.unlocked
+                && (self.component == pxu::Component::Xp || self.component == pxu::Component::Xm)
+            {
+                let z = match self.component {
+                    pxu::Component::Xp => pt.xm,
+                    pxu::Component::Xm => pt.xp,
+                    _ => unreachable!(),
+                };
+
+                let center = to_screen * egui::pos2(z.re as f32, -z.im as f32);
+
+                let stroke = if is_active {
+                    egui::epaint::Stroke::new(2.0, Color32::BLUE)
+                } else {
+                    egui::epaint::Stroke::new(2.0, Color32::GRAY)
+                };
+
+                shapes.push(egui::epaint::Shape::Circle(egui::epaint::CircleShape {
+                    center,
+                    radius: 7.0,
+                    fill: Color32::TRANSPARENT,
+                    stroke,
+                }));
+            }
+
             let z = pt.get(self.component);
             let center = to_screen * egui::pos2(z.re as f32, -z.im as f32);
 
