@@ -1321,12 +1321,12 @@ impl ContourCommandGenerator {
     }
 
     fn push_cut(&mut self, p_range: i32) -> &mut Self {
-        let Some(component) = std::mem::replace(&mut self.component, None) else {
+        let Some(component) = self.component.take() else {
             log::warn!("Can't push cut without component");
             self.reset();
             return self;
         };
-        let Some(cut_type) = std::mem::replace(&mut self.cut_type, None) else {
+        let Some(cut_type) = self.cut_type.take() else {
             log::warn!("Can't push cut without type");
             self.reset();
             return self;
