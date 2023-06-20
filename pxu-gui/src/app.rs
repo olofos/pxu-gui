@@ -295,9 +295,15 @@ impl eframe::App for PxuGuiApp {
             }
         });
 
-        let mut close_dialog = false;
+        self.show_load_path_window(ctx);
+    }
+}
+
+impl PxuGuiApp {
+    fn show_load_path_window(&mut self, ctx: &egui::Context) {
         if let Some(ref mut s) = self.path_dialog_text {
-            egui::Window::new("Load/save path")
+            let mut close_dialog = false;
+            egui::Window::new("Load path")
                 .default_height(500.0)
                 .show(ctx, |ui| {
                     egui::ScrollArea::vertical()
@@ -338,14 +344,12 @@ impl eframe::App for PxuGuiApp {
                         }
                     });
                 });
-        }
-        if close_dialog {
-            self.path_dialog_text = None;
+            if close_dialog {
+                self.path_dialog_text = None;
+            }
         }
     }
-}
 
-impl PxuGuiApp {
     fn draw_coupling_controls(&mut self, ui: &mut egui::Ui) {
         let old_consts = self.pxu.consts;
         let mut new_consts = self.pxu.consts;
