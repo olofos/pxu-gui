@@ -54,7 +54,7 @@ impl Goto for pxu::State {
         consts: CouplingConstants,
     ) {
         for &[re, im] in path {
-            self.goto(component, Complex64::new(re, im), contours, consts, 16);
+            self.goto(component, Complex64::new(re, im), contours, consts, 15);
         }
     }
 }
