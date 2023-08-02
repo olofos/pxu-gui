@@ -133,9 +133,30 @@ impl eframe::App for PxuGuiApp {
             self.ui_state.hide_side_panel = false;
         }
 
-        if ctx.input(|i| i.key_pressed(egui::Key::Space)) {
-            self.pxu.state.unlocked = !self.pxu.state.unlocked;
-        }
+        ctx.input(|i| {
+            for (key, num) in [
+                (egui::Key::Backspace, self.pxu.state.points.len()),
+                (egui::Key::Num1, 1),
+                (egui::Key::Num2, 2),
+                (egui::Key::Num3, 3),
+                (egui::Key::Num4, 4),
+                (egui::Key::Num5, 5),
+                (egui::Key::Num6, 6),
+                (egui::Key::Num7, 7),
+                (egui::Key::Num8, 8),
+                (egui::Key::Num9, 9),
+            ] {
+                if i.key_pressed(key) {
+                    self.pxu.state = pxu::State::new(num, self.pxu.consts);
+                    self.ui_state.plot_state.active_point =
+                        self.ui_state.plot_state.active_point.min(num - 1);
+                }
+            }
+
+            if i.key_pressed(egui::Key::Space) {
+                self.pxu.state.unlocked = !self.pxu.state.unlocked;
+            }
+        });
 
         if self.pxu.state.unlocked && ctx.input(|i| i.key_pressed(egui::Key::PlusEquals)) {
             self.pxu
