@@ -16,6 +16,7 @@ pub use cut::{Cut, CutType};
 pub use kinematics::CouplingConstants;
 pub use path::Path;
 pub use point::Point;
+pub use state::SavedState;
 pub use state::State;
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]

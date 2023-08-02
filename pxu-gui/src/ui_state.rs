@@ -15,6 +15,8 @@ pub struct UiState {
     pub saved_paths_to_load: Option<Vec<pxu::path::SavedPath>>,
     #[serde(skip)]
     pub path_load_progress: Option<(usize, usize)>,
+    #[serde(skip)]
+    pub inital_saved_state: Option<pxu::SavedState>,
 }
 
 impl UiState {
@@ -31,6 +33,10 @@ impl UiState {
                 paths.reverse();
             }
             self.saved_paths_to_load = saved_paths_to_load
+        }
+
+        if let Some(ref s) = arguments.state {
+            self.inital_saved_state = pxu::SavedState::decode(&s);
         }
     }
 }

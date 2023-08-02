@@ -218,6 +218,11 @@ impl eframe::App for PxuGuiApp {
             self.draw_side_panel(ctx);
         }
 
+        if let Some(saved_state) = self.ui_state.inital_saved_state.take() {
+            self.pxu.consts = saved_state.consts;
+            self.pxu.state = saved_state.state;
+        }
+
         {
             let start = chrono::Utc::now();
             while (chrono::Utc::now() - start).num_milliseconds()
@@ -320,7 +325,7 @@ impl eframe::App for PxuGuiApp {
         });
 
         self.show_load_path_window(ctx);
-        self.show_save_state_window(ctx);
+        self.show_load_save_state_window(ctx);
     }
 }
 
@@ -375,7 +380,7 @@ impl PxuGuiApp {
         }
     }
 
-    fn show_save_state_window(&mut self, ctx: &egui::Context) {
+    fn show_load_save_state_window(&mut self, ctx: &egui::Context) {
         if let Some(ref mut s) = self.state_dialog_text {
             let mut close_dialog = false;
             egui::Window::new("Save state")
@@ -396,8 +401,35 @@ impl PxuGuiApp {
                     ui.add_space(10.0);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::LEFT), |ui| {
                         ui.add_space(10.0);
+
                         if ui.button("Close").clicked() {
                             close_dialog = true;
+                        }
+
+                        if ui.button("Load").clicked() {
+                            close_dialog = true;
+
+                            if let Some(saved_state) = pxu::SavedState::decode(&s) {
+                                self.pxu.consts = saved_state.consts;
+                                self.pxu.state = saved_state.state;
+                            }
+                        }
+
+                        if ui.button("Compress").clicked() {
+                            use base64::Engine;
+                            use std::io::Write;
+
+                            let mut enc = flate2::write::DeflateEncoder::new(
+                                Vec::new(),
+                                flate2::Compression::best(),
+                            );
+                            if enc.write_all(s.as_bytes()).is_ok() {
+                                if let Ok(data) = enc.finish() {
+                                    let compressed =
+                                        base64::engine::general_purpose::URL_SAFE.encode(data);
+                                    *s = compressed;
+                                }
+                            }
                         }
                     });
                 });
@@ -525,8 +557,12 @@ impl PxuGuiApp {
                 self.path_dialog_text = Some(String::new());
             }
 
-            if ui.button("Save state").clicked() {
-                if let Ok(s) = ron::to_string(&self.pxu.state) {
+            if ui.button("Load/save state").clicked() {
+                let saved_state = pxu::SavedState {
+                    state: self.pxu.state.clone(),
+                    consts: self.pxu.consts,
+                };
+                if let Ok(s) = ron::to_string(&saved_state) {
                     self.state_dialog_text = Some(s);
                 } else {
                     log::info!("Could not print state");

@@ -170,3 +170,51 @@ impl State {
             .sum::<Complex64>()
     }
 }
+
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct SavedState {
+    pub consts: CouplingConstants,
+    pub state: State,
+}
+
+impl SavedState {
+    pub fn decode(input: &str) -> Option<Self> {
+        use base64::Engine;
+        use std::io::Write;
+
+        let input = input.trim();
+
+        if let Ok(saved_state) = ron::from_str(input) {
+            return Some(saved_state);
+        }
+        log::info!("Could not decode RON, trying JSON");
+        if let Ok(saved_state) = serde_json::from_str(input) {
+            return Some(saved_state);
+        }
+        log::info!("Could not decode JSON, trying base64");
+
+        let Ok(data) = base64::engine::general_purpose::URL_SAFE.decode(input) else {
+            log::warn!("Could not decode base64");
+            return None;
+        };
+
+        let mut dec = flate2::write::DeflateDecoder::new(Vec::new());
+        let Ok(()) = dec.write_all(&data[..]) else {
+            log::warn!("Could not deflate");
+            return None;
+        };
+        let Ok(data) = dec.finish() else {
+            log::warn!("Could not deflate");
+            return None;
+        };
+        let Ok(input) = String::from_utf8(data) else {
+            log::warn!("Resulting data is not a string");
+            return None;
+        };
+        if let Ok(saved_state) = ron::from_str::<SavedState>(&input) {
+            return Some(saved_state);
+        }
+        log::warn!("Could not decode RON");
+        None
+    }
+}

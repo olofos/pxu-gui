@@ -5,6 +5,7 @@ pub struct Arguments {
     pub show_dev: bool,
     pub continuous_mode: bool,
     pub paths: Option<String>,
+    pub state: Option<String>,
     pub show_x: bool,
 }
 
@@ -60,6 +61,12 @@ impl Arguments {
                     .required(false),
             )
             .arg(
+                clap::Arg::new("state")
+                    .long("state")
+                    .help("Load state")
+                    .required(false),
+            )
+            .arg(
                 clap::Arg::new("show_x")
                     .short('x')
                     .long("show-x")
@@ -74,6 +81,7 @@ impl Arguments {
             show_dev: matches.get_flag("dev"),
             continuous_mode: matches.get_flag("continuous_mode"),
             paths: matches.get_one::<String>("paths").cloned(),
+            state: matches.get_one::<String>("state").cloned(),
             show_x: matches.get_flag("show_x"),
         }
     }
