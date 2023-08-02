@@ -806,6 +806,139 @@ fn path_u_crossing_from_min_1(contours: &pxu::Contours, consts: CouplingConstant
     )
 }
 
+fn generate_full_integration_path(
+    consts: CouplingConstants,
+    x0: f64,
+    y0: f64,
+    d: f64,
+    dn: i32,
+) -> Vec<Complex64> {
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let u_s = pxu::kinematics::u_of_x(consts.s(), consts).re;
+
+    let n = 3;
+    let n_angle = 8;
+
+    let mut path = vec![Complex64::new(-x0, y0 - d)];
+
+    for i in 0..=n {
+        let y = y0 + i as f64 * 2.0 * k / h;
+        for j in 0..=n_angle {
+            let theta = PI * j as f64 / n_angle as f64;
+            path.push(Complex64::new(u_s, y) + Complex64::from_polar(d, theta - PI / 2.0));
+        }
+        path.push(Complex64::new(-x0, y + d));
+        path.push(Complex64::new(-x0, y + k / h - d));
+        path.push(Complex64::new(-x0, y + k / h + d));
+
+        path.push(Complex64::new(-x0, y + 2.0 * k / h - d));
+    }
+    path.pop();
+    path.pop();
+    path.push(Complex64::new(x0, y0 + (2 * n + 1) as f64 * k / h - d));
+
+    for i in ((-n + 1)..=(n - 1)).rev() {
+        let y = y0 + (2 * i + 1) as f64 * k / h;
+        path.push(Complex64::new(x0, y + d));
+        for j in 0..=n_angle {
+            let theta = PI * j as f64 / n_angle as f64;
+            path.push(Complex64::new(-u_s, y) + Complex64::from_polar(d, theta + PI / 2.0));
+        }
+        path.push(Complex64::new(x0, y - d));
+    }
+
+    path.push(Complex64::new(x0, y0 - (2 * n - 1) as f64 * k / h + d));
+    path.push(Complex64::new(-x0, y0 - (2 * n - 1) as f64 * k / h + d));
+    path.push(Complex64::new(-x0, y0 - (2 * n - 2) as f64 * k / h - d));
+
+    for i in (-(n - 1))..dn {
+        let y = y0 + i as f64 * 2.0 * k / h;
+
+        for j in 0..=n_angle {
+            let theta = PI * j as f64 / n_angle as f64;
+            path.push(Complex64::new(u_s, y) + Complex64::from_polar(d, theta - PI / 2.0));
+        }
+
+        path.push(Complex64::new(-x0, y + d));
+        path.push(Complex64::new(-x0, y + 2.0 * k / h - d));
+    }
+
+    path
+}
+
+// U integration path full xm outside
+fn path_u_integration_path_full_xm_outside(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+
+    let x0 = 8.0;
+    let y0 = -0.5;
+    let d = 0.15;
+
+    state.follow_path(
+        pxu::Component::U,
+        &[[0.0, 0.0], [-x0, 0.0], [-x0, y0 - d]],
+        contours,
+        consts,
+    );
+
+    let path = generate_full_integration_path(consts, x0, y0, d, 1);
+
+    pxu::path::SavedPath::new(
+        "U integration path full xm outside",
+        path,
+        state,
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+// U integration path full xm inside
+fn path_u_integration_path_full_xm_inside(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+
+    let x0 = 8.0;
+    let y0 = -0.5;
+    let d = 0.15;
+
+    state.follow_path(
+        pxu::Component::U,
+        &[
+            [0.0, 0.0],
+            [0.0, 2.0],
+            [0.0, 4.0],
+            [-2.5, 4.0],
+            [-2.5, 2.0],
+            [-0.1, 2.0],
+            [-0.1, 1.0],
+            [-0.1, 0.0],
+            [-0.1, y0 - d],
+            [-x0, y0 - d],
+        ],
+        contours,
+        consts,
+    );
+
+    let path = generate_full_integration_path(consts, x0, y0, d, -1);
+
+    pxu::path::SavedPath::new(
+        "U integration path full xm inside",
+        path,
+        state,
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
 type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
 
 pub const PLOT_PATHS: &[PathFunction] = &[
@@ -824,13 +957,15 @@ pub const PLOT_PATHS: &[PathFunction] = &[
 ];
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
-    path_xp_circle_between_between,
-    path_p_circle_origin_e,
-    path_p_circle_origin_not_e,
-    path_u_band_between_inside,
-    path_u_band_between_outside,
-    path_u_periodic_between_between,
-    path_u_crossing_from_0_b,
-    path_u_crossing_from_0_a,
-    path_u_crossing_from_min_1,
+    // path_xp_circle_between_between,
+    // path_p_circle_origin_e,
+    // path_p_circle_origin_not_e,
+    // path_u_band_between_inside,
+    // path_u_band_between_outside,
+    // path_u_periodic_between_between,
+    // path_u_crossing_from_0_b,
+    // path_u_crossing_from_0_a,
+    // path_u_crossing_from_min_1,
+    path_u_integration_path_full_xm_outside,
+    path_u_integration_path_full_xm_inside,
 ];
