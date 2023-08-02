@@ -36,7 +36,7 @@ impl UiState {
         }
 
         if let Some(ref s) = arguments.state {
-            self.inital_saved_state = pxu::SavedState::decode(&s);
+            self.inital_saved_state = pxu::SavedState::decode(s);
         }
     }
 }

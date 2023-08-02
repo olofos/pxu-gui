@@ -409,7 +409,7 @@ impl PxuGuiApp {
                         if ui.button("Load").clicked() {
                             close_dialog = true;
 
-                            if let Some(saved_state) = pxu::SavedState::decode(&s) {
+                            if let Some(saved_state) = pxu::SavedState::decode(s) {
                                 self.pxu.consts = saved_state.consts;
                                 self.pxu.state = saved_state.state;
                             }
