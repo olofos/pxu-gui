@@ -112,18 +112,6 @@ impl eframe::App for PxuGuiApp {
             ctx.request_repaint();
         }
 
-        #[cfg(not(target_arch = "wasm32"))] // no File->Quit on web pages!
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            // The top panel is often a good place for a menu bar:
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Quit").clicked() {
-                        frame.close();
-                    }
-                });
-            });
-        });
-
         if ctx.input(|i| i.key_pressed(egui::Key::Enter)) {
             self.ui_state.hide_side_panel = !self.ui_state.hide_side_panel;
         }
