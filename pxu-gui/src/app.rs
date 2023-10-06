@@ -26,6 +26,8 @@ pub struct PxuGuiApp {
     path_dialog_text: Option<String>,
     #[serde(skip)]
     state_dialog_text: Option<String>,
+    #[serde(skip)]
+    show_about: bool,
 }
 
 impl Default for PxuGuiApp {
@@ -75,6 +77,7 @@ impl Default for PxuGuiApp {
             ui_state: Default::default(),
             path_dialog_text: None,
             state_dialog_text: None,
+            show_about: true,
         }
     }
 }
@@ -314,6 +317,7 @@ impl eframe::App for PxuGuiApp {
 
         self.show_load_path_window(ctx);
         self.show_load_save_state_window(ctx);
+        self.show_about_window(ctx);
     }
 }
 
@@ -425,6 +429,63 @@ impl PxuGuiApp {
                 self.state_dialog_text = None;
             }
         }
+    }
+
+    fn show_about_window(&mut self, ctx: &egui::Context) {
+        egui::Window::new("About")
+            .open(&mut self.show_about)
+            .resizable(false)
+            .collapsible(false)
+            .show(ctx, |ui| {
+                ui.heading("PXU gui");
+
+                const VERSION: &str = env!("CARGO_PKG_VERSION");
+                ui.label(format!("Version {VERSION}"));
+
+                ui.add_space(8.0);
+
+                ui.horizontal(|ui| {
+                    const ARXIV_ID: &str = "XXXX.XXXXX";
+
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("This application is a supplement to the paper ");
+                    ui.hyperlink_to(
+                        format!("arXiv:{ARXIV_ID}"),
+                        format!("https://arxiv.org/abs/{ARXIV_ID}"),
+                    );
+                    ui.label(".");
+                });
+
+                ui.add_space(8.0);
+
+                ui.label("Copyright © 2023 Olof Ohlsson Sax");
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("Licensed under the ");
+                    ui.hyperlink_to(
+                        "MIT license",
+                        "https://github.com/olofos/pxu-gui/blob/master/LICENSE",
+                    );
+                    ui.label(".");
+                });
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("Source code available on ");
+                    ui.hyperlink_to("github", "https://github.com/olofos/pxu-gui/");
+                    ui.label(".");
+                });
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 0.0;
+                    ui.label("Powered by ");
+                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
+                    ui.label(" and ");
+                    ui.hyperlink_to(
+                        "eframe",
+                        "https://github.com/emilk/egui/tree/master/crates/eframe",
+                    );
+                    ui.label(".");
+                });
+            });
     }
 
     fn draw_coupling_controls(&mut self, ui: &mut egui::Ui) {
@@ -652,7 +713,7 @@ impl PxuGuiApp {
         egui::SidePanel::right("side_panel").show(ctx, |ui| {
             self.draw_coupling_controls(ui);
 
-            if ui.add(egui::Button::new("Reset")).clicked() {
+            if ui.add(egui::Button::new("Reset State")).clicked() {
                 self.pxu.state = pxu::State::new(self.pxu.state.points.len(), self.pxu.consts);
                 self.anim_data.stop();
             }
@@ -660,6 +721,11 @@ impl PxuGuiApp {
             ui.checkbox(&mut self.pxu.state.unlocked, "Unlock bound state");
 
             self.draw_state_information(ui);
+
+            ui.separator();
+            if ui.button("About").clicked() {
+                self.show_about = true;
+            }
 
             if !self.pxu.paths.is_empty() {
                 ui.separator();
@@ -693,18 +759,7 @@ impl PxuGuiApp {
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to(
-                        "eframe",
-                        "https://github.com/emilk/egui/tree/master/crates/eframe",
-                    );
-                    ui.label(".");
-                });
-
+                ui.add_space(8.0);
                 egui::warn_if_debug_build(ui);
 
                 if self.ui_state.show_fps {
