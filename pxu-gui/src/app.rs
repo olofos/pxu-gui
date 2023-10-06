@@ -77,7 +77,7 @@ impl Default for PxuGuiApp {
             ui_state: Default::default(),
             path_dialog_text: None,
             state_dialog_text: None,
-            show_about: true,
+            show_about: false,
         }
     }
 }
