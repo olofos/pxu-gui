@@ -12,8 +12,12 @@ pub struct Arguments {
 #[cfg(target_arch = "wasm32")]
 impl From<url::Url> for Arguments {
     fn from(url: url::Url) -> Self {
-        let Some(query) = url.query() else { return Default::default(); };
-        let Ok(settings) = serde_urlencoded::from_str(query) else { return Default::default(); };
+        let Some(query) = url.query() else {
+            return Default::default();
+        };
+        let Ok(settings) = serde_urlencoded::from_str(query) else {
+            return Default::default();
+        };
         settings
     }
 }
@@ -21,7 +25,9 @@ impl From<url::Url> for Arguments {
 #[cfg(target_arch = "wasm32")]
 impl From<Option<url::Url>> for Arguments {
     fn from(url: Option<url::Url>) -> Self {
-        let Some(url) = url else { return Default::default();};
+        let Some(url) = url else {
+            return Default::default();
+        };
         Self::from(url)
     }
 }

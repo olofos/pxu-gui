@@ -234,7 +234,9 @@ fn refine<T: Refiner + Clone>(
         }
 
         for (point, z) in refinements {
-            let Some(x) = eval(point.clone(), z) else {continue;};
+            let Some(x) = eval(point.clone(), z) else {
+                continue;
+            };
             points.push((point, x));
         }
 
@@ -722,7 +724,9 @@ impl EPInterpolator {
         let consts = self.consts;
 
         let branch_point_p = self.compute_branch_point_p();
-        let Some(starting_path) = self.compute_starting_path_p() else {return (None, None)};
+        let Some(starting_path) = self.compute_starting_path_p() else {
+            return (None, None);
+        };
 
         let branch_point = branch_point_p.map(|p| cut_f(p, 0.0, consts));
         let mut path = VecDeque::new();
@@ -773,7 +777,10 @@ impl EPInterpolator {
             return &self.starting_path_p;
         }
 
-        let Some(p0) = self.compute_branch_point_p() else { self.starting_path_p = None; return &self.starting_path_p; };
+        let Some(p0) = self.compute_branch_point_p() else {
+            self.starting_path_p = None;
+            return &self.starting_path_p;
+        };
 
         let mut path = vec![];
 
@@ -783,7 +790,9 @@ impl EPInterpolator {
         for i in 1.. {
             let im = i as f64 * i as f64 * i as f64 / 8.0;
 
-            let Some(p) = self.find_p_at_im(im, p_prev) else {break;};
+            let Some(p) = self.find_p_at_im(im, p_prev) else {
+                break;
+            };
 
             path.push((im, p));
             p_prev = p;

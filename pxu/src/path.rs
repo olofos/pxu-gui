@@ -294,8 +294,12 @@ impl ConstructedSegment {
     }
 
     fn normalize(&mut self) {
-        let Some(&(t0,_)) = self.path.first() else {return};
-        let Some(&(t1,_)) = self.path.last() else {return};
+        let Some(&(t0, _)) = self.path.first() else {
+            return;
+        };
+        let Some(&(t1, _)) = self.path.last() else {
+            return;
+        };
 
         for entry in self.path.iter_mut() {
             entry.0 = (entry.0 - t0) / (t1 - t0);

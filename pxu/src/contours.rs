@@ -516,43 +516,57 @@ impl Contours {
             }
 
             PGotoXp(p, m) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_xp(p, m);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             PGotoXm(p, m) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_xm(p, m);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             PGotoRe(x) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_re(x);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             PGotoIm(x) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_im(x);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             PGotoP(p) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_p(p);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             PGotoM(m) => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 p_int.goto_m(m);
                 self.rctx.debug_path.push(p_int.pt().evaluate(consts));
             }
 
             AddGridLineP => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 let path = p_int.contour();
 
                 let (component, conj_component) = match p_int.pt() {
@@ -604,7 +618,9 @@ impl Contours {
                     self.rctx.debug_path = vec![];
                 }
 
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 let new_path = if reverse {
                     p_int.contour().into_iter().rev().collect()
                 } else {
@@ -619,7 +635,9 @@ impl Contours {
             }
 
             ComputeBranchPointP => {
-                let Some(ref mut p_int) = self.rctx.p_int else { return };
+                let Some(ref mut p_int) = self.rctx.p_int else {
+                    return;
+                };
                 let p = p_int.p();
                 self.rctx.cut_data.branch_point = Some(p);
             }
@@ -636,7 +654,12 @@ impl Contours {
                 self.rctx.cut_data.path = None;
                 self.rctx.cut_data.branch_point = None;
 
-                let Some(BranchPointData { p: p_branch_point, m, typ: branch_point_type }) = self.rctx.branch_point_data else {
+                let Some(BranchPointData {
+                    p: p_branch_point,
+                    m,
+                    typ: branch_point_type,
+                }) = self.rctx.branch_point_data
+                else {
                     log::warn!("No branch point set");
                     return;
                 };
@@ -690,28 +713,36 @@ impl Contours {
             }
 
             ComputeCutEP => {
-                let Some(ref mut e_int) = self.rctx.e_int else {return};
+                let Some(ref mut e_int) = self.rctx.e_int else {
+                    return;
+                };
                 let (branch_point, path) = e_int.get_cut_p();
                 self.rctx.cut_data.path = path;
                 self.rctx.cut_data.branch_point = branch_point;
             }
 
             ComputeCutEXp => {
-                let Some(ref mut e_int) = self.rctx.e_int else {return};
+                let Some(ref mut e_int) = self.rctx.e_int else {
+                    return;
+                };
                 let (branch_point, path) = e_int.get_cut_xp();
                 self.rctx.cut_data.path = path;
                 self.rctx.cut_data.branch_point = branch_point;
             }
 
             ComputeCutEXm => {
-                let Some(ref mut e_int) = self.rctx.e_int else {return};
+                let Some(ref mut e_int) = self.rctx.e_int else {
+                    return;
+                };
                 let (branch_point, path) = e_int.get_cut_xm();
                 self.rctx.cut_data.path = path;
                 self.rctx.cut_data.branch_point = branch_point;
             }
 
             ComputeCutEU => {
-                let Some(ref mut e_int) = self.rctx.e_int else {return};
+                let Some(ref mut e_int) = self.rctx.e_int else {
+                    return;
+                };
                 let (branch_point, path) = e_int.get_cut_u();
                 self.rctx.cut_data.path = path;
                 self.rctx.cut_data.branch_point = branch_point;
@@ -762,9 +793,13 @@ impl Contours {
             }
 
             SplitCut(component, cut_typ, branch_point, order) => {
-                let Some(mut cut) = self.cuts.pop() else {return};
-                let Some(_) = self.cuts.pop() else {return};
-                let Some(ref path) = self.rctx.cut_data.path else { return };
+                let Some(mut cut) = self.cuts.pop() else {
+                    return;
+                };
+                let Some(_) = self.cuts.pop() else { return };
+                let Some(ref path) = self.rctx.cut_data.path else {
+                    return;
+                };
 
                 let shift = match cut.component {
                     Component::U => {
@@ -849,8 +884,8 @@ impl Contours {
             }
 
             PopCut => {
-                let Some(cut) = self.cuts.pop() else {return};
-                let Some(_) = self.cuts.pop() else {return};
+                let Some(cut) = self.cuts.pop() else { return };
+                let Some(_) = self.cuts.pop() else { return };
 
                 let shift = match cut.component {
                     Component::U => {
