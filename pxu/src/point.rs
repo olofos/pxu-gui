@@ -75,7 +75,7 @@ impl Point {
         sheet_data: &SheetData,
         consts: CouplingConstants,
     ) -> Option<Self> {
-        let Some(p) = p else { return None };
+        let p = p?;
         let new_xp = xp_on_sheet(p, 1.0, consts, sheet_data);
         let new_xm = xm_on_sheet(p, 1.0, consts, sheet_data);
         let new_u = u(p, consts, sheet_data);

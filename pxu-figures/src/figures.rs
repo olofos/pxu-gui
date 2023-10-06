@@ -1427,7 +1427,7 @@ fn get_physical_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
 
         let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
         p_int.goto_m(0.0);
-        line.extend(p_int.contour().into_iter());
+        line.extend(p_int.contour());
 
         let mut full_line = line.clone();
         full_line.extend(line.into_iter().rev().map(|z| z.conj()));

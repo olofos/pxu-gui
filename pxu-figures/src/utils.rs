@@ -46,7 +46,7 @@ pub struct Summary {
 }
 
 impl Summary {
-    const START: &str = r#"\nonstopmode
+    const START: &str = r"\nonstopmode
     \documentclass[12pt,a4paper]{article}
     \usepackage[bottom=0.5cm, right=0.5cm, left=0.5cm, top=0.5cm]{geometry}
     \usepackage{graphicx}
@@ -56,9 +56,9 @@ impl Summary {
     \usepackage{pdflscape}
     \pagestyle{empty}
     \begin{document}
-    "#;
+    ";
 
-    const END: &str = r#"\end{document}"#;
+    const END: &str = r"\end{document}";
 
     pub fn add(&mut self, finished_figure: FinishedFigure) {
         self.finished_figures.push(finished_figure);
