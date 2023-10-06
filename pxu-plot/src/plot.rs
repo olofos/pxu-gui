@@ -384,7 +384,7 @@ impl Plot {
             let is_active = plot_state.active_point == i;
 
             if pxu.state.unlocked
-                && (self.component == pxu::Component::Xp || self.component == pxu::Component::Xm)
+                && matches!(self.component, pxu::Component::Xp | pxu::Component::Xm)
             {
                 let z = match self.component {
                     pxu::Component::Xp => pt.xm,
