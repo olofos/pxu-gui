@@ -3,7 +3,9 @@ use pxu::kinematics::CouplingConstants;
 use pxu_plot::{Plot, PlotState};
 use std::collections::HashMap;
 
+#[allow(deprecated)]
 use egui_extras::RetainedImage;
+// TODO: RetainedImage should be replaced by egui::Image
 
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
@@ -120,20 +122,17 @@ impl Frame {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct PresentationApp {
     plot_data: PlotData,
-    // #[serde(skip)]
-    // images: Vec<Vec<RetainedImage>>,
-    // image_index: (usize, usize),
     #[serde(skip)]
     pxu: Vec<pxu::Pxu>,
     #[serde(skip)]
     frames: Vec<Frame>,
-    // #[serde(skip)]
     frame_index: usize,
     #[serde(skip)]
     frame_start: f64,
     #[serde(skip)]
     loaded: bool,
     #[serde(skip)]
+    #[allow(deprecated)]
     images: HashMap<String, Option<RetainedImage>>,
     #[serde(skip)]
     dev: bool,
@@ -454,6 +453,7 @@ impl PresentationApp {
         Ok(presentation.frame.into_iter().map(Frame::from).collect())
     }
 
+    #[allow(deprecated)]
     fn load_image(image_name: &String) -> Result<RetainedImage, Error> {
         let path = std::path::Path::new("./presentation/images/").join(image_name);
 
@@ -572,7 +572,7 @@ impl PresentationApp {
                 let rect = ui.available_rect_before_wrap();
 
                 let shapes = vec![
-                    egui::Shape::rect_filled(rect, egui::Rounding::none(), egui::Color32::WHITE),
+                    egui::Shape::rect_filled(rect, egui::Rounding::ZERO, egui::Color32::WHITE),
                     ui.fonts(|f| {
                         egui::epaint::Shape::text(
                             f,
@@ -745,12 +745,12 @@ impl PresentationApp {
 
             shapes.push(egui::epaint::Shape::rect_filled(
                 text_shape.visual_bounding_rect().expand(6.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Color32::WHITE,
             ));
             shapes.push(egui::epaint::Shape::rect_stroke(
                 text_shape.visual_bounding_rect().expand(4.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Stroke::new(0.5, egui::Color32::BLACK),
             ));
             shapes.push(text_shape);
@@ -890,12 +890,12 @@ impl PresentationApp {
 
             shapes.push(egui::epaint::Shape::rect_filled(
                 text_shape.visual_bounding_rect().expand(6.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Color32::WHITE,
             ));
             shapes.push(egui::epaint::Shape::rect_stroke(
                 text_shape.visual_bounding_rect().expand(4.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Stroke::new(0.5, egui::Color32::BLACK),
             ));
             shapes.push(text_shape);
@@ -1006,12 +1006,12 @@ impl PresentationApp {
 
             shapes.push(egui::epaint::Shape::rect_filled(
                 text_shape.visual_bounding_rect().expand(6.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Color32::WHITE,
             ));
             shapes.push(egui::epaint::Shape::rect_stroke(
                 text_shape.visual_bounding_rect().expand(4.0),
-                egui::Rounding::none(),
+                egui::Rounding::ZERO,
                 egui::Stroke::new(0.5, egui::Color32::BLACK),
             ));
             shapes.push(text_shape);
