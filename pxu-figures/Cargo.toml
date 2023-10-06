@@ -9,13 +9,13 @@ rust-version.workspace = true
 log = "0.4.6"
 tracing-subscriber = "0.3"
 tracing = "0.1.37"
-itertools = "0.10.5"
+itertools.workspace = true
 num = "0.4.0"
 md5 = "0.7.0"
 pxu = { path = "../pxu" }
 make-paths = { path = "../make-paths" }
 indicatif = "0.17.3"
-clap = { version = "4.2.2", features = ["derive"] }
+clap = { workspace = true, features = ["derive"] }
 threadpool = "1.8.1"
 num_cpus = "1.15.0"
 ron = "0.8.0"
