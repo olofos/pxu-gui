@@ -551,12 +551,12 @@ impl Plot {
 
                 shapes.push(egui::epaint::Shape::rect_filled(
                     text_shape.visual_bounding_rect().expand(6.0),
-                    egui::Rounding::none(),
+                    egui::Rounding::ZERO,
                     Color32::WHITE,
                 ));
                 shapes.push(egui::epaint::Shape::rect_stroke(
                     text_shape.visual_bounding_rect().expand(4.0),
-                    egui::Rounding::none(),
+                    egui::Rounding::ZERO,
                     egui::Stroke::new(0.5, Color32::BLACK),
                 ));
                 shapes.push(text_shape);
