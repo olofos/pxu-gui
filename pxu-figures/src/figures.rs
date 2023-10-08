@@ -302,7 +302,22 @@ fn fig_p_plane_short_cuts(
     )?;
 
     figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &[])?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::E
+                    | pxu::CutType::Log(_)
+                    | pxu::CutType::UShortKidney(_)
+                    | pxu::CutType::UShortScallion(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], pxu.consts)?;
+    }
 
     figure.finish(cache, settings, pb)
 }
