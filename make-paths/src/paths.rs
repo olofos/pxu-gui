@@ -154,7 +154,7 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
-    let y0 = -1.5;
+    let y0 = -1.55;
     let k = consts.k() as f64;
     let h = consts.h;
 
@@ -247,7 +247,7 @@ fn path_u_band_between_outside_single(
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
-    let y0 = -1.5;
+    let y0 = -1.55;
     let k = consts.k() as f64;
     let h = consts.h;
 
@@ -957,15 +957,15 @@ pub const PLOT_PATHS: &[PathFunction] = &[
 ];
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
-    // path_xp_circle_between_between,
-    // path_p_circle_origin_e,
-    // path_p_circle_origin_not_e,
-    // path_u_band_between_inside,
-    // path_u_band_between_outside,
-    // path_u_periodic_between_between,
-    // path_u_crossing_from_0_b,
-    // path_u_crossing_from_0_a,
-    // path_u_crossing_from_min_1,
+    path_xp_circle_between_between,
+    path_p_circle_origin_e,
+    path_p_circle_origin_not_e,
+    path_u_band_between_inside,
+    path_u_band_between_outside,
+    path_u_periodic_between_between,
+    path_u_crossing_from_0_b,
+    path_u_crossing_from_0_a,
+    path_u_crossing_from_min_1,
     path_u_integration_path_full_xm_outside,
     path_u_integration_path_full_xm_inside,
 ];
