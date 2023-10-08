@@ -323,10 +323,11 @@ progress_file=io.open(""#;
         consts: CouplingConstants,
     ) -> Result<()> {
         let dashed = "densely dashed";
+        let dotted = "dotted";
         let (color, style) = match cut.typ {
             pxu::CutType::E => ("black", ""),
-            pxu::CutType::Log(pxu::Component::Xp) => ("Red", ""),
-            pxu::CutType::Log(pxu::Component::Xm) => ("Green", ""),
+            pxu::CutType::Log(pxu::Component::Xp) => ("Red", dotted),
+            pxu::CutType::Log(pxu::Component::Xm) => ("Green", dotted),
             pxu::CutType::ULongPositive(pxu::Component::Xp) => ("Red", ""),
             pxu::CutType::ULongNegative(pxu::Component::Xp) => ("Red", dashed),
             pxu::CutType::ULongPositive(pxu::Component::Xm) => ("Green", ""),
