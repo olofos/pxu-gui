@@ -349,6 +349,12 @@ progress_file=io.open(""#;
             vec![None]
         };
 
+        let mark_size = if options.contains(&"semithick") {
+            "mark size=0.03cm"
+        } else {
+            "mark size=0.05cm"
+        };
+
         for shift in shifts {
             self.y_shift = shift;
 
@@ -359,7 +365,7 @@ progress_file=io.open(""#;
 
             if let Some(branch_point) = cut.branch_point {
                 self.add_plot_all(
-                    &[&[color, "only marks", "mark size=0.05cm"], options].concat(),
+                    &[&[color, "only marks", mark_size], options].concat(),
                     vec![branch_point],
                 )?;
             }
