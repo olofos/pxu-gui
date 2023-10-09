@@ -85,7 +85,7 @@ progress_file=io.open(""#;
 \usepackage{pgfplots}
 \pgfplotsset{compat=1.17}
 \usepgfplotslibrary{fillbetween}
-\usetikzlibrary{patterns}
+\usetikzlibrary{patterns,decorations.markings}
 \usepackage[active,tightpage]{preview}
 \PreviewEnvironment{tikzpicture}
 \setlength\PreviewBorder{0pt}
