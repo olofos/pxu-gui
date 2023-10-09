@@ -508,7 +508,6 @@ progress_file=io.open(""#;
                 pxu::Component::P => "p",
                 pxu::Component::Xp => "x^+",
                 pxu::Component::Xm => "x^-",
-                pxu::Component::X => "x",
                 pxu::Component::U => "u",
             };
             writeln!(

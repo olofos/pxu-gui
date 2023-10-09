@@ -58,8 +58,6 @@ const fn _i32_zero() -> i32 {
 pub struct SheetData {
     pub log_branch_p: i32,
     pub log_branch_m: i32,
-    #[serde(default = "_i32_zero")]
-    pub log_branch_x: i32,
     pub e_branch: i32,
     pub u_branch: (UBranch, UBranch),
     pub im_x_sign: (i8, i8),

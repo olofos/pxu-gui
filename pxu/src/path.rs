@@ -500,7 +500,7 @@ impl Path {
 
         let max_step = match base_path.component {
             Component::P => 0.05,
-            Component::Xp | Component::Xm | Component::X => 0.1,
+            Component::Xp | Component::Xm => 0.1,
             Component::U => 0.5 / consts.h,
         };
 
@@ -595,7 +595,6 @@ impl Segment {
             Component::Xp => &self.xp,
             Component::Xm => &self.xm,
             Component::U => &self.u,
-            Component::X => &self.x,
         }
     }
 }

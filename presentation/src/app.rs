@@ -94,7 +94,6 @@ impl Frame {
                 pxu::Component::Xp => &mut plot_data.xp_plot,
                 pxu::Component::Xm => &mut plot_data.xm_plot,
                 pxu::Component::U => &mut plot_data.u_plot,
-                _ => unimplemented!(),
             };
 
             if let Some(Value::Const(origin)) = descr.origin {
@@ -348,7 +347,6 @@ impl eframe::App for PresentationApp {
                             pxu::Component::Xp => &mut self.plot_data.xp_plot,
                             pxu::Component::Xm => &mut self.plot_data.xm_plot,
                             pxu::Component::U => &mut self.plot_data.u_plot,
-                            _ => unimplemented!(),
                         };
 
                         if let Some(ref height) = descr.height {

@@ -1,7 +1,7 @@
 use crate::contours::Component;
 use crate::cut::{Cut, CutType};
 use crate::kinematics::{
-    du_dp, du_dx, dxm_dp_on_sheet, dxp_dp_on_sheet, u, u_of_x, xm, xm_on_sheet, xp, xp_on_sheet,
+    du_dp, dxm_dp_on_sheet, dxp_dp_on_sheet, u, xm, xm_on_sheet, xp, xp_on_sheet,
     CouplingConstants, SheetData, UBranch,
 };
 use crate::nr;
@@ -17,8 +17,6 @@ pub struct Point {
     pub xp: Complex64,
     pub xm: Complex64,
     pub u: Complex64,
-    #[serde(default = "_c_zero")]
-    pub x: Complex64,
     pub sheet_data: SheetData,
 }
 
@@ -27,7 +25,6 @@ impl Point {
         let p: Complex64 = p.into();
         let log_branch_p: i32 = 0;
         let log_branch_m = p.re.floor() as i32;
-        let log_branch_x: i32 = 0;
         let u_branch = if log_branch_m >= 0 {
             (UBranch::Outside, UBranch::Outside)
         } else if log_branch_m == -1 {
@@ -39,7 +36,6 @@ impl Point {
         let sheet_data = SheetData {
             log_branch_p,
             log_branch_m,
-            log_branch_x,
             e_branch: 1,
             u_branch,
             im_x_sign: (1, 1),
@@ -48,25 +44,13 @@ impl Point {
         let xp = xp(p, 1.0, consts);
         let xm = xm(p, 1.0, consts);
         let u = u(p, consts, &sheet_data);
-        let x = Self::find_x(u, (xp + xm) / 2.0, consts).unwrap();
         Self {
             p,
             xp,
             xm,
             u,
-            x,
             sheet_data,
         }
-    }
-
-    fn find_x(u: Complex64, guess: Complex64, consts: CouplingConstants) -> Option<Complex64> {
-        nr::find_root(
-            |x| u_of_x(x, consts) - u,
-            |x| du_dx(x, consts),
-            guess,
-            1.0e-5,
-            50,
-        )
     }
 
     fn shifted(
@@ -122,44 +106,16 @@ impl Point {
             // return None;
         }
 
-        let mut sheet_data = sheet_data.clone();
+        let sheet_data = sheet_data.clone();
         let xp = new_xp;
         let xm = new_xm;
         let u = new_u;
-
-        let mut x = Self::find_x(
-            u + Complex64::new(
-                0.0,
-                -2.0 * sheet_data.log_branch_x as f64 * consts.k() as f64 / consts.h,
-            ),
-            self.x,
-            consts,
-        )
-        .unwrap_or(self.x);
-
-        if x.re < 0.0 && self.x.im * x.im < 0.0 {
-            if x.im > 0.0 {
-                sheet_data.log_branch_x += 1;
-            } else {
-                sheet_data.log_branch_x -= 1;
-            }
-            x = Self::find_x(
-                u + Complex64::new(
-                    0.0,
-                    -2.0 * sheet_data.log_branch_x as f64 * consts.k() as f64 / consts.h,
-                ),
-                self.x.conj(),
-                consts,
-            )
-            .unwrap_or(self.x);
-        }
 
         Some(Self {
             p,
             xp,
             xm,
             u,
-            x,
             sheet_data,
         })
     }
@@ -218,7 +174,6 @@ impl Point {
             Component::U => self.u,
             Component::Xp => self.xp,
             Component::Xm => self.xm,
-            Component::X => self.x,
         }
     }
 
@@ -302,9 +257,6 @@ impl Point {
                     Component::Xp => self.shift_xp(new_value, &new_sheet_data, guess, consts),
                     Component::Xm => self.shift_xm(new_value, &new_sheet_data, guess, consts),
                     Component::U => self.shift_u(new_value, &new_sheet_data, guess, consts),
-                    Component::X => {
-                        todo!("add shift_x")
-                    }
                 };
 
                 self.shifted(p, &new_sheet_data, consts)
@@ -383,9 +335,6 @@ impl SheetData {
                 } else {
                     sd1.u_branch.0 == sd2.u_branch.0
                 }
-            }
-            Component::X => {
-                todo!("figure out x branches")
             }
         }
     }
