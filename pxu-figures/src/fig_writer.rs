@@ -322,19 +322,20 @@ progress_file=io.open(""#;
         options: &[&str],
         consts: CouplingConstants,
     ) -> Result<()> {
-        let dashed = "densely dashed";
-        let dotted = "dotted";
+        let straight = "very thick";
+        let dashed = "very thick,densely dashed";
+        let zigzag = "decorate,decoration={zigzag, segment length=1.2mm, amplitude=0.15mm},thick";
         let (color, style) = match cut.typ {
             pxu::CutType::E => ("black", ""),
-            pxu::CutType::Log(pxu::Component::Xp) => ("Red", dotted),
-            pxu::CutType::Log(pxu::Component::Xm) => ("Green", dotted),
-            pxu::CutType::ULongPositive(pxu::Component::Xp) => ("Red", ""),
+            pxu::CutType::Log(pxu::Component::Xp) => ("Red", zigzag),
+            pxu::CutType::Log(pxu::Component::Xm) => ("Green", zigzag),
+            pxu::CutType::ULongPositive(pxu::Component::Xp) => ("Red", straight),
             pxu::CutType::ULongNegative(pxu::Component::Xp) => ("Red", dashed),
-            pxu::CutType::ULongPositive(pxu::Component::Xm) => ("Green", ""),
+            pxu::CutType::ULongPositive(pxu::Component::Xm) => ("Green", straight),
             pxu::CutType::ULongNegative(pxu::Component::Xm) => ("Green", dashed),
-            pxu::CutType::UShortScallion(pxu::Component::Xp) => ("Red", ""),
+            pxu::CutType::UShortScallion(pxu::Component::Xp) => ("Red", straight),
             pxu::CutType::UShortKidney(pxu::Component::Xp) => ("Red", dashed),
-            pxu::CutType::UShortScallion(pxu::Component::Xm) => ("Green", ""),
+            pxu::CutType::UShortScallion(pxu::Component::Xm) => ("Green", straight),
             pxu::CutType::UShortKidney(pxu::Component::Xm) => ("Green", dashed),
             _ => {
                 return Ok(());
@@ -354,10 +355,7 @@ progress_file=io.open(""#;
             if style == dashed {
                 self.add_plot(&[&["lightgray", "very thick"], options].concat(), &cut.path)?
             }
-            self.add_plot(
-                &[&[color, style, "very thick"], options].concat(),
-                &cut.path,
-            )?;
+            self.add_plot(&[&[color, style], options].concat(), &cut.path)?;
 
             if let Some(branch_point) = cut.branch_point {
                 self.add_plot_all(
