@@ -363,6 +363,14 @@ fn draw_path_figure(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let mut pxu = (*pxu).clone();
+    if let Some(name) = paths.first() {
+        let path = pxu
+            .get_path_by_name(name)
+            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
+        pxu.state = path.base_path.start.clone();
+    }
+
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_cuts(&pxu, &["semithick"])?;
 
@@ -384,6 +392,13 @@ fn draw_path_figure_with_options(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let mut pxu = (*pxu).clone();
+    if let Some((name, _)) = paths.first() {
+        let path = pxu
+            .get_path_by_name(name)
+            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
+        pxu.state = path.base_path.start.clone();
+    }
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_cuts(&pxu, &["semithick"])?;
 
@@ -407,6 +422,14 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let mut pxu = (*pxu).clone();
+    if let Some((name, _, _, _)) = paths.first() {
+        let path = pxu
+            .get_path_by_name(name)
+            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
+        pxu.state = path.base_path.start.clone();
+    }
+
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_cuts(&pxu, &["semithick"])?;
 
