@@ -759,7 +759,7 @@ impl EPInterpolator {
             |p| en2(p, 1.0, self.consts) + im * im,
             |p| den2_dp(p, 1.0, self.consts),
             guess,
-            1.0e-3,
+            1.0e-5,
             50,
         )
     }
@@ -788,7 +788,7 @@ impl EPInterpolator {
         let mut p_prev = p0;
 
         for i in 1.. {
-            let im = i as f64 * i as f64 * i as f64 / 8.0;
+            let im = i as f64 * i as f64 * i as f64 / 128.0;
 
             let Some(p) = self.find_p_at_im(im, p_prev) else {
                 break;
