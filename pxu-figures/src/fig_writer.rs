@@ -470,6 +470,69 @@ progress_file=io.open(""#;
         Ok(())
     }
 
+    pub fn add_path_start_end_mark(
+        &mut self,
+        path: &pxu::path::Path,
+        options: &[&str],
+    ) -> Result<()> {
+        let first_seg = path.segments[0].first().unwrap();
+        let last_seg = path.segments[0].last().unwrap();
+
+        let start = first_seg.get(self.component).first().unwrap();
+        let end = last_seg.get(self.component).last().unwrap();
+
+        let points = vec![*start, *end];
+
+        self.add_plot(&[&["only marks"], options].concat(), &points)
+    }
+
+    pub fn add_path_arrows(
+        &mut self,
+        path: &pxu::path::Path,
+        mark_pos: &[f64],
+        options: &[&str],
+    ) -> Result<()> {
+        let mut lines: Vec<(Complex64, Complex64, f64)> = vec![];
+        let mut len: f64 = 0.0;
+
+        for segment in &path.segments[0] {
+            for (p1, p2) in segment.get(self.component).iter().tuple_windows() {
+                len += (p2 - p1).norm();
+                lines.push((*p1, *p2, len)); // We store the length including the current segment
+            }
+        }
+
+        let total_len = len;
+
+        for pos in mark_pos {
+            let pos = pos * total_len;
+            let index = lines.partition_point(|(_, _, seg_end)| seg_end < &pos);
+            if index == lines.len() {
+                continue;
+            }
+            let (start, end, seg_end) = lines[index];
+            let t = 1.0 - (seg_end - pos) / (end - start).norm();
+            let points = vec![start, end];
+
+            self.add_plot(
+                &[
+                    &[
+                        "draw=none",
+                        &format!(
+                            "decoration={{markings,mark=at position {t} with {{\\arrow{{latex}}}}}}"
+                        ),
+                        "postaction=decorate",
+                    ],
+                    options,
+                ]
+                .concat(),
+                &points,
+            )?;
+        }
+
+        Ok(())
+    }
+
     pub fn add_node(&mut self, text: &str, pos: Complex64, options: &[&str]) -> Result<()> {
         let coord = self.format_coordinate(pos);
         writeln!(
