@@ -806,6 +806,96 @@ fn path_u_crossing_from_min_1(contours: &pxu::Contours, consts: CouplingConstant
     )
 }
 
+// p crossing a
+fn path_p_crossing_a(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let p0 = 0.15;
+    let y0 = 0.08;
+    let steps = 100;
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, p0, contours, consts, 4);
+
+    let mut path = vec![];
+    for i in 0..=steps {
+        let x = 1.0 - (i as f64 / steps as f64) * 2.0;
+        let y = y0 * (1.0 - x * x);
+        let p = Complex64::new(x * p0, y);
+
+        path.push(p);
+    }
+
+    pxu::path::SavedPath::new("p crossing a", path, state, pxu::Component::P, 0, consts)
+}
+
+// p crossing b
+fn path_p_crossing_b(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let p0 = 0.15;
+    let y0 = 0.08;
+    let steps = 100;
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, p0, contours, consts, 4);
+
+    let mut path = vec![];
+    for i in 0..=steps {
+        let x = 1.0 - (i as f64 / steps as f64) * 2.0;
+        let y = -y0 * (1.0 - x * x);
+        let p = Complex64::new(x * p0, y);
+
+        path.push(p);
+    }
+
+    pxu::path::SavedPath::new("p crossing b", path, state, pxu::Component::P, 0, consts)
+}
+
+// p crossing c
+fn path_p_crossing_c(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let p0 = 0.15;
+    let bp = Complex64::new(0.915, 0.370);
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, p0, contours, consts, 4);
+
+    let dp = (bp / bp.norm()) * p0 * (bp.re / bp.norm());
+
+    let mut path = vec![Complex64::from(p0), bp + p0 - dp];
+
+    let steps = 32;
+
+    for i in 1..(steps - 1) {
+        let theta = PI * i as f64 / steps as f64;
+        path.push(bp + (p0 - dp) * (Complex64::i() * theta).exp());
+    }
+
+    path.extend([bp - p0 + dp, Complex64::from(-p0)]);
+
+    pxu::path::SavedPath::new("p crossing c", path, state, pxu::Component::P, 0, consts)
+}
+
+// p crossing d
+fn path_p_crossing_d(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let p0 = 0.15;
+    let bp = Complex64::new(-0.922, -0.265);
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, p0, contours, consts, 4);
+
+    let dp = (bp / bp.norm()) * p0 * (bp.re / bp.norm());
+
+    let mut path = vec![Complex64::from(p0), bp + p0 - dp];
+
+    let steps = 32;
+
+    for i in 1..(steps - 1) {
+        let theta = -PI * i as f64 / steps as f64;
+        path.push(bp + (p0 - dp) * (Complex64::i() * theta).exp());
+    }
+
+    path.extend([bp - p0 + dp, Complex64::from(-p0)]);
+
+    pxu::path::SavedPath::new("p crossing d", path, state, pxu::Component::P, 0, consts)
+}
+
 type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
 
 pub const PLOT_PATHS: &[PathFunction] = &[
@@ -821,6 +911,10 @@ pub const PLOT_PATHS: &[PathFunction] = &[
     path_u_crossing_from_0_a,
     path_u_crossing_from_0_b,
     path_u_crossing_from_min_1,
+    path_p_crossing_a,
+    path_p_crossing_b,
+    path_p_crossing_c,
+    path_p_crossing_d,
 ];
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
@@ -833,4 +927,8 @@ pub const INTERACTIVE_PATHS: &[PathFunction] = &[
     path_u_crossing_from_0_b,
     path_u_crossing_from_0_a,
     path_u_crossing_from_min_1,
+    path_p_crossing_a,
+    path_p_crossing_b,
+    path_p_crossing_c,
+    path_p_crossing_d,
 ];
