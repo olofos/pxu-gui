@@ -70,20 +70,20 @@ fn create_xp_circle_between_path(
     let center = Complex64::new(-0.458742, 0.20995);
     let radius = 0.907159 * 1.03;
 
-    let steps = 128.0;
+    let steps = 256.0;
 
     let mut path = vec![];
 
-    for i in 0..=(-start_rev * steps) as i32 {
-        let theta = -TAU * (i as f64 / steps - 0.5);
+    for i in 0..=(start_rev.abs() * steps) as i32 {
+        let theta = start_rev.signum() * TAU * (i as f64 / steps - 0.5);
         let xp = center + Complex64::from_polar(radius, theta);
         start.update(0, pxu::Component::Xp, xp, contours, consts);
     }
 
     let steps = 256.0;
 
-    for i in (start_rev * steps) as i32..=(end_rev * steps) as i32 {
-        let theta = TAU * (i as f64 / steps - 0.5);
+    for i in 0..=((end_rev - start_rev).abs() * steps) as i32 {
+        let theta = TAU * (start_rev + (end_rev - start_rev).signum() * i as f64 / steps - 0.5);
         let xp = center + Complex64::from_polar(radius, theta);
         path.push(xp);
     }
@@ -115,7 +115,10 @@ fn path_xp_circle_between_between(
 }
 
 // xp circle between/inside
-fn path_xp_circle_between_inside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_xp_circle_between_inside_left(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
@@ -125,9 +128,32 @@ fn path_xp_circle_between_inside(contours: &pxu::Contours, consts: CouplingConst
     );
 
     create_xp_circle_between_path(
-        "xp circle between/inside",
+        "xp circle between/inside L",
         state,
+        0.0,
         -2.5,
+        contours,
+        consts,
+    )
+}
+
+// xp circle between/inside
+fn path_xp_circle_between_inside_right(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+    state.follow_path(
+        pxu::Component::P,
+        &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0], [-0.06, -0.2]],
+        contours,
+        consts,
+    );
+
+    create_xp_circle_between_path(
+        "xp circle between/inside R",
+        state,
+        0.0,
         3.5,
         contours,
         consts,
@@ -135,7 +161,7 @@ fn path_xp_circle_between_inside(contours: &pxu::Contours, consts: CouplingConst
 }
 
 // xp circle between/outside
-fn path_xp_circle_between_outside(
+fn path_xp_circle_between_outside_left(
     contours: &pxu::Contours,
     consts: CouplingConstants,
 ) -> SavedPath {
@@ -148,9 +174,32 @@ fn path_xp_circle_between_outside(
     );
 
     create_xp_circle_between_path(
-        "xp circle between/outside",
+        "xp circle between/outside L",
         state,
+        0.0,
         -2.5,
+        contours,
+        consts,
+    )
+}
+
+// xp circle between/outside
+fn path_xp_circle_between_outside_right(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+    state.follow_path(
+        pxu::Component::P,
+        &[[0.2, 0.0], [0.2, 0.2], [0.78, 0.2]],
+        contours,
+        consts,
+    );
+
+    create_xp_circle_between_path(
+        "xp circle between/outside R",
+        state,
+        0.0,
         3.5,
         contours,
         consts,
@@ -596,9 +645,10 @@ fn path_u_periodic_between_between(
         16,
     );
 
-    let r1 = 1.0;
+    let r1 = 0.75;
     let r2 = k / h - r1;
     let y0 = -r1 - 3.0 * k;
+    let x0 = 1.8;
 
     state.goto(
         pxu::Component::U,
@@ -985,9 +1035,11 @@ type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
 
 pub const PLOT_PATHS: &[PathFunction] = &[
     path_xp_circle_between_between,
-    path_xp_circle_between_inside,
-    path_xp_circle_between_outside,
     path_xp_circle_between_between_single,
+    path_xp_circle_between_inside_left,
+    path_xp_circle_between_inside_right,
+    path_xp_circle_between_outside_left,
+    path_xp_circle_between_outside_right,
     path_p_circle_origin_e,
     path_p_circle_origin_not_e,
     path_u_band_between_inside,
@@ -1007,9 +1059,11 @@ pub const PLOT_PATHS: &[PathFunction] = &[
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
     path_xp_circle_between_between,
-    path_xp_circle_between_inside,
-    path_xp_circle_between_outside,
     path_xp_circle_between_between_single,
+    path_xp_circle_between_inside_left,
+    path_xp_circle_between_inside_right,
+    path_xp_circle_between_outside_left,
+    path_xp_circle_between_outside_right,
     path_p_circle_origin_e,
     path_p_circle_origin_not_e,
     path_u_band_between_inside,
