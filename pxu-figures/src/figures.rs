@@ -834,6 +834,180 @@ fn fig_p_period_between_between(
     )
 }
 
+fn fig_p_circle_between_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "p-circle-between-between",
+        -0.15..0.15,
+        0.0,
+        Size {
+            width: 8.0,
+            height: 8.0,
+        },
+        pxu::Component::P,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure(
+        figure,
+        &["xp circle between/between (single)"],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_xp_circle_between_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xp-circle-between-between",
+        -3.1..2.1,
+        0.0,
+        Size {
+            width: 8.0,
+            height: 8.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure_with_options(
+        figure,
+        &[("xp circle between/between (single)", &["solid"])],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_xm_circle_between_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "xm-circle-between-between",
+        -3.1..2.1,
+        0.0,
+        Size {
+            width: 8.0,
+            height: 8.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure_with_options(
+        figure,
+        &[("xp circle between/between (single)", &["solid"])],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_circle_between_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-circle-between-between",
+        -6.0..4.0,
+        0.25,
+        Size {
+            width: 5.0,
+            height: 12.5,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure(
+        figure,
+        &["xp circle between/between"],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_circle_between_outside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-circle-between-outside",
+        -6.0..4.0,
+        0.25,
+        Size {
+            width: 5.0,
+            height: 12.5,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure(
+        figure,
+        &["xp circle between/outside L", "xp circle between/outside R"],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_circle_between_inside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let figure = FigureWriter::new(
+        "u-circle-between-inside",
+        -6.0..4.0,
+        0.25,
+        Size {
+            width: 5.0,
+            height: 12.5,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    draw_path_figure(
+        figure,
+        &["xp circle between/inside L", "xp circle between/inside R"],
+        pxu,
+        cache,
+        settings,
+        pb,
+    )
+}
+
 fn fig_p_crossing_all(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -2449,6 +2623,12 @@ fn fig_bs_disp_rel_lr0(
 // (points:[(p:(0.00850451567122419,-0.0351163366428777),xp:(2.0310515783264487,4.601193769786978),xm:(1.8236774624129255,3.5979057375562773),u:(0.8259067559962097,3.000099999989294),x:(1.93432972901603,4.098745666617839),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010200854291000724,-0.04550262603714801),xp:(1.8236774624129262,3.597905737556278),xm:(1.5405247013607068,2.6099269202774904),u:(0.8259067559962101,2.0000999999892946),x:(0.1335098726834099,-0.6208477455958303),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.007959997082149057,-0.06357375026038176),xp:(1.5405247013607066,2.60992692027749),xm:(1.1194362803928564,1.69661364718726),u:(0.8259067559962101,1.0000999999892937),x:(1.352017996815633,2.1352062219696677),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(-0.012722224785590501,-0.08134433357584302),xp:(1.1194362803928557,1.6966136471872597),xm:(0.5880689843184308,1.0680557686233254),u:(0.8259067559962098,0.0000999999892933312),x:(0.849369701941432,-1.331891622661128),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.03140676738687043,-0.07227843902770795),xp:(0.5880689843184305,1.0680557686233256),xm:(0.2332062381776739,0.7382588231196434),u:(0.8259067559962091,-0.9999000000107066),x:(0.38078647020266615,0.8816012612265064),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.027770277529154154,-0.06094259444272281),xp:(0.23320623817767397,0.7382588231196433),xm:(0.06921147606791347,0.5233598375865766),u:(0.8259067559962093,-1.9999000000107068),x:(-0.016428422019962932,0.1695648360578815),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.018153442581473014,-0.052985849236542905),xp:(0.06921147606791343,0.5233598375865767),xm:(0.006591888732602278,0.37836764565645814),u:(0.8259067559962092,-2.9999000000107072),x:(1.9342884969851755,-4.098544933029524),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Inside),im_x_sign:(1,-1))),(p:(-0.00998500769250728,-0.044846613616642786),xp:(0.0065918887326022226,0.378367645656458),xm:(-0.01293367285536308,0.2852058772051723),u:(0.8259067559962093,-3.999900000010708),x:(-0.006224288663879103,0.326542532266881),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.00504454849795598,-0.037273352266220736),xp:(-0.012933672855363176,0.28520587720517243),xm:(-0.01737926285524494,0.22521931099646053),u:(0.8259067559962077,-4.999900000010707),x:(-0.01613831014380371,0.25206198159240306),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.002444001225971159,-0.0311580515212133),xp:(-0.01737926285524475,0.22521931099646045),xm:(-0.01713100290273024,0.18493402813542317),u:(0.8259067559962114,-5.999900000010708),x:(0.38078647020266637,0.881601261226505),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.001107047302755978,-0.026473566594018966),xp:(-0.017131002902730157,0.18493402813542284),xm:(-0.015594721972887067,0.15648999637430783),u:(0.8259067559962135,-6.999900000010719),x:(-0.01642842201996279,0.16956483605788117),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-2.469490518301797,0.026467846111587222),xp:(-0.015594721972887044,0.15648999637430758),xm:(-0.01713076618032053,-0.18492734608997766),u:(0.8259067559962137,-7.9999000000107285),x:(2.9374736459666977,-14.154798684335006),sheet_data:(log_branch_p:0,log_branch_m:-3,log_branch_x:1,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.002443635689955469,0.031156981066727794),xp:(-0.017130766180320594,-0.18492734608997763),xm:(-0.017379500127251722,-0.22520962585015392),u:(0.8259067559962111,-8.999900000010724),x:(-0.013017598277623029,0.12694382857518613),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.005043836866204629,0.03727197299065966),xp:(-0.01737950012725175,-0.22520962585015392),xm:(-0.012935523601068057,-0.2851911225008308),u:(0.825906755996211,-9.999900000010722),x:(-0.016139122690666204,-0.2520500961959419),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.009983704183199597,0.04484499420457478),xp:(-0.012935523601068168,-0.2851911225008307),xm:(0.006585048506230251,-0.3783444850201329),u:(0.8259067559962098,-10.999900000010722),x:(-0.006227974631957518,-0.32652406485302565),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.018151529315943035,0.052984258851600366),xp:(0.006585048506230137,-0.3783444850201332),xm:(0.06919133582369916,-0.5233244260619485),u:(0.8259067559962082,-11.999900000010726),x:(-0.01642842201996293,0.16956483605788097),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.0277685687530608,0.060940873423300734),xp:(0.06919133582369891,-0.5233244260619482),xm:(0.23315768719594876,-0.7382073272200409),u:(0.8259067559962081,-12.999900000010722),x:(0.13350987268341222,-0.6208477455958343),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Between),im_x_sign:(1,-1))),(p:(-0.03140769505134425,0.07227554691810695),xp:(0.23315768719594848,-0.7382073272200408),xm:(0.5879736502152035,-1.0679684020490827),u:(0.8259067559962082,-13.999900000010722),x:(0.3807160871328493,-0.8815370234323279),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.012728003253993338,0.08134523025357689),xp:(0.5879736502152039,-1.0679684020490832),xm:(1.119334123519768,-1.6964500714143518),u:(0.8259067559962079,-14.999900000010722),x:(0.8493697019414395,-1.3318916226611388),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,-1))),(p:(0.0079582652388391,0.06357826822367572),xp:(1.119334123519768,-1.6964500714143518),xm:(1.5404568947697497,-2.609733039471947),u:(0.8259067559962079,-15.999900000010722),x:(1.3519342542269488,-2.135021615283242),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010201073290449466,0.045505322744012554),xp:(1.5404568947697506,-2.6097330394719482),xm:(1.8236298764824674,-3.597705907174023),u:(0.8259067559962082,-16.999900000010726),x:(3.329264545743063,-23.178646433207852),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.008504887271023925,0.03511793006501657),xp:(1.8236298764824672,-3.5977059071740234),xm:(2.031015228567917,-4.6009925982671325),u:(0.8259067559962083,-17.999900000010726),x:(1.9342884969851784,-4.098544933029543),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1)))],unlocked:false)
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_xp_circle_between_between,
+    fig_p_circle_between_between,
+    fig_xm_circle_between_between,
+    fig_u_circle_between_between,
+    fig_u_circle_between_inside,
+    fig_u_circle_between_outside,
     fig_p_crossing_all,
     fig_xp_crossing_all,
     fig_xm_crossing_all,
