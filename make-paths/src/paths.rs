@@ -59,6 +59,38 @@ impl Goto for pxu::State {
     }
 }
 
+fn create_xp_circle_between_path(
+    name: &str,
+    mut start: pxu::State,
+    start_rev: f64,
+    end_rev: f64,
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let center = Complex64::new(-0.458742, 0.20995);
+    let radius = 0.907159 * 1.03;
+
+    let steps = 128.0;
+
+    let mut path = vec![];
+
+    for i in 0..=(-start_rev * steps) as i32 {
+        let theta = -TAU * (i as f64 / steps - 0.5);
+        let xp = center + Complex64::from_polar(radius, theta);
+        start.update(0, pxu::Component::Xp, xp, contours, consts);
+    }
+
+    let steps = 256.0;
+
+    for i in (start_rev * steps) as i32..=(end_rev * steps) as i32 {
+        let theta = TAU * (i as f64 / steps - 0.5);
+        let xp = center + Complex64::from_polar(radius, theta);
+        path.push(xp);
+    }
+
+    pxu::path::SavedPath::new(name, path, start, pxu::Component::Xp, 0, consts)
+}
+
 // xp circle between/between
 fn path_xp_circle_between_between(
     contours: &pxu::Contours,
@@ -72,25 +104,78 @@ fn path_xp_circle_between_between(
         consts,
     );
 
-    let center = Complex64::new(-0.3, 0.5);
-    let radius = 1.2;
-    let steps = 128;
-
-    let mut path = vec![];
-
-    state.update(0, pxu::Component::Xp, center - radius, contours, consts);
-    for i in 0..=(4 * steps) {
-        let theta = TAU * (i as f64 / steps as f64 - 0.5);
-        let xp = center + Complex64::from_polar(radius, theta);
-        path.push(xp);
-    }
-
-    pxu::path::SavedPath::new(
+    create_xp_circle_between_path(
         "xp circle between/between",
-        path,
         state,
-        pxu::Component::Xp,
-        0,
+        -2.5,
+        3.5,
+        contours,
+        consts,
+    )
+}
+
+// xp circle between/inside
+fn path_xp_circle_between_inside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+    state.follow_path(
+        pxu::Component::P,
+        &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0], [-0.06, -0.2]],
+        contours,
+        consts,
+    );
+
+    create_xp_circle_between_path(
+        "xp circle between/inside",
+        state,
+        -2.5,
+        3.5,
+        contours,
+        consts,
+    )
+}
+
+// xp circle between/outside
+fn path_xp_circle_between_outside(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+    state.follow_path(
+        pxu::Component::P,
+        &[[0.2, 0.0], [0.2, 0.2], [0.78, 0.2]],
+        contours,
+        consts,
+    );
+
+    create_xp_circle_between_path(
+        "xp circle between/outside",
+        state,
+        -2.5,
+        3.5,
+        contours,
+        consts,
+    )
+}
+
+// xp circle between/between single
+fn path_xp_circle_between_between_single(
+    contours: &pxu::Contours,
+    consts: CouplingConstants,
+) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+    state.follow_path(
+        pxu::Component::P,
+        &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0]],
+        contours,
+        consts,
+    );
+
+    create_xp_circle_between_path(
+        "xp circle between/between (single)",
+        state,
+        0.0,
+        1.0,
+        contours,
         consts,
     )
 }
@@ -900,6 +985,9 @@ type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
 
 pub const PLOT_PATHS: &[PathFunction] = &[
     path_xp_circle_between_between,
+    path_xp_circle_between_inside,
+    path_xp_circle_between_outside,
+    path_xp_circle_between_between_single,
     path_p_circle_origin_e,
     path_p_circle_origin_not_e,
     path_u_band_between_inside,
@@ -919,6 +1007,9 @@ pub const PLOT_PATHS: &[PathFunction] = &[
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
     path_xp_circle_between_between,
+    path_xp_circle_between_inside,
+    path_xp_circle_between_outside,
+    path_xp_circle_between_between_single,
     path_p_circle_origin_e,
     path_p_circle_origin_not_e,
     path_u_band_between_inside,
