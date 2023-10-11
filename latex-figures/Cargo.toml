@@ -1,5 +1,5 @@
 [package]
-name = "pxu-figures"
+name = "latex-figures"
 version.workspace = true
 authors.workspace = true
 edition.workspace = true
