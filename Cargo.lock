@@ -1639,6 +1639,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "26072860ba924cbfa98ea39c8c19b4dd6a4a25423dbdf219c1eca91aa0cf6964"
 
 [[package]]
+name = "plot"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "chrono",
+ "clap",
+ "console_error_panic_hook",
+ "eframe",
+ "egui",
+ "flate2",
+ "itertools",
+ "log",
+ "num",
+ "pxu",
+ "ron",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "tracing",
+ "tracing-subscriber",
+ "tracing-wasm",
+ "url",
+ "wasm-bindgen-futures",
+ "wasm-logger",
+ "web-sys",
+]
+
+[[package]]
 name = "png"
 version = "0.17.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1674,8 +1702,8 @@ dependencies = [
  "log",
  "md5",
  "num",
+ "plot",
  "pxu",
- "pxu-plot",
  "ron",
  "serde",
  "serde_json",
@@ -1752,35 +1780,7 @@ dependencies = [
  "itertools",
  "log",
  "num",
- "pxu",
- "pxu-plot",
- "ron",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "tracing",
- "tracing-subscriber",
- "tracing-wasm",
- "url",
- "wasm-bindgen-futures",
- "wasm-logger",
- "web-sys",
-]
-
-[[package]]
-name = "pxu-plot"
-version = "0.1.0"
-dependencies = [
- "base64",
- "chrono",
- "clap",
- "console_error_panic_hook",
- "eframe",
- "egui",
- "flate2",
- "itertools",
- "log",
- "num",
+ "plot",
  "pxu",
  "ron",
  "serde",

@@ -5,7 +5,7 @@ members = [
     "latex-figures",
     "pxu-gui",
     "make-paths",
-    "pxu-plot",
+    "plot",
     "presentation",
 ]
 

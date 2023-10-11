@@ -1,6 +1,6 @@
 use egui::{pos2, vec2, Pos2};
+use plot::{Plot, PlotState};
 use pxu::kinematics::CouplingConstants;
-use pxu_plot::{Plot, PlotState};
 use std::collections::HashMap;
 
 #[allow(deprecated)]
@@ -33,7 +33,7 @@ struct Frame {
     pub start_time: f64,
     pub duration: Option<f64>,
     pub consts: Option<CouplingConstants>,
-    pub cut_filter: Option<pxu_plot::CutFilter>,
+    pub cut_filter: Option<plot::CutFilter>,
     pub image_name: String,
 }
 

@@ -179,7 +179,7 @@ pub struct FrameDescription {
     pub disp_rel_plot: Option<DispRelPlotDescription>,
     pub duration: Option<f64>,
     pub consts: Option<pxu::CouplingConstants>,
-    pub cut_filter: Option<pxu_plot::CutFilter>,
+    pub cut_filter: Option<plot::CutFilter>,
 }
 
 #[derive(Debug, Default, serde::Deserialize, serde::Serialize)]

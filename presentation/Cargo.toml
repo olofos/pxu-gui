@@ -24,7 +24,7 @@ chrono = { version = "0.4", features = [
 ], default-features = false }
 
 pxu = { path = "../pxu", features = ["egui"] }
-pxu-plot = { path = "../pxu-plot" }
+plot = { path = "../plot" }
 serde_json = "1.0.95"
 serde_urlencoded = "0.7.1"
 base64.workspace = true
