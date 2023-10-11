@@ -33,6 +33,8 @@ jobs:
         # relatively as eframe_template/favicon.ico. if we skip public-url option, the href paths will instead request username.github.io/favicon.ico which
         # will obviously return error 404 not found.
         run: ./trunk build --release --public-url "${GITHUB_REPOSITORY#*/}" ./pxu-gui/index.html
+      - name: Build figures
+        run: cargo run --bin interactive-figures -- -o ./pxu-gui/dist/data
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@v4
         with:
