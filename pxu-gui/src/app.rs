@@ -538,23 +538,21 @@ impl PxuGuiApp {
         ui.separator();
         ui.heading("Dev controls");
         ui.add_space(5.0);
-        ui.horizontal(|ui| {
-            if ui.add(egui::Button::new("Load path")).clicked() {
-                self.path_dialog_text = Some(String::new());
-            }
+        if ui.add(egui::Button::new("Load path")).clicked() {
+            self.path_dialog_text = Some(String::new());
+        }
 
-            if ui.button("Load/save state").clicked() {
-                let saved_state = pxu::SavedState {
-                    state: self.pxu.state.clone(),
-                    consts: self.pxu.consts,
-                };
-                if let Ok(s) = ron::to_string(&saved_state) {
-                    self.state_dialog_text = Some(s);
-                } else {
-                    log::info!("Could not print state");
-                }
+        if ui.button("Load/save state").clicked() {
+            let saved_state = pxu::SavedState {
+                state: self.pxu.state.clone(),
+                consts: self.pxu.consts,
+            };
+            if let Ok(s) = ron::to_string(&saved_state) {
+                self.state_dialog_text = Some(s);
+            } else {
+                log::info!("Could not print state");
             }
-        });
+        }
     }
 
     fn draw_state_information(&mut self, ui: &mut egui::Ui) {
