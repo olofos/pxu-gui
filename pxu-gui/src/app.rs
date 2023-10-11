@@ -120,7 +120,9 @@ impl PxuGuiApp {
             return app;
         }
 
-        Default::default()
+        let mut app: PxuGuiApp = Default::default();
+        app.ui_state.set(settings);
+        app
     }
 }
 
