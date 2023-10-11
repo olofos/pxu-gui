@@ -579,9 +579,9 @@ impl PxuGuiApp {
             ui.label(format!("Energy: {:.3}", active_point.en(self.pxu.consts)));
 
             ui.add_space(10.0);
-            ui.label(format!("x+: {:.3}", active_point.xp));
-            ui.label(format!("x-: {:.3}", active_point.xm));
-            ui.label(format!("u: {:.3}", active_point.u));
+            ui.label(format!("x⁺: {:.3}", active_point.xp));
+            ui.label(format!("x⁻: {:.3}", active_point.xm));
+            ui.label(format!("u:  {:.3}", active_point.u));
 
             ui.add_space(10.0);
             ui.label("Branch info:");
@@ -612,9 +612,9 @@ impl PxuGuiApp {
                         - 2.0 * num::complex::Complex64::i() * (k * p) / h)
                         .im;
                 if xp.im >= 0.0 {
-                    ui.label(format!("xp = Xp({:.3},{:.3})", p, m));
+                    ui.label(format!("x⁺ = X⁺({:.3},{:.3})", p, m));
                 } else {
-                    ui.label(format!("xp = Xm({:.3},{:.3})", -p, -m));
+                    ui.label(format!("x⁺ = X⁻({:.3},{:.3})", -p, -m));
                 };
             }
             {
@@ -630,9 +630,9 @@ impl PxuGuiApp {
                         - 2.0 * num::complex::Complex64::i() * (k * p) / h)
                         .im;
                 if xm.im >= 0.0 {
-                    ui.label(format!("xm = Xp({:.3},{:.3})", -p, -m));
+                    ui.label(format!("x⁻ = X⁺({:.3},{:.3})", -p, -m));
                 } else {
-                    ui.label(format!("xm = Xm({:.3},{:.3})", p, m));
+                    ui.label(format!("x⁻ = X⁻({:.3},{:.3})", p, m));
                 };
             }
         }

@@ -518,8 +518,8 @@ impl Plot {
             let text = match self.component {
                 pxu::Component::P => "p",
                 pxu::Component::U => "u",
-                pxu::Component::Xp => "X+",
-                pxu::Component::Xm => "X-",
+                pxu::Component::Xp => "x⁺",
+                pxu::Component::Xm => "x⁻",
             };
 
             ui.fonts(|f| {
@@ -528,7 +528,7 @@ impl Plot {
                     rect.right_top() + vec2(-10.0, 10.0),
                     egui::Align2::RIGHT_TOP,
                     text,
-                    egui::TextStyle::Monospace.resolve(ui.style()),
+                    egui::TextStyle::Body.resolve(ui.style()),
                     Color32::BLACK,
                 );
 
