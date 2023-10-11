@@ -103,7 +103,6 @@ fn main() -> std::io::Result<()> {
     for path_func in make_paths::INTERACTIVE_PATHS {
         let tx = tx.clone();
         let contours = contours.clone();
-        let consts = consts;
         let spinner_style = spinner_style_no_progress.clone();
         let settings = settings.clone();
         let mb = mb.clone();
