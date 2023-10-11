@@ -24,7 +24,6 @@ impl UiState {
         self.show_fps = arguments.show_fps;
         self.show_dev = arguments.show_dev;
         self.continuous_mode = arguments.continuous_mode;
-        self.plot_state.show_x = arguments.show_x;
 
         if let Some(ref paths) = arguments.paths {
             let mut saved_paths_to_load = pxu::path::SavedPath::load(paths);

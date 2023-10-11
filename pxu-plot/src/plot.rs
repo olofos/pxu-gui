@@ -36,8 +36,6 @@ pub struct PlotState {
     #[serde(skip)]
     pub fullscreen_component: Option<pxu::Component>,
     #[serde(skip)]
-    pub show_x: bool,
-    #[serde(skip)]
     pub cut_filter: CutFilter,
 }
 

@@ -6,7 +6,6 @@ pub struct Arguments {
     pub continuous_mode: bool,
     pub paths: Option<String>,
     pub state: Option<String>,
-    pub show_x: bool,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -72,14 +71,6 @@ impl Arguments {
                     .help("Load state")
                     .required(false),
             )
-            .arg(
-                clap::Arg::new("show_x")
-                    .short('x')
-                    .long("show-x")
-                    .help("Show the X component")
-                    .action(clap::ArgAction::SetTrue)
-                    .required(false),
-            )
             .get_matches();
 
         Self {
@@ -88,7 +79,6 @@ impl Arguments {
             continuous_mode: matches.get_flag("continuous_mode"),
             paths: matches.get_one::<String>("paths").cloned(),
             state: matches.get_one::<String>("state").cloned(),
-            show_x: matches.get_flag("show_x"),
         }
     }
 }
