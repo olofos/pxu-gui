@@ -2,9 +2,9 @@
 
 `PXU gui` gives a visualisation of the relation between the variables `p`, `x⁺`, `x⁻` and `u` which are useful for describing the kinematics of world-sheet excitations of the light-cone gauge string in AdS₃ × S³ × T⁴ supported by a mix of RR and NSNS flux.
 
-There are four main panels showing the `p`, `x⁺`, `x⁻` and `u` planes. In each plane there is a background grid which represent the images of `X⁺(p,m)` and `X⁻(p,m)` for integers `m` and real `p`.
+There are four main panels showing the `p`, `x⁺`, `x⁻` and `u` planes. In each plane there is a background grid which represent the images of `X⁺(p,m)` and `X⁻(p,m)` for integers `m` and real `p`. Furthermore there are black, green and red lines which represent cuts in the various planes.
 
-Additionally there are black, green and red lines which represent cuts in the various planes. The blue dots can be dragged around and dragging them through a cut brings the point to a different sheet of the full Riemann surface.
+The state is represented by dots can be dragged around and dragging them through a cut brings the point to a different sheet of the full Riemann surface. The last moved dot is considered active. The dots are blue if they are on the same sheet as the active dot, otherwise they are gray.
 
 On the right hand side there are sliders to pick the values for the coupling constants `h` and `k` as well as the bound state number `M`. Changing the bound state number resets the state to a standard position. There is also a `Reset state` button which can be used to go back to a standard state.
 
