@@ -19,3 +19,6 @@ pub fn get_interactive_paths(
         .map(|f| f(contours, consts))
         .collect::<Vec<_>>()
 }
+
+pub use paths::INTERACTIVE_PATHS;
+pub use paths::PLOT_PATHS;

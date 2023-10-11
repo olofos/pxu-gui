@@ -1066,6 +1066,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "interactive-figures"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "flate2",
+ "indicatif",
+ "itertools",
+ "log",
+ "make-paths",
+ "num",
+ "num_cpus",
+ "pxu",
+ "ron",
+ "serde",
+ "threadpool",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "itertools"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"

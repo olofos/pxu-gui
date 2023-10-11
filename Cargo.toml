@@ -3,6 +3,7 @@ resolver = "2"
 members = [
     "pxu",
     "latex-figures",
+    "interactive-figures",
     "pxu-gui",
     "make-paths",
     "plot",
