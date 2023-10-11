@@ -1,8 +1,6 @@
 use clap::Parser;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -202,11 +200,10 @@ fn main() -> std::io::Result<()> {
     for (filename, fig) in filename_and_figures.iter() {
         let toml = ron::to_string(&fig).unwrap();
 
-        let mut path = PathBuf::from(settings.output_dir.clone()).join(filename.clone());
+        let mut path = PathBuf::from(settings.output_dir.clone()).join(filename);
         path.set_extension("toml");
 
-        let mut file = File::create(path)?;
-        file.write_all(toml.as_bytes())?;
+        std::fs::write(path, toml)?;
     }
 
     println!("[5/5] Saving descriptions");
@@ -214,9 +211,7 @@ fn main() -> std::io::Result<()> {
     let toml = ron::to_string(&descriptions).unwrap();
 
     let path = PathBuf::from(settings.output_dir.clone()).join("figures.toml");
-
-    let mut file = File::create(path)?;
-    file.write_all(toml.as_bytes())?;
+    std::fs::write(path, toml)?;
 
     Ok(())
 }
