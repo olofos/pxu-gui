@@ -368,7 +368,7 @@ fn draw_path_figure(
         let path = pxu
             .get_path_by_name(name)
             .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state = path.base_path.start.clone();
+        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
     }
 
     figure.add_grid_lines(&pxu, &[])?;
@@ -397,7 +397,7 @@ fn draw_path_figure_with_options(
         let path = pxu
             .get_path_by_name(name)
             .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state = path.base_path.start.clone();
+        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
     }
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_cuts(&pxu, &["semithick"])?;
@@ -427,7 +427,7 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
         let path = pxu
             .get_path_by_name(name)
             .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state = path.base_path.start.clone();
+        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
     }
 
     figure.add_grid_lines(&pxu, &[])?;

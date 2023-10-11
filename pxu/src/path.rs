@@ -10,7 +10,7 @@ use crate::State;
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
 pub struct Path {
     pub segments: Vec<Vec<Segment>>,
-    pub base_path: BasePath,
+    pub name: String,
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
@@ -557,7 +557,7 @@ impl Path {
         );
 
         Self {
-            base_path,
+            name: base_path.name,
             segments,
         }
     }

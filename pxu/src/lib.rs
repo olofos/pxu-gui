@@ -40,6 +40,6 @@ impl Pxu {
     }
 
     pub fn get_path_by_name(&self, name: &str) -> Option<&Path> {
-        self.paths.iter().find(|path| path.base_path.name == name)
+        self.paths.iter().find(|path| path.name == name)
     }
 }
