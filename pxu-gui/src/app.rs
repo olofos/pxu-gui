@@ -71,11 +71,43 @@ impl Default for PxuGuiApp {
     }
 }
 
+fn setup_custom_fonts(ctx: &egui::Context) {
+    // Start with the default fonts (we will be adding to them rather than replacing them).
+    let mut fonts = egui::FontDefinitions::default();
+
+    // Install my own font (maybe supporting non-latin characters).
+    // .ttf and .otf files supported.
+
+    fonts.font_data.insert(
+        "DejaVuSansMono".to_owned(),
+        egui::FontData::from_static(include_bytes!("../../fonts/DejaVuSansMono.ttf")),
+    );
+
+    // Put my font first (highest priority):
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Proportional)
+        .unwrap()
+        .insert(0, "DejaVuSansMono".to_owned());
+
+    // // Put my font as last fallback for monospace:
+    fonts
+        .families
+        .get_mut(&egui::FontFamily::Monospace)
+        .unwrap()
+        .insert(0, "DejaVuSansMono".to_owned());
+
+    // Tell egui to use these fonts:
+    ctx.set_fonts(fonts);
+}
+
 impl PxuGuiApp {
     /// Called once before the first frame.
     pub fn new(cc: &eframe::CreationContext<'_>, settings: Arguments) -> Self {
         // This is also where you can customize the look and feel of egui using
         // `cc.egui_ctx.set_visuals` and `cc.egui_ctx.set_fonts`.
+
+        setup_custom_fonts(&cc.egui_ctx);
 
         // Load previous app state (if any).
         // Note that you must enable the `persistence` feature for this to work.
