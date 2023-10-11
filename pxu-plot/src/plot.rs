@@ -32,7 +32,7 @@ pub struct PlotState {
     #[serde(skip)]
     pub dragged: bool,
     #[serde(skip)]
-    pub path_index: Option<usize>,
+    pub path_indices: Vec<usize>,
     #[serde(skip)]
     pub fullscreen_component: Option<pxu::Component>,
     #[serde(skip)]
@@ -450,7 +450,7 @@ impl Plot {
         self.draw_grid(rect, &pxu.contours, &mut shapes);
         self.draw_cuts(rect, pxu, plot_state, &mut shapes);
 
-        if let Some(path_index) = plot_state.path_index {
+        for &path_index in plot_state.path_indices.iter() {
             if path_index < pxu.paths.len() {
                 for (active_point, segments) in pxu.paths[path_index].segments.iter().enumerate() {
                     let mut points = vec![];

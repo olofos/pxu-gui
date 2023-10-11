@@ -268,7 +268,7 @@ impl eframe::App for PxuGuiApp {
                             self.ui_state.saved_paths_to_load = None;
                             self.ui_state.path_load_progress = None;
                             if !self.pxu.paths.is_empty() {
-                                self.ui_state.plot_state.path_index = Some(0);
+                                self.ui_state.plot_state.path_indices = vec![];
                             }
                         }
                     }
@@ -555,7 +555,7 @@ impl PxuGuiApp {
         }
     }
 
-    fn draw_path_editing_controls(&mut self, ui: &mut egui::Ui) {
+    fn draw_dev_controls(&mut self, ui: &mut egui::Ui) {
         ui.separator();
         ui.heading("Dev controls");
         ui.add_space(5.0);
@@ -573,6 +573,42 @@ impl PxuGuiApp {
             } else {
                 log::info!("Could not print state");
             }
+        }
+
+        if self.pxu.paths.len() > 0 {
+            ui.add_space(5.0);
+            ui.label("Paths");
+            egui::Frame::none()
+                .inner_margin(4.0)
+                .stroke(egui::Stroke::new(2.0, egui::Color32::GRAY))
+                .fill(egui::Color32::WHITE)
+                .show(ui, |ui| {
+                    egui::ScrollArea::vertical()
+                        .max_height(200.0)
+                        .show(ui, |ui| {
+                            for i in 0..self.pxu.paths.len() {
+                                let path = &self.pxu.paths[i];
+                                let index_index = self
+                                    .ui_state
+                                    .plot_state
+                                    .path_indices
+                                    .iter()
+                                    .position(|&j| j == i);
+                                let selected = index_index.is_some();
+
+                                if ui.selectable_label(selected, &path.name).clicked() {
+                                    if selected {
+                                        self.ui_state
+                                            .plot_state
+                                            .path_indices
+                                            .remove(index_index.unwrap());
+                                    } else {
+                                        self.ui_state.plot_state.path_indices.push(i);
+                                    }
+                                }
+                            }
+                        });
+                });
         }
     }
 
@@ -694,33 +730,8 @@ impl PxuGuiApp {
                 }
             });
 
-            if !self.pxu.paths.is_empty() {
-                ui.separator();
-                ui.label("Path:");
-                let path_name = if let Some(path_index) = self.ui_state.plot_state.path_index {
-                    &self.pxu.paths[path_index].base_path.name
-                } else {
-                    "None"
-                };
-                egui::ComboBox::from_id_source("path")
-                    .selected_text(path_name)
-                    .show_ui(ui, |ui| {
-                        ui.style_mut().wrap = Some(false);
-                        ui.set_min_width(60.0);
-                        ui.selectable_value(&mut self.ui_state.plot_state.path_index, None, "None");
-                        for i in 0..self.pxu.paths.len() {
-                            ui.selectable_value(
-                                &mut self.ui_state.plot_state.path_index,
-                                Some(i),
-                                &self.pxu.paths[i].base_path.name,
-                            );
-                        }
-                    });
-                ui.end_row();
-            }
-
             if self.ui_state.show_dev {
-                self.draw_path_editing_controls(ui);
+                self.draw_dev_controls(ui);
             }
 
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
