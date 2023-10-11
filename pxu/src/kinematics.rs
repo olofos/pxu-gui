@@ -42,9 +42,9 @@ pub enum UBranch {
 impl std::fmt::Display for UBranch {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            Self::Outside => "outside",
-            Self::Between => "between",
-            Self::Inside => "inside",
+            Self::Outside => "out",
+            Self::Between => "bet",
+            Self::Inside => "in",
         };
         write!(f, "{}", s)
     }

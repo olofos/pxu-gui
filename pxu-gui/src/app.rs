@@ -499,6 +499,10 @@ impl PxuGuiApp {
         let old_consts = self.pxu.consts;
         let mut new_consts = self.pxu.consts;
 
+        ui.add_space(6.0);
+        ui.label(egui::RichText::new("Parameters").strong());
+        ui.add_space(6.0);
+
         ui.add(
             egui::Slider::new(&mut new_consts.h, 0.1..=10.0)
                 .text("h")
@@ -557,10 +561,15 @@ impl PxuGuiApp {
         let active_point = &self.pxu.state.points[self.ui_state.plot_state.active_point];
         ui.separator();
         {
+            ui.label(egui::RichText::new("State").strong());
+
             ui.label(format!("Momentum: {:.3}", self.pxu.state.p()));
-            ui.label(format!("Energy: {:.3}", self.pxu.state.en(self.pxu.consts)));
             ui.label(format!(
-                "Charge: {:.3}",
+                "Energy:   {:.3}",
+                self.pxu.state.en(self.pxu.consts)
+            ));
+            ui.label(format!(
+                "Charge:   {:.3}",
                 self.pxu.state.points.len() as f64
                     + self.pxu.consts.k() as f64 * self.pxu.state.p()
             ));
@@ -569,14 +578,17 @@ impl PxuGuiApp {
         ui.separator();
 
         {
-            ui.label(format!(
-                "Active excitation (#{}):",
-                self.ui_state.plot_state.active_point
-            ));
+            ui.label(
+                egui::RichText::new(format!(
+                    "Active excitation (#{})",
+                    self.ui_state.plot_state.active_point
+                ))
+                .strong(),
+            );
 
             ui.label(format!("Momentum: {:.3}", active_point.p));
 
-            ui.label(format!("Energy: {:.3}", active_point.en(self.pxu.consts)));
+            ui.label(format!("Energy:   {:.3}", active_point.en(self.pxu.consts)));
 
             ui.add_space(10.0);
             ui.label(format!("x⁺: {:.3}", active_point.xp));
@@ -584,16 +596,19 @@ impl PxuGuiApp {
             ui.label(format!("u:  {:.3}", active_point.u));
 
             ui.add_space(10.0);
-            ui.label("Branch info:");
+            ui.label(egui::RichText::new("Branch info").strong());
 
             ui.label(format!(
-                "Log branches: {:+} {:+}",
+                "Log branch: {:+} {:+}",
                 active_point.sheet_data.log_branch_p, active_point.sheet_data.log_branch_m
             ));
 
-            ui.label(format!("E branch: {:+} ", active_point.sheet_data.e_branch));
             ui.label(format!(
-                "U branch: ({:+},{:+}) ",
+                "E branch:   {:+}",
+                active_point.sheet_data.e_branch
+            ));
+            ui.label(format!(
+                "U branch:   ({:+},{:+})",
                 active_point.sheet_data.u_branch.0, active_point.sheet_data.u_branch.1
             ));
 
