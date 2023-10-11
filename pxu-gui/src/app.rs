@@ -575,7 +575,7 @@ impl PxuGuiApp {
             }
         }
 
-        if self.pxu.paths.len() > 0 {
+        if !self.pxu.paths.is_empty() {
             ui.add_space(5.0);
             ui.label("Paths");
             egui::Frame::none()
