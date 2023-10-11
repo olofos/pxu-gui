@@ -24,6 +24,8 @@ pub struct PxuGuiApp {
     state_dialog_text: Option<String>,
     #[serde(skip)]
     show_about: bool,
+    #[serde(skip)]
+    show_help: bool,
 }
 
 impl Default for PxuGuiApp {
@@ -67,6 +69,7 @@ impl Default for PxuGuiApp {
             path_dialog_text: None,
             state_dialog_text: None,
             show_about: false,
+            show_help: false,
         }
     }
 }
@@ -325,6 +328,7 @@ impl eframe::App for PxuGuiApp {
         self.show_load_path_window(ctx);
         self.show_load_save_state_window(ctx);
         self.show_about_window(ctx);
+        self.show_help_window(ctx);
     }
 }
 
@@ -492,6 +496,21 @@ impl PxuGuiApp {
                     );
                     ui.label(".");
                 });
+            });
+    }
+
+    fn show_help_window(&mut self, ctx: &egui::Context) {
+        egui::Window::new("Help")
+            .open(&mut self.show_help)
+            .resizable(true)
+            .collapsible(true)
+            .scroll2([false, true])
+            .show(ctx, |ui| {
+                use egui_commonmark::*;
+                let markdown = include_str!("help.md");
+
+                let mut cache = CommonMarkCache::default();
+                CommonMarkViewer::new("viewer").show(ui, &mut cache, markdown);
             });
     }
 
@@ -664,9 +683,14 @@ impl PxuGuiApp {
             self.draw_state_information(ui);
 
             ui.separator();
-            if ui.button("About").clicked() {
-                self.show_about = true;
-            }
+            ui.horizontal(|ui| {
+                if ui.button("About").clicked() {
+                    self.show_about = true;
+                }
+                if ui.button("Help").clicked() {
+                    self.show_help = true;
+                }
+            });
 
             if !self.pxu.paths.is_empty() {
                 ui.separator();
