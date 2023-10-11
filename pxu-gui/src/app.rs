@@ -2,7 +2,6 @@ use egui::{vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
 
-use crate::anim::Anim;
 use crate::arguments::Arguments;
 use crate::ui_state::UiState;
 use pxu_plot::Plot;
@@ -19,8 +18,6 @@ pub struct PxuGuiApp {
     ui_state: UiState,
     #[serde(skip)]
     frame_history: crate::frame_history::FrameHistory,
-    #[serde(skip)]
-    anim_data: Anim,
     #[serde(skip)]
     path_dialog_text: Option<String>,
     #[serde(skip)]
@@ -66,7 +63,6 @@ impl Default for PxuGuiApp {
                 origin: Pos2::ZERO,
             },
             frame_history: Default::default(),
-            anim_data: Default::default(),
             ui_state: Default::default(),
             path_dialog_text: None,
             state_dialog_text: None,
@@ -241,19 +237,6 @@ impl eframe::App for PxuGuiApp {
                     }
                     break;
                 }
-                ctx.request_repaint();
-            }
-        }
-
-        if !self.anim_data.is_stopped() {
-            if let Some(z) = self.anim_data.update() {
-                self.pxu.state.update(
-                    self.anim_data.active_point,
-                    self.anim_data.component,
-                    z,
-                    &self.pxu.contours,
-                    self.pxu.consts,
-                );
                 ctx.request_repaint();
             }
         }
@@ -501,7 +484,6 @@ impl PxuGuiApp {
                     let n = n as usize;
                     self.pxu.state = pxu::State::new(n, self.pxu.consts);
                     self.ui_state.plot_state.active_point = n / 2;
-                    self.anim_data.stop();
                 }
                 self.pxu.state.points.len() as f64
             })
@@ -513,80 +495,7 @@ impl PxuGuiApp {
             self.pxu.consts = new_consts;
             self.pxu.state = pxu::State::new(self.pxu.state.points.len(), new_consts);
             self.pxu.contours.clear();
-            self.anim_data.stop();
         }
-    }
-
-    fn draw_animation_controls(&mut self, ui: &mut egui::Ui, visible: bool) {
-        let enabled = false;
-
-        ui.scope(|ui| {
-            ui.set_visible(visible);
-
-            ui.separator();
-
-            ui.horizontal(|ui| {
-                if ui
-                    .add_enabled(
-                        enabled && self.anim_data.is_paused(),
-                        egui::Button::new("⏮"),
-                    )
-                    .clicked()
-                {
-                    self.pxu.state.points = self.anim_data.goto_start();
-                }
-
-                if self.anim_data.is_stopped() {
-                    if ui.add_enabled(enabled, egui::Button::new("⏵")).clicked() {
-                        // self.pxu.state.points = self.anim_data.start(&self.pxu.paths);
-                    }
-                } else if self.anim_data.is_paused() {
-                    if ui.add_enabled(enabled, egui::Button::new("⏵")).clicked() {
-                        self.anim_data.unpause();
-                    }
-                } else if ui.add_enabled(enabled, egui::Button::new("⏸")).clicked() {
-                    self.anim_data.pause();
-                }
-
-                if ui
-                    .add_enabled(!self.anim_data.is_stopped(), egui::Button::new("⏹"))
-                    .clicked()
-                {
-                    self.anim_data.stop();
-                }
-
-                if ui
-                    .add_enabled(
-                        enabled && self.anim_data.is_paused(),
-                        egui::Button::new("⏭"),
-                    )
-                    .clicked()
-                {
-                    self.pxu.state.points = self.anim_data.goto_end();
-                }
-            });
-
-            ui.add_enabled(enabled, egui::Button::new("→"));
-            ui.add_enabled(enabled, egui::Button::new("⇤"));
-            ui.add_enabled(enabled, egui::Button::new("↔"));
-
-            ui.add_enabled(
-                enabled && self.anim_data.total_len > 0.0 && self.anim_data.is_paused(),
-                egui::Slider::from_get_set(0.0..=1.0, |v| {
-                    if let Some(v) = v {
-                        self.anim_data.t = v * self.anim_data.total_len;
-                    }
-                    self.anim_data.t / self.anim_data.total_len
-                })
-                .show_value(false),
-            );
-
-            ui.add(
-                egui::Slider::new(&mut self.anim_data.speed, 1.0..=100.0)
-                    .text("Speed")
-                    .show_value(false),
-            );
-        });
     }
 
     fn draw_path_editing_controls(&mut self, ui: &mut egui::Ui) {
@@ -703,7 +612,6 @@ impl PxuGuiApp {
 
             if ui.add(egui::Button::new("Reset State")).clicked() {
                 self.pxu.state = pxu::State::new(self.pxu.state.points.len(), self.pxu.consts);
-                self.anim_data.stop();
             }
 
             ui.checkbox(&mut self.pxu.state.unlocked, "Unlock bound state");
@@ -739,8 +647,6 @@ impl PxuGuiApp {
                     });
                 ui.end_row();
             }
-
-            self.draw_animation_controls(ui, false);
 
             if self.ui_state.show_dev {
                 self.draw_path_editing_controls(ui);
