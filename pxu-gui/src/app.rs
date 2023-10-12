@@ -147,8 +147,57 @@ impl PxuGuiApp {
         app
     }
 
+    fn parse_figure_download_response(
+        &mut self,
+        name: String,
+        response: ehttp::Response,
+    ) -> Result<(), String> {
+        if !response.ok {
+            return Err(format!(
+                "Fetch failed with {} {}",
+                response.status, response.status_text
+            ));
+        }
+
+        let Some(typ) = response.headers.get("content-type") else {
+            return Err("No content-type header!".into());
+        };
+
+        if typ == "text/html" {
+            return Err("Unexpected html file".into());
+        }
+
+        let Ok(body) = std::str::from_utf8(&response.bytes) else {
+            return Err("Could not parse response body".into());
+        };
+
+        if name == "figures" {
+            let Ok(figures) = ron::from_str::<Vec<interactive_figures::FigureDescription>>(body)
+            else {
+                log::info!("{body}");
+                return Err("Could not parse figure descriptions".into());
+            };
+            self.figure_index = None;
+            self.figures = figures;
+        } else {
+            let Ok(figure) = ron::from_str::<interactive_figures::Figure>(body) else {
+                log::info!("{body}");
+                return Err(format!("Could not parse figure {name}"));
+            };
+
+            log::info!("Loaded figure {name}");
+
+            self.ui_state.plot_state.path_indices = (0..figure.paths.len()).collect();
+            self.pxu.state = figure.state;
+            self.pxu.paths = figure.paths;
+        }
+
+        Ok(())
+    }
+
     fn handle_figure_download(&mut self, ctx: &egui::Context) {
         let mut fetch_filename = None;
+        let mut response = None;
 
         {
             let download: &mut Download = &mut self.download.lock().unwrap();
@@ -160,59 +209,24 @@ impl PxuGuiApp {
                 Download::InProgress(name) => {
                     log::info!("Waiting for {name}");
                 }
-                Download::Done(name, response) => {
-                    match response {
+
+                Download::Done(ref name, ref resp) => {
+                    match resp {
                         Err(err) => {
                             log::info!("Error: {err}")
                         }
-                        Ok(response) => {
-                            if response.ok {
-                                if let Some(typ) = response.headers.get("content-type") {
-                                    if typ == "text/html" {
-                                        log::warn!("Unexpected html file");
-                                    } else if let Ok(body) = std::str::from_utf8(&response.bytes) {
-                                        if name == "figures" {
-                                            if let Ok(figures) = ron::from_str::<
-                                                Vec<interactive_figures::FigureDescription>,
-                                            >(
-                                                body
-                                            ) {
-                                                self.figure_index = None;
-                                                self.figures = figures;
-                                            } else {
-                                                log::info!("{body}");
-                                                log::warn!("Could not parse figure descriptions");
-                                            }
-                                        } else if let Ok(figure) =
-                                            ron::from_str::<interactive_figures::Figure>(body)
-                                        {
-                                            log::info!("Loaded figure {name}");
-
-                                            self.ui_state.plot_state.path_indices =
-                                                (0..figure.paths.len()).collect();
-                                            self.pxu.state = figure.state;
-                                            self.pxu.paths = figure.paths;
-                                        } else {
-                                            log::info!("{body}");
-                                            log::warn!("Could not parse figure {name}");
-                                        }
-                                    } else {
-                                        log::warn!("Could not parse response body");
-                                    }
-                                } else {
-                                    log::warn!("No content-type header!");
-                                }
-                            } else {
-                                log::warn!(
-                                    "Fetch failed with {} {}",
-                                    response.status,
-                                    response.status_text
-                                );
-                            }
+                        Ok(resp) => {
+                            response = Some((name.clone(), resp.clone()));
                         }
                     }
                     *download = Download::None;
                 }
+            }
+        }
+
+        if let Some((name, response)) = response {
+            if let Err(err) = self.parse_figure_download_response(name, response) {
+                log::error!("Error: {err}")
             }
         }
 
