@@ -31,6 +31,8 @@ pub struct PxuGuiApp {
     #[serde(skip)]
     show_help: bool,
     #[serde(skip)]
+    show_figure_picker: bool,
+    #[serde(skip)]
     fetch_queue: VecDeque<String>,
     #[serde(skip)]
     figures: Vec<interactive_figures::FigureDescription>,
@@ -100,6 +102,7 @@ impl Default for PxuGuiApp {
             state_dialog_text: None,
             show_about: false,
             show_help: false,
+            show_figure_picker: false,
             fetch_queue: VecDeque::from(vec!["figures".to_owned()]),
             figures: vec![],
             figure_index: None,
@@ -445,6 +448,7 @@ impl eframe::App for PxuGuiApp {
         self.show_load_save_state_window(ctx);
         self.show_about_window(ctx);
         self.show_help_window(ctx);
+        self.show_figure_window(ctx);
     }
 }
 
@@ -628,6 +632,30 @@ impl PxuGuiApp {
                 let mut cache = CommonMarkCache::default();
                 CommonMarkViewer::new("viewer").show(ui, &mut cache, markdown);
             });
+    }
+
+    fn show_figure_window(&mut self, ctx: &egui::Context) {
+        let mut close = false;
+        egui::Window::new("Figures")
+            .open(&mut self.show_figure_picker)
+            .resizable(false)
+            .collapsible(true)
+            .show(ctx, |ui| {
+                for (index, fig) in self.figures.iter().enumerate() {
+                    let response = ui.selectable_label(Some(index) == self.figure_index, &fig.name);
+                    if (response.clicked() || response.double_clicked())
+                        && Some(index) != self.figure_index
+                    {
+                        self.fetch_queue.push_back(fig.filename.clone());
+                        self.figure_index = Some(index);
+                    };
+
+                    if response.double_clicked() {
+                        close = true;
+                    }
+                }
+            });
+        self.show_figure_picker ^= close;
     }
 
     fn draw_coupling_controls(&mut self, ui: &mut egui::Ui) {
@@ -835,38 +863,37 @@ impl PxuGuiApp {
             self.draw_state_information(ui);
 
             ui.separator();
-            ui.horizontal(|ui| {
-                if ui.button("About").clicked() {
-                    self.show_about = true;
+            ui.horizontal_wrapped(|ui| {
+                if ui
+                    .add_enabled(!self.figures.is_empty(), egui::Button::new("Figures"))
+                    .on_disabled_hover_text("No figures loaded")
+                    .on_hover_text("Pick a figure")
+                    .clicked()
+                {
+                    self.show_figure_picker = true;
                 }
+
                 if ui.button("Help").clicked() {
                     self.show_help = true;
                 }
+
+                if ui.button("About").clicked() {
+                    self.show_about = true;
+                }
             });
 
-            ui.separator();
             if let Some(index) = self.figure_index {
-                ui.label(egui::RichText::new("Figure").strong());
-                ui.label(&self.figures[index].name);
+                ui.separator();
+                ui.label(
+                    egui::RichText::new(format!("Figure: {}", self.figures[index].name)).strong(),
+                );
+                ui.add_space(5.0);
                 ui.label(&self.figures[index].description);
+                ui.add_space(5.0);
 
                 if ui.button("Close").clicked() {
                     self.figure_index = None;
                     self.pxu.paths.clear();
-                }
-            }
-
-            ui.separator();
-            if !self.figures.is_empty() {
-                ui.label(egui::RichText::new("Figures").strong());
-                for (index, fig) in self.figures.iter().enumerate() {
-                    if ui
-                        .selectable_label(Some(index) == self.figure_index, &fig.name)
-                        .clicked()
-                    {
-                        self.fetch_queue.push_back(fig.filename.clone());
-                        self.figure_index = Some(index);
-                    };
                 }
             }
 
