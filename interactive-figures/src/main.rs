@@ -160,6 +160,13 @@ fn main() -> std::io::Result<()> {
         .into_iter()
         .map(|fig| {
             pb.set_message(fig.filename);
+
+            for name in fig.path_names.iter() {
+                if !path_map.contains_key(*name) {
+                    panic!("Path {name} not found");
+                }
+            }
+
             let state = if fig.state.is_some() {
                 fig.state.unwrap()
             } else if !fig.path_names.is_empty() {
