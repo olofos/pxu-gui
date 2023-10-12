@@ -198,20 +198,20 @@ fn main() -> std::io::Result<()> {
     std::fs::create_dir_all(&path)?;
 
     for (filename, fig) in filename_and_figures.iter() {
-        let toml = ron::to_string(&fig).unwrap();
+        let ron = ron::to_string(&fig).unwrap();
 
         let mut path = PathBuf::from(settings.output_dir.clone()).join(filename);
-        path.set_extension("toml");
+        path.set_extension("ron");
 
-        std::fs::write(path, toml)?;
+        std::fs::write(path, ron)?;
     }
 
     println!("[5/5] Saving descriptions");
 
-    let toml = ron::to_string(&descriptions).unwrap();
+    let ron = ron::to_string(&descriptions).unwrap();
 
-    let path = PathBuf::from(settings.output_dir.clone()).join("figures.toml");
-    std::fs::write(path, toml)?;
+    let path = PathBuf::from(settings.output_dir.clone()).join("figures.ron");
+    std::fs::write(path, ron)?;
 
     Ok(())
 }
