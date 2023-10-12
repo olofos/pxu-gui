@@ -1,5 +1,4 @@
 use std::collections::VecDeque;
-use std::sync::{Arc, Mutex};
 
 use egui::{vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
@@ -8,6 +7,8 @@ use pxu::Pxu;
 use crate::arguments::Arguments;
 use crate::ui_state::UiState;
 use plot::Plot;
+
+use std::sync::mpsc;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(serde::Deserialize, serde::Serialize)]
@@ -30,20 +31,31 @@ pub struct PxuGuiApp {
     #[serde(skip)]
     show_help: bool,
     #[serde(skip)]
-    download: Arc<Mutex<Download>>,
-    #[serde(skip)]
     fetch_queue: VecDeque<String>,
     #[serde(skip)]
     figures: Vec<interactive_figures::FigureDescription>,
     #[serde(skip)]
     figure_index: Option<usize>,
+    #[serde(skip)]
+    figure_response_channel: ResponseChannel,
 }
 
-#[derive(Debug, PartialEq)]
-enum Download {
-    None,
-    InProgress(String),
-    Done(String, ehttp::Result<ehttp::Response>),
+type ResponseChannelTuple = (
+    mpsc::Sender<(String, Result<ehttp::Response, ehttp::Error>)>,
+    mpsc::Receiver<(String, Result<ehttp::Response, ehttp::Error>)>,
+);
+struct ResponseChannel {
+    tx: mpsc::Sender<(String, Result<ehttp::Response, ehttp::Error>)>,
+    rx: mpsc::Receiver<(String, Result<ehttp::Response, ehttp::Error>)>,
+}
+
+impl From<ResponseChannelTuple> for ResponseChannel {
+    fn from(value: ResponseChannelTuple) -> Self {
+        Self {
+            tx: value.0,
+            rx: value.1,
+        }
+    }
 }
 
 impl Default for PxuGuiApp {
@@ -88,10 +100,10 @@ impl Default for PxuGuiApp {
             state_dialog_text: None,
             show_about: false,
             show_help: false,
-            download: Arc::new(Mutex::new(Download::None)),
             fetch_queue: VecDeque::from(vec!["figures".to_owned()]),
             figures: vec![],
             figure_index: None,
+            figure_response_channel: mpsc::channel().into(),
         }
     }
 }
@@ -196,52 +208,32 @@ impl PxuGuiApp {
     }
 
     fn handle_figure_download(&mut self, ctx: &egui::Context) {
-        let mut fetch_filename = None;
-        let mut response = None;
-
-        {
-            let download: &mut Download = &mut self.download.lock().unwrap();
-            match download {
-                Download::None => {
-                    fetch_filename = self.fetch_queue.pop_front();
-                }
-
-                Download::InProgress(name) => {
-                    log::info!("Waiting for {name}");
-                }
-
-                Download::Done(ref name, ref resp) => {
-                    match resp {
-                        Err(err) => {
-                            log::info!("Error: {err}")
-                        }
-                        Ok(resp) => {
-                            response = Some((name.clone(), resp.clone()));
-                        }
-                    }
-                    *download = Download::None;
-                }
-            }
-        }
-
-        if let Some((name, response)) = response {
-            if let Err(err) = self.parse_figure_download_response(name, response) {
-                log::error!("Error: {err}")
-            }
-        }
-
-        if let Some(name) = fetch_filename {
+        if let Some(name) = self.fetch_queue.pop_front() {
             let url = format!("http://127.0.0.1:8080/data/{name}.ron");
             let request = ehttp::Request::get(url);
 
-            let download_store = self.download.clone();
-            *download_store.lock().unwrap() = Download::InProgress(name.clone());
             let ctx = ctx.clone();
+            let tx = self.figure_response_channel.tx.clone();
 
             ehttp::fetch(request, move |response| {
-                *download_store.lock().unwrap() = Download::Done(name, response);
+                if tx.send((name, response)).is_err() {
+                    log::info!("Could not send response!");
+                }
                 ctx.request_repaint(); // Wake up UI thread
             });
+        }
+
+        if let Ok((name, response)) = self.figure_response_channel.rx.try_recv() {
+            match response {
+                Err(err) => {
+                    log::info!("Error: {err}")
+                }
+                Ok(response) => {
+                    if let Err(err) = self.parse_figure_download_response(name, response) {
+                        log::error!("Error: {err}")
+                    }
+                }
+            }
         }
     }
 }
