@@ -205,6 +205,7 @@ impl PxuGuiApp {
             self.ui_state.plot_state.path_indices = (0..figure.paths.len()).collect();
             self.pxu.state = figure.state;
             self.pxu.paths = figure.paths;
+            self.ui_state.plot_state.active_point = 0;
         }
 
         Ok(())
