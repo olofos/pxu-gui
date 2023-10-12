@@ -210,9 +210,35 @@ impl PxuGuiApp {
         Ok(())
     }
 
+    #[cfg(target_arch = "wasm32")]
+    fn get_base_url(&self) -> Option<String> {
+        let location: String = web_sys::window()?
+            .document()?
+            .location()?
+            .to_string()
+            .into();
+
+        let mut url = url::Url::parse(&location).ok()?;
+
+        url.set_fragment(None);
+        url.set_query(None);
+        let url = url.join("./").ok()?;
+
+        Some(url.to_string())
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn get_base_url(&self) -> Option<String> {
+        Some("http://localhost:8080/".to_owned())
+    }
+
     fn handle_figure_download(&mut self, ctx: &egui::Context) {
+        let Some(base_url) = self.get_base_url() else {
+            return;
+        };
+
         if let Some(name) = self.fetch_queue.pop_front() {
-            let url = format!("http://127.0.0.1:8080/data/{name}.ron");
+            let url = format!("{base_url}data/{name}.ron");
             let request = ehttp::Request::get(url);
 
             let ctx = ctx.clone();
