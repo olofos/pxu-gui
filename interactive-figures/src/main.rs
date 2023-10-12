@@ -26,13 +26,43 @@ struct FigureSource<'a> {
 }
 
 fn main() -> std::io::Result<()> {
-    let figures = vec![FigureSource {
-        filename: "crossing-0",
+    let figures = vec![
+        FigureSource {
+        filename: "crossing-0a",
         name: "Crossing from (0,2π)",
         description:
-            "Two different paths that can be used for crossing starting from p in the range (0,2π)",
+            "Two paths that can be used for crossing starting from p in the range (0,2π)",
         path_names: vec!["p crossing a", "p crossing b"],
         state: None,
+    },
+    FigureSource {
+        filename: "crossing-0b",
+        name: "Another crossing from (0,2π)",
+        description:
+            "Two more less convenient paths that can be used for crossing starting from p in the range (0,2π)",
+        path_names: vec!["p crossing c", "p crossing d"],
+        state: None,
+    },
+    FigureSource {
+        filename: "xp-circle-between",
+        name: "x⁺ circle between/between",
+        description: "x⁺ goes in a circle around the kidney with x⁻ staying between the scallion and the kidney. This path is periodic in the p, x⁺ and x⁻ planes.",
+        path_names: vec!["xp circle between/between"],
+        state: None
+    },
+    FigureSource {
+        filename: "xp-circle-between-outside",
+        name: "x⁺ circle between/outside",
+        description: "x⁺ goes in a circle around the kidney with x⁻ staying outside the scallion.",
+        path_names: vec!["xp circle between/outside L", "xp circle between/outside R"],
+        state: None
+    },
+    FigureSource {
+        filename: "xp-circle-between-inside",
+        name: "x⁺ circle between/inside",
+        description: "x⁺ goes in a circle around the kidney with x⁻ staying inside the scallion.",
+        path_names: vec!["xp circle between/inside L", "xp circle between/inside R"],
+        state: None
     }];
 
     let settings = Settings::parse();
