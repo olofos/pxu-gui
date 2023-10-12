@@ -1,3 +1,6 @@
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
+
 use egui::{vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
 use pxu::Pxu;
@@ -26,6 +29,21 @@ pub struct PxuGuiApp {
     show_about: bool,
     #[serde(skip)]
     show_help: bool,
+    #[serde(skip)]
+    download: Arc<Mutex<Download>>,
+    #[serde(skip)]
+    fetch_queue: VecDeque<String>,
+    #[serde(skip)]
+    figures: Vec<interactive_figures::FigureDescription>,
+    #[serde(skip)]
+    figure_index: Option<usize>,
+}
+
+#[derive(Debug, PartialEq)]
+enum Download {
+    None,
+    InProgress(String),
+    Done(String, ehttp::Result<ehttp::Response>),
 }
 
 impl Default for PxuGuiApp {
@@ -70,6 +88,10 @@ impl Default for PxuGuiApp {
             state_dialog_text: None,
             show_about: false,
             show_help: false,
+            download: Arc::new(Mutex::new(Download::None)),
+            fetch_queue: VecDeque::from(vec!["figures".to_owned()]),
+            figures: vec![],
+            figure_index: None,
         }
     }
 }
@@ -124,6 +146,90 @@ impl PxuGuiApp {
         app.ui_state.set(settings);
         app
     }
+
+    fn handle_figure_download(&mut self, ctx: &egui::Context) {
+        let mut fetch_filename = None;
+
+        {
+            let download: &mut Download = &mut self.download.lock().unwrap();
+            match download {
+                Download::None => {
+                    fetch_filename = self.fetch_queue.pop_front();
+                }
+
+                Download::InProgress(name) => {
+                    log::info!("Waiting for {name}");
+                }
+                Download::Done(name, response) => {
+                    match response {
+                        Err(err) => {
+                            log::info!("Error: {err}")
+                        }
+                        Ok(response) => {
+                            if response.ok {
+                                if let Some(typ) = response.headers.get("content-type") {
+                                    if typ == "text/html" {
+                                        log::warn!("Unexpected html file");
+                                    } else if let Ok(body) = std::str::from_utf8(&response.bytes) {
+                                        if name == "figures" {
+                                            if let Ok(figures) = ron::from_str::<
+                                                Vec<interactive_figures::FigureDescription>,
+                                            >(
+                                                body
+                                            ) {
+                                                self.figure_index = None;
+                                                self.figures = figures;
+                                            } else {
+                                                log::info!("{body}");
+                                                log::warn!("Could not parse figure descriptions");
+                                            }
+                                        } else if let Ok(figure) =
+                                            ron::from_str::<interactive_figures::Figure>(body)
+                                        {
+                                            log::info!("Loaded figure {name}");
+
+                                            self.ui_state.plot_state.path_indices =
+                                                (0..figure.paths.len()).collect();
+                                            self.pxu.state = figure.state;
+                                            self.pxu.paths = figure.paths;
+                                        } else {
+                                            log::info!("{body}");
+                                            log::warn!("Could not parse figure {name}");
+                                        }
+                                    } else {
+                                        log::warn!("Could not parse response body");
+                                    }
+                                } else {
+                                    log::warn!("No content-type header!");
+                                }
+                            } else {
+                                log::warn!(
+                                    "Fetch failed with {} {}",
+                                    response.status,
+                                    response.status_text
+                                );
+                            }
+                        }
+                    }
+                    *download = Download::None;
+                }
+            }
+        }
+
+        if let Some(name) = fetch_filename {
+            let url = format!("http://127.0.0.1:8080/data/{name}.ron");
+            let request = ehttp::Request::get(url);
+
+            let download_store = self.download.clone();
+            *download_store.lock().unwrap() = Download::InProgress(name.clone());
+            let ctx = ctx.clone();
+
+            ehttp::fetch(request, move |response| {
+                *download_store.lock().unwrap() = Download::Done(name, response);
+                ctx.request_repaint(); // Wake up UI thread
+            });
+        }
+    }
 }
 
 impl eframe::App for PxuGuiApp {
@@ -136,6 +242,8 @@ impl eframe::App for PxuGuiApp {
             self.frame_history
                 .on_new_frame(ctx.input(|i| i.time), frame.info().cpu_usage);
         }
+
+        self.handle_figure_download(ctx);
 
         if self.ui_state.continuous_mode {
             ctx.request_repaint();
@@ -729,6 +837,32 @@ impl PxuGuiApp {
                     self.show_help = true;
                 }
             });
+
+            ui.separator();
+            if let Some(index) = self.figure_index {
+                ui.label(egui::RichText::new("Figure").strong());
+                ui.label(&self.figures[index].name);
+                ui.label(&self.figures[index].description);
+
+                if ui.button("Close").clicked() {
+                    self.figure_index = None;
+                    self.pxu.paths.clear();
+                }
+            }
+
+            ui.separator();
+            if !self.figures.is_empty() {
+                ui.label(egui::RichText::new("Figures").strong());
+                for (index, fig) in self.figures.iter().enumerate() {
+                    if ui
+                        .selectable_label(Some(index) == self.figure_index, &fig.name)
+                        .clicked()
+                    {
+                        self.fetch_queue.push_back(fig.filename.clone());
+                        self.figure_index = Some(index);
+                    };
+                }
+            }
 
             if self.ui_state.show_dev {
                 self.draw_dev_controls(ui);

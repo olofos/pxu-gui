@@ -28,12 +28,13 @@ chrono = { version = "0.4", features = [
 
 pxu = { path = "../pxu", features = ["egui"] }
 plot = { path = "../plot" }
+interactive-figures = { path = "../interactive-figures" }
 serde_json = "1.0.95"
 serde_urlencoded = "0.7.1"
 base64.workspace = true
 flate2 = "1.0.25"
 ron = "0.8.0"
-
+ehttp = "0.3.1"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
