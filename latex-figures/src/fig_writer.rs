@@ -542,6 +542,10 @@ progress_file=io.open(""#;
         )
     }
 
+    pub fn draw(&mut self, path: &str, options: &[&str]) -> Result<()> {
+        writeln!(self.writer, "\\draw [{}] {path};", options.join(","))
+    }
+
     pub fn add_point(&mut self, point: &pxu::Point, options: &[&str]) -> Result<()> {
         let points = vec![point.get(self.component)];
         self.add_plot_all(&[&["only marks"], options].concat(), points)?;
