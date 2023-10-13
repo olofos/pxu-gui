@@ -272,6 +272,7 @@ impl PxuGuiApp {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     fn load_local_file(&mut self, name: &String) -> Result<(), String> {
         let mut path = std::path::Path::new("./pxu-gui/dist/data/").join(name);
         path.set_extension("ron");
