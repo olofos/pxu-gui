@@ -216,6 +216,51 @@ fn fig_p_plane_e_cuts(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_scallion_and_kidney(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "scallion-and-kidney",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_axis()?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+    }
+
+    figure.add_node("Scallion", Complex64::new(1.5, -2.0), &["anchor=west"])?;
+    figure.add_node("Kidney", Complex64::new(-1.25, 0.5), &["anchor=east"])?;
+    figure.draw("(1.5,-2.0) to[out=180,in=-45] (0.68,-1.53)", &["->"])?;
+    figure.draw("(-1.25,0.5) to[out=0,in=130] (-0.75,0.3)", &["->"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xpl_cover(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -2678,4 +2723,5 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_bs_disp_rel_large,
     fig_bs_disp_rel_small,
     fig_bs_disp_rel_lr0,
+    fig_scallion_and_kidney,
 ];
