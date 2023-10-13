@@ -272,7 +272,7 @@ fn fig_scallion_and_kidney(
             )
         })
     {
-        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
     }
 
     figure.add_node("Scallion", Complex64::new(1.5, -2.0), &["anchor=west"])?;
@@ -385,7 +385,7 @@ fn fig_x_regions_outside(
             )
         })
     {
-        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -473,7 +473,7 @@ fn fig_x_regions_between(
             )
         })
     {
-        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -546,7 +546,7 @@ fn fig_x_regions_inside(
             )
         })
     {
-        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
     }
 
     figure.finish(cache, settings, pb)
