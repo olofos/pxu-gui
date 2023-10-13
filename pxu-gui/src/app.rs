@@ -172,7 +172,7 @@ impl PxuGuiApp {
         Ok(())
     }
 
-    fn load_figure(&mut self, name: String, body: &str) -> Result<(), String> {
+    fn load_figure(&mut self, name: &String, body: &str) -> Result<(), String> {
         let Ok(figure) = ron::from_str::<interactive_figures::Figure>(body) else {
             log::info!("{body}");
             return Err(format!("Could not parse figure {name}"));
@@ -187,9 +187,21 @@ impl PxuGuiApp {
         Ok(())
     }
 
+    fn load_file(&mut self, name: &String, bytes: Vec<u8>) -> Result<(), String> {
+        let Ok(body) = std::str::from_utf8(&bytes) else {
+            return Err("Could not parse response body".into());
+        };
+
+        if name == "figures" {
+            self.load_figure_descriptions(body)
+        } else {
+            self.load_figure(name, body)
+        }
+    }
+
     fn parse_figure_download_response(
         &mut self,
-        name: String,
+        name: &String,
         response: ehttp::Response,
     ) -> Result<(), String> {
         if !response.ok {
@@ -207,15 +219,7 @@ impl PxuGuiApp {
             return Err("Unexpected html file".into());
         }
 
-        let Ok(body) = std::str::from_utf8(&response.bytes) else {
-            return Err("Could not parse response body".into());
-        };
-
-        if name == "figures" {
-            self.load_figure_descriptions(body)
-        } else {
-            self.load_figure(name, body)
-        }
+        self.load_file(name, response.bytes)
     }
 
     #[cfg(target_arch = "wasm32")]
@@ -237,39 +241,74 @@ impl PxuGuiApp {
 
     #[cfg(not(target_arch = "wasm32"))]
     fn get_base_url(&self) -> Option<String> {
-        Some("http://localhost:8080/".to_owned())
+        Some("http://olofos.github.io/pxu-gui/".to_owned())
     }
 
-    fn handle_figure_download(&mut self, ctx: &egui::Context) {
+    fn download_file(&mut self, ctx: &egui::Context, name: &String) -> Result<(), String> {
         let Some(base_url) = self.get_base_url() else {
-            return;
+            return Err("No base URL set".into());
         };
 
-        if let Some(name) = self.fetch_queue.pop_front() {
-            let url = format!("{base_url}data/{name}.ron");
-            let request = ehttp::Request::get(url);
+        let url = format!("{base_url}data/{name}.ron");
+        let request = ehttp::Request::get(url);
 
-            let ctx = ctx.clone();
-            let tx = self.figure_response_channel.tx.clone();
+        let ctx = ctx.clone();
+        let tx = self.figure_response_channel.tx.clone();
+        let name = name.clone();
+        ehttp::fetch(request, move |response| {
+            if tx.send((name, response)).is_err() {
+                log::info!("Could not send response!");
+            }
+            ctx.request_repaint(); // Wake up UI thread
+        });
 
-            ehttp::fetch(request, move |response| {
-                if tx.send((name, response)).is_err() {
-                    log::info!("Could not send response!");
-                }
-                ctx.request_repaint(); // Wake up UI thread
-            });
-        }
+        Ok(())
+    }
 
+    fn receive_download(&mut self) {
         if let Ok((name, response)) = self.figure_response_channel.rx.try_recv() {
             match response {
                 Err(err) => {
                     log::info!("Error: {err}")
                 }
                 Ok(response) => {
-                    if let Err(err) = self.parse_figure_download_response(name, response) {
+                    if let Err(err) = self.parse_figure_download_response(&name, response) {
                         log::error!("Error: {err}")
                     }
                 }
+            }
+        }
+    }
+
+    fn load_local_file(&mut self, name: &String) -> Result<(), String> {
+        let mut path = std::path::Path::new("./pxu-gui/dist/data/").join(&name);
+        path.set_extension("ron");
+
+        let Ok(bytes) = std::fs::read(&path) else {
+            return Err(format!("Could not read {:?}", path));
+        };
+
+        self.load_file(&name, bytes)
+    }
+
+    fn load_files(&mut self, ctx: &egui::Context) {
+        let Some(name) = self.fetch_queue.pop_front() else {
+            return;
+        };
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            match self.load_local_file(&name) {
+                Ok(_) => return,
+                Err(err) => {
+                    log::warn!("Error: {err}");
+                    log::info!("Trying to download file instead");
+                }
+            }
+        }
+        match self.download_file(ctx, &name) {
+            Ok(_) => {}
+            Err(err) => {
+                log::warn!("Error: {err}");
             }
         }
     }
@@ -286,7 +325,8 @@ impl eframe::App for PxuGuiApp {
                 .on_new_frame(ctx.input(|i| i.time), frame.info().cpu_usage);
         }
 
-        self.handle_figure_download(ctx);
+        self.load_files(ctx);
+        self.receive_download();
 
         if self.ui_state.continuous_mode {
             ctx.request_repaint();
