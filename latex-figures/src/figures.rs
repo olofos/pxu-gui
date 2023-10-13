@@ -282,6 +282,111 @@ fn fig_scallion_and_kidney(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_x_regions_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "x-regions-between",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_axis()?;
+
+    // for cut in pxu
+    //     .contours
+    //     .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    //     .filter(|cut| {
+    //         matches!(
+    //             cut.typ,
+    //             pxu::CutType::UShortKidney(pxu::Component::Xp)
+    //                 | pxu::CutType::UShortScallion(pxu::Component::Xp)
+    //         )
+    //     })
+    // {
+    //     figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+    // }
+
+    let xp_scallions = pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+        .collect::<Vec<_>>();
+
+    let xp_kidney = pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
+        .collect::<Vec<_>>();
+
+    let mut scallion_path = xp_scallions[0]
+        .path
+        .clone()
+        .into_iter()
+        .filter(|x| x.im < 0.0 && x.re > -3.5)
+        .collect::<Vec<_>>();
+
+    let mut kidney_path = xp_kidney[0]
+        .path
+        .clone()
+        .into_iter()
+        .filter(|x| x.im < 0.0 && x.re > -3.5)
+        .collect::<Vec<_>>();
+
+    if scallion_path.first().unwrap().re > scallion_path.last().unwrap().re {
+        scallion_path.reverse();
+    }
+
+    if kidney_path.first().unwrap().re > kidney_path.last().unwrap().re {
+        kidney_path.reverse();
+    }
+
+    let (scallion_left, scallion_right) = scallion_path.split_at(
+        scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
+    );
+
+    let (kidney_left, kidney_right) = kidney_path.split_at(
+        kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
+    );
+
+    let mut vertical_path = vec![];
+    for segment in pxu.get_path_by_name("u vertical between").unwrap().segments[0].iter() {
+        vertical_path.extend(&segment.xp);
+    }
+
+    let mut q4_path = vec![*kidney_right.last().unwrap(), pxu.consts.s().into()];
+
+    q4_path.extend(scallion_right.iter().rev());
+    q4_path.extend(&vertical_path);
+    q4_path.extend(kidney_right);
+
+    let mut q3_path = vec![
+        Complex64::from(-1.0 / pxu.consts.s()),
+        Complex64::from(-4.0),
+    ];
+
+    q3_path.extend(scallion_left);
+    q3_path.extend(&vertical_path);
+    q3_path.extend(kidney_left.iter().rev());
+
+    figure.add_plot(&["fill=green", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=red", "draw=none"], &q4_path)?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xpl_cover(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -2745,4 +2850,5 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_bs_disp_rel_small,
     fig_bs_disp_rel_lr0,
     fig_scallion_and_kidney,
+    fig_x_regions_between,
 ];

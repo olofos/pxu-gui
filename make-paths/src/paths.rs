@@ -1031,6 +1031,106 @@ fn path_p_crossing_d(contours: &pxu::Contours, consts: CouplingConstants) -> Sav
     pxu::path::SavedPath::new("p crossing d", path, state, pxu::Component::P, 0, consts)
 }
 
+fn path_u_vertical_outside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+
+    let steps = 67;
+    let y0 = -0.51;
+    let y1 = -8.0;
+
+    state.follow_path(
+        pxu::Component::U,
+        &[[3.0, 0.0], [3.0, -2.0], [0.0, -2.0], [0.0, y0]],
+        contours,
+        consts,
+    );
+
+    let p1 = Complex64::new(0.0, y0);
+    let p2 = Complex64::new(0.0, y1);
+
+    let path = (0..=steps)
+        .map(|i| p1 + (i as f64 / steps as f64) * (p2 - p1))
+        .collect::<Vec<_>>();
+
+    pxu::path::SavedPath::new(
+        "u vertical outside",
+        path,
+        state,
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn path_u_vertical_between(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+
+    let steps = 67;
+    let y0 = -0.49;
+    let y1 = 2.0;
+
+    state.follow_path(
+        pxu::Component::U,
+        &[[3.0, 0.0], [3.0, -2.0], [0.0, -2.0], [0.0, y0]],
+        contours,
+        consts,
+    );
+
+    let p1 = Complex64::new(0.0, y0);
+    let p2 = Complex64::new(0.0, y1);
+
+    let path = (0..=steps)
+        .map(|i| p1 + (i as f64 / steps as f64) * (p2 - p1))
+        .collect::<Vec<_>>();
+
+    pxu::path::SavedPath::new(
+        "u vertical between",
+        path,
+        state,
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn path_u_vertical_inside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+    let mut state = pxu::State::new(1, consts);
+
+    let steps = 67;
+    let y0 = 2.0;
+    let y1 = 50.0;
+
+    state.follow_path(
+        pxu::Component::U,
+        &[
+            [3.0, 0.0],
+            [3.0, -2.0],
+            [0.0, -2.0],
+            [0.0, -0.49],
+            [0.0, 0.0],
+            [0.0, y0],
+        ],
+        contours,
+        consts,
+    );
+
+    let p1 = Complex64::new(0.0, y0);
+    let p2 = Complex64::new(0.0, y1);
+
+    let path = (0..=steps)
+        .map(|i| p1 + (i as f64 / steps as f64) * (p2 - p1))
+        .collect::<Vec<_>>();
+
+    pxu::path::SavedPath::new(
+        "u vertical inside",
+        path,
+        state,
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
 type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
 
 pub const PLOT_PATHS: &[PathFunction] = &[
@@ -1055,25 +1155,29 @@ pub const PLOT_PATHS: &[PathFunction] = &[
     path_p_crossing_b,
     path_p_crossing_c,
     path_p_crossing_d,
+    path_u_vertical_outside,
+    path_u_vertical_between,
+    path_u_vertical_inside,
 ];
 
 pub const INTERACTIVE_PATHS: &[PathFunction] = &[
-    path_xp_circle_between_between,
-    path_xp_circle_between_between_single,
-    path_xp_circle_between_inside_left,
-    path_xp_circle_between_inside_right,
-    path_xp_circle_between_outside_left,
-    path_xp_circle_between_outside_right,
-    path_p_circle_origin_e,
-    path_p_circle_origin_not_e,
-    path_u_band_between_inside,
-    path_u_band_between_outside,
-    path_u_periodic_between_between,
-    path_u_crossing_from_0_b,
-    path_u_crossing_from_0_a,
-    path_u_crossing_from_min_1,
-    path_p_crossing_a,
-    path_p_crossing_b,
-    path_p_crossing_c,
-    path_p_crossing_d,
+    // path_xp_circle_between_between,
+    // path_xp_circle_between_between_single,
+    // path_xp_circle_between_inside_left,
+    // path_xp_circle_between_inside_right,
+    // path_xp_circle_between_outside_left,
+    // path_xp_circle_between_outside_right,
+    // path_p_circle_origin_e,
+    // path_p_circle_origin_not_e,
+    // path_u_band_between_inside,
+    // path_u_band_between_outside,
+    // path_u_periodic_between_between,
+    // path_u_crossing_from_0_b,
+    // path_u_crossing_from_0_a,
+    // path_u_crossing_from_min_1,
+    // path_p_crossing_a,
+    // path_p_crossing_b,
+    // path_p_crossing_c,
+    // path_p_crossing_d,
+    path_u_vertical_between,
 ];
