@@ -158,9 +158,9 @@ fn main() -> std::io::Result<()> {
 
     if settings.verbose == 0 {
         if settings.rebuild {
-            println!("[3/5] Builing figures (ignoring cache)");
+            println!("[3/5] Building figures (ignoring cache)");
         } else {
-            println!("[3/5] Builing figures");
+            println!("[3/5] Building figures");
         }
     }
     let mb = Arc::new(MultiProgress::new());
