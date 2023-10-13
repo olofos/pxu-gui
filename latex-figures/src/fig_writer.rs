@@ -358,8 +358,8 @@ progress_file=io.open(""#;
         for shift in shifts {
             self.y_shift = shift;
 
-            if style == dashed {
-                self.add_plot(&[&["lightgray", "very thick"], options].concat(), &cut.path)?
+            if style == dashed && options.is_empty() {
+                self.add_plot(&["lightgray", "very thick"], &cut.path)?
             }
             self.add_plot(&[&[color, style], options].concat(), &cut.path)?;
 
