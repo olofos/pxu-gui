@@ -50,6 +50,27 @@ fn fig_p_xpl_preimage(
         figure.add_cut(cut, &[], pxu.consts)?;
     }
 
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::E
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
+                    | pxu::CutType::ULongPositive(pxu::Component::Xp)
+            )
+        })
+    {
+        let options: &[&str] = match cut.typ {
+            pxu::CutType::Log(_) => &["Red!50!white", "decoration={name=none}", "very thick"],
+            pxu::CutType::ULongPositive(_) => &["Red!50!white", "densely dashed", "very thick"],
+            _ => &[],
+        };
+        figure.add_cut(cut, options, pxu.consts)?;
+    }
+
     let k = pxu.consts.k() as f64;
 
     for p_range in -3..=2 {
