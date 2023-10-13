@@ -163,20 +163,17 @@ impl PxuGuiApp {
     }
 
     fn load_figure_descriptions(&mut self, body: &str) -> Result<(), String> {
-        let Ok(figures) = ron::from_str::<Vec<interactive_figures::FigureDescription>>(body) else {
-            log::info!("{body}");
-            return Err("Could not parse figure descriptions".into());
-        };
+        let figures = ron::from_str::<Vec<interactive_figures::FigureDescription>>(body)
+            .map_err(|err| format!("Could not parse figure description: {err}"))?;
+
         self.figure_index = None;
         self.figures = figures;
         Ok(())
     }
 
     fn load_figure(&mut self, name: &String, body: &str) -> Result<(), String> {
-        let Ok(figure) = ron::from_str::<interactive_figures::Figure>(body) else {
-            log::info!("{body}");
-            return Err(format!("Could not parse figure {name}"));
-        };
+        let figure = ron::from_str::<interactive_figures::Figure>(body)
+            .map_err(|err| format!("Could not parse figure {name}: {err}"))?;
 
         log::info!("Loaded figure {name}");
 
@@ -188,9 +185,8 @@ impl PxuGuiApp {
     }
 
     fn load_file(&mut self, name: &String, bytes: Vec<u8>) -> Result<(), String> {
-        let Ok(body) = std::str::from_utf8(&bytes) else {
-            return Err("Could not parse response body".into());
-        };
+        let body = std::str::from_utf8(&bytes)
+            .map_err(|err| format!("Could not parse response body: {err}"))?;
 
         if name == "figures" {
             self.load_figure_descriptions(body)
@@ -211,12 +207,10 @@ impl PxuGuiApp {
             ));
         }
 
-        let Some(typ) = response.headers.get("content-type") else {
-            return Err("No content-type header!".into());
-        };
-
-        if typ == "text/html" {
-            return Err("Unexpected html file".into());
+        if let Some(typ) = response.headers.get("content-type") {
+            if typ == "text/html" {
+                return Err("Unexpected html file".into());
+            }
         }
 
         self.load_file(name, response.bytes)
@@ -245,9 +239,7 @@ impl PxuGuiApp {
     }
 
     fn download_file(&mut self, ctx: &egui::Context, name: &String) -> Result<(), String> {
-        let Some(base_url) = self.get_base_url() else {
-            return Err("No base URL set".into());
-        };
+        let base_url = self.get_base_url().ok_or("No base URL set".to_owned())?;
 
         let url = format!("{base_url}data/{name}.ron");
         let request = ehttp::Request::get(url);
@@ -281,14 +273,13 @@ impl PxuGuiApp {
     }
 
     fn load_local_file(&mut self, name: &String) -> Result<(), String> {
-        let mut path = std::path::Path::new("./pxu-gui/dist/data/").join(&name);
+        let mut path = std::path::Path::new("./pxu-gui/dist/data/").join(name);
         path.set_extension("ron");
 
-        let Ok(bytes) = std::fs::read(&path) else {
-            return Err(format!("Could not read {:?}", path));
-        };
+        let bytes =
+            std::fs::read(&path).map_err(|err| format!("Could not read {path:?}: {err}"))?;
 
-        self.load_file(&name, bytes)
+        self.load_file(name, bytes)
     }
 
     fn load_files(&mut self, ctx: &egui::Context) {
