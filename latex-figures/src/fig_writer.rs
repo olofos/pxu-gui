@@ -326,7 +326,7 @@ progress_file=io.open(""#;
         let dashed = "very thick,densely dashed";
         let zigzag = "decorate,decoration={zigzag, segment length=1.2mm, amplitude=0.15mm},thick";
         let (color, style) = match cut.typ {
-            pxu::CutType::E => ("black", ""),
+            pxu::CutType::E => ("black", straight),
             pxu::CutType::Log(pxu::Component::Xp) => ("Red", zigzag),
             pxu::CutType::Log(pxu::Component::Xm) => ("Green", zigzag),
             pxu::CutType::ULongPositive(pxu::Component::Xp) => ("Red", straight),
