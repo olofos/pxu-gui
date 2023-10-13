@@ -5,6 +5,7 @@ use crate::utils::{error, Settings, Size};
 use indicatif::ProgressBar;
 
 use num::complex::Complex64;
+use num::Zero;
 use pxu::GridLineComponent;
 use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch, Pxu};
 use std::io::Result;
@@ -282,6 +283,114 @@ fn fig_scallion_and_kidney(
     figure.finish(cache, settings, pb)
 }
 
+fn get_cut_path(
+    pxu: &Arc<Pxu>,
+    component: pxu::Component,
+    cut_type: pxu::CutType,
+) -> Vec<Complex64> {
+    let cut_paths = pxu
+        .contours
+        .get_visible_cuts(pxu, component, 0)
+        .filter(|cut| cut.typ == cut_type)
+        .collect::<Vec<_>>();
+
+    let mut path = cut_paths[0]
+        .path
+        .clone()
+        .into_iter()
+        .filter(|x| x.im < 0.0 && x.re > -3.5)
+        .collect::<Vec<_>>();
+
+    if path.first().unwrap().re > path.last().unwrap().re {
+        path.reverse();
+    }
+
+    path
+}
+
+fn fig_x_regions_outside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "x-regions-outside",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_axis()?;
+
+    let scallion_path = get_cut_path(
+        &pxu,
+        pxu::Component::Xp,
+        pxu::CutType::UShortScallion(pxu::Component::Xp),
+    );
+
+    let (scallion_left, scallion_right) = scallion_path.split_at(
+        scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
+    );
+
+    let mut vertical_path: Vec<Complex64> = vec![];
+    for segment in pxu.get_path_by_name("u vertical outside").unwrap().segments[0].iter() {
+        vertical_path.extend(&segment.xp);
+    }
+
+    let mut q4_path = vec![pxu.consts.s().into()];
+
+    q4_path.extend(scallion_right);
+    q4_path.extend([
+        Complex64::from(pxu.consts.s()),
+        Complex64::from(4.0),
+        Complex64::new(4.0, vertical_path.last().unwrap().im),
+    ]);
+    q4_path.extend(vertical_path.iter().rev());
+
+    let mut q3_path = vec![Complex64::from(-4.0)];
+
+    q3_path.extend(scallion_left);
+    q3_path.extend(&vertical_path);
+    q3_path.extend([
+        Complex64::new(-4.0, vertical_path.last().unwrap().im),
+        Complex64::from(-4.0),
+        Complex64::from(-1.0 / pxu.consts.s()),
+    ]);
+
+    let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+    let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_x_regions_between(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -305,53 +414,17 @@ fn fig_x_regions_between(
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_axis()?;
 
-    // for cut in pxu
-    //     .contours
-    //     .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
-    //     .filter(|cut| {
-    //         matches!(
-    //             cut.typ,
-    //             pxu::CutType::UShortKidney(pxu::Component::Xp)
-    //                 | pxu::CutType::UShortScallion(pxu::Component::Xp)
-    //         )
-    //     })
-    // {
-    //     figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
-    // }
+    let scallion_path = get_cut_path(
+        &pxu,
+        pxu::Component::Xp,
+        pxu::CutType::UShortScallion(pxu::Component::Xp),
+    );
 
-    let xp_scallions = pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
-        .collect::<Vec<_>>();
-
-    let xp_kidney = pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
-        .collect::<Vec<_>>();
-
-    let mut scallion_path = xp_scallions[0]
-        .path
-        .clone()
-        .into_iter()
-        .filter(|x| x.im < 0.0 && x.re > -3.5)
-        .collect::<Vec<_>>();
-
-    let mut kidney_path = xp_kidney[0]
-        .path
-        .clone()
-        .into_iter()
-        .filter(|x| x.im < 0.0 && x.re > -3.5)
-        .collect::<Vec<_>>();
-
-    if scallion_path.first().unwrap().re > scallion_path.last().unwrap().re {
-        scallion_path.reverse();
-    }
-
-    if kidney_path.first().unwrap().re > kidney_path.last().unwrap().re {
-        kidney_path.reverse();
-    }
+    let kidney_path = get_cut_path(
+        &pxu,
+        pxu::Component::Xp,
+        pxu::CutType::UShortKidney(pxu::Component::Xp),
+    );
 
     let (scallion_left, scallion_right) = scallion_path.split_at(
         scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
@@ -381,8 +454,100 @@ fn fig_x_regions_between(
     q3_path.extend(&vertical_path);
     q3_path.extend(kidney_left.iter().rev());
 
-    figure.add_plot(&["fill=green", "draw=none"], &q3_path)?;
-    figure.add_plot(&["fill=red", "draw=none"], &q4_path)?;
+    let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+    let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_x_regions_inside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "x-regions-inside",
+        -1.1..1.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_axis()?;
+
+    let kidney_path = get_cut_path(
+        &pxu,
+        pxu::Component::Xp,
+        pxu::CutType::UShortKidney(pxu::Component::Xp),
+    );
+
+    let (kidney_left, kidney_right) = kidney_path.split_at(
+        kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
+    );
+
+    let mut vertical_path = vec![];
+    for segment in pxu.get_path_by_name("u vertical inside").unwrap().segments[0].iter() {
+        vertical_path.extend(&segment.xp);
+    }
+
+    let mut q4_path = vec![Complex64::zero()];
+
+    q4_path.extend(kidney_right.iter().rev());
+    q4_path.extend(&vertical_path);
+
+    let mut q3_path = vec![Complex64::zero(), Complex64::from(-1.0 / pxu.consts.s())];
+
+    q3_path.extend(kidney_left);
+    q3_path.extend(&vertical_path);
+
+    let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+    let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["solid", "black", "very thick"], pxu.consts)?;
+    }
 
     figure.finish(cache, settings, pb)
 }
@@ -2850,5 +3015,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_bs_disp_rel_small,
     fig_bs_disp_rel_lr0,
     fig_scallion_and_kidney,
+    fig_x_regions_outside,
     fig_x_regions_between,
+    fig_x_regions_inside,
 ];
