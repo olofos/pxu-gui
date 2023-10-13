@@ -552,6 +552,94 @@ fn fig_x_regions_inside(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_u_regions_between(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-between",
+        -6.0..4.0,
+        0.75,
+        Size {
+            width: 5.0,
+            height: 12.5,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+
+    for i in -2..=3 {
+        let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
+
+        figure.add_plot(
+            &["fill=green", "fill opacity=0.25"],
+            &vec![
+                Complex64::new(0.0, -0.5) + shift,
+                Complex64::new(10.0, -0.5) + shift,
+                Complex64::new(10.0, -3.0) + shift,
+                Complex64::new(0.0, -3.0) + shift,
+            ],
+        )?;
+
+        figure.add_plot(
+            &["fill=red", "fill opacity=0.25"],
+            &vec![
+                Complex64::new(0.0, -0.5) + shift,
+                Complex64::new(-10.0, -0.5) + shift,
+                Complex64::new(-10.0, -3.0) + shift,
+                Complex64::new(0.0, -3.0) + shift,
+            ],
+        )?;
+
+        figure.add_plot(
+            &["fill=yellow", "fill opacity=0.25"],
+            &vec![
+                Complex64::new(0.0, -0.5) + shift,
+                Complex64::new(10.0, -0.5) + shift,
+                Complex64::new(10.0, 2.0) + shift,
+                Complex64::new(0.0, 2.0) + shift,
+            ],
+        )?;
+
+        figure.add_plot(
+            &["fill=blue", "fill opacity=0.25"],
+            &vec![
+                Complex64::new(0.0, -0.5) + shift,
+                Complex64::new(-10.0, -0.5) + shift,
+                Complex64::new(-10.0, 2.0) + shift,
+                Complex64::new(0.0, 2.0) + shift,
+            ],
+        )?;
+    }
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xpl_cover(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -3018,4 +3106,5 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,
+    fig_u_regions_between,
 ];
