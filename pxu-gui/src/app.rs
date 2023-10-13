@@ -162,6 +162,31 @@ impl PxuGuiApp {
         app
     }
 
+    fn load_figure_descriptions(&mut self, body: &str) -> Result<(), String> {
+        let Ok(figures) = ron::from_str::<Vec<interactive_figures::FigureDescription>>(body) else {
+            log::info!("{body}");
+            return Err("Could not parse figure descriptions".into());
+        };
+        self.figure_index = None;
+        self.figures = figures;
+        Ok(())
+    }
+
+    fn load_figure(&mut self, name: String, body: &str) -> Result<(), String> {
+        let Ok(figure) = ron::from_str::<interactive_figures::Figure>(body) else {
+            log::info!("{body}");
+            return Err(format!("Could not parse figure {name}"));
+        };
+
+        log::info!("Loaded figure {name}");
+
+        self.ui_state.plot_state.path_indices = (0..figure.paths.len()).collect();
+        self.pxu.state = figure.state;
+        self.pxu.paths = figure.paths;
+        self.ui_state.plot_state.active_point = 0;
+        Ok(())
+    }
+
     fn parse_figure_download_response(
         &mut self,
         name: String,
@@ -187,28 +212,10 @@ impl PxuGuiApp {
         };
 
         if name == "figures" {
-            let Ok(figures) = ron::from_str::<Vec<interactive_figures::FigureDescription>>(body)
-            else {
-                log::info!("{body}");
-                return Err("Could not parse figure descriptions".into());
-            };
-            self.figure_index = None;
-            self.figures = figures;
+            self.load_figure_descriptions(body)
         } else {
-            let Ok(figure) = ron::from_str::<interactive_figures::Figure>(body) else {
-                log::info!("{body}");
-                return Err(format!("Could not parse figure {name}"));
-            };
-
-            log::info!("Loaded figure {name}");
-
-            self.ui_state.plot_state.path_indices = (0..figure.paths.len()).collect();
-            self.pxu.state = figure.state;
-            self.pxu.paths = figure.paths;
-            self.ui_state.plot_state.active_point = 0;
+            self.load_figure(name, body)
         }
-
-        Ok(())
     }
 
     #[cfg(target_arch = "wasm32")]
