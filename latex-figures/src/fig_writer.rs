@@ -60,6 +60,13 @@ impl Bounds {
 }
 
 #[derive(Debug)]
+enum ComponentIndicator {
+    Automatic,
+    None,
+    Custom(String),
+}
+
+#[derive(Debug)]
 pub struct FigureWriter {
     pub name: String,
     pub caption: String,
@@ -69,7 +76,7 @@ pub struct FigureWriter {
     pub plot_count: u64,
     pub component: pxu::Component,
     y_shift: Option<f64>,
-    no_component_indicator: bool,
+    component_indicator: ComponentIndicator,
 }
 
 impl FigureWriter {
@@ -165,7 +172,7 @@ progress_file=io.open(""#;
             component,
             y_shift: None,
             caption: String::new(),
-            no_component_indicator: false,
+            component_indicator: ComponentIndicator::Automatic,
         })
     }
 
@@ -202,12 +209,16 @@ progress_file=io.open(""#;
             component: pxu::Component::P,
             y_shift: None,
             caption: String::new(),
-            no_component_indicator: true,
+            component_indicator: ComponentIndicator::None,
         })
     }
 
     pub fn no_component_indicator(&mut self) {
-        self.no_component_indicator = true;
+        self.component_indicator = ComponentIndicator::None;
+    }
+
+    pub fn component_indicator(&mut self, s: &str) {
+        self.component_indicator = ComponentIndicator::Custom(s.to_owned());
     }
 
     fn format_coordinate(&self, p: Complex64) -> String {
@@ -570,16 +581,24 @@ progress_file=io.open(""#;
     ) -> std::io::Result<FigureCompiler> {
         writeln!(self.writer, "\\end{{axis}}\n")?;
 
-        if !self.no_component_indicator {
-            let component_name = match self.component {
-                pxu::Component::P => "p",
-                pxu::Component::Xp => "x^+",
-                pxu::Component::Xm => "x^-",
-                pxu::Component::U => "u",
-            };
+        let indicator = match &self.component_indicator {
+            ComponentIndicator::Automatic => Some(
+                match self.component {
+                    pxu::Component::P => "p",
+                    pxu::Component::Xp => "x^+",
+                    pxu::Component::Xm => "x^-",
+                    pxu::Component::U => "u",
+                }
+                .to_owned(),
+            ),
+            ComponentIndicator::Custom(s) => Some(s.clone()),
+            ComponentIndicator::None => None,
+        };
+
+        if let Some(indicator) = indicator {
             writeln!(
                 self.writer,
-                "\\node at (current bounding box.north east) [anchor=north east,fill=white,outer sep=0.1cm,draw,thin] {{$\\scriptstyle {component_name}$}};"
+                "\\node at (current bounding box.north east) [anchor=north east,fill=white,outer sep=0.1cm,draw,thin] {{$\\scriptstyle {indicator}$}};"
             )?;
         }
 

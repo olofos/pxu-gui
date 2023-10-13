@@ -327,7 +327,7 @@ fn fig_x_regions_outside(
         pb,
     )?;
 
-    figure.no_component_indicator();
+    figure.component_indicator("x");
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_axis()?;
 
@@ -410,7 +410,7 @@ fn fig_x_regions_between(
         pb,
     )?;
 
-    figure.no_component_indicator();
+    figure.component_indicator("x");
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_axis()?;
 
@@ -498,7 +498,7 @@ fn fig_x_regions_inside(
         pb,
     )?;
 
-    figure.no_component_indicator();
+    figure.component_indicator("x");
     figure.add_grid_lines(&pxu, &[])?;
     figure.add_axis()?;
 
@@ -577,6 +577,9 @@ fn fig_u_regions_outside(
         ::pxu::kinematics::UBranch::Outside,
     );
 
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+
     figure.add_plot(
         &["fill=green", "fill opacity=0.25"],
         &vec![
@@ -652,6 +655,9 @@ fn fig_u_regions_between(
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
 
     for i in -2..=3 {
         let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
@@ -738,6 +744,9 @@ fn fig_u_regions_inside(
         ::pxu::kinematics::UBranch::Inside,
         ::pxu::kinematics::UBranch::Inside,
     );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25"],
