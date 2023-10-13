@@ -7,7 +7,7 @@ use std::sync::Arc;
 #[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Settings {
-    #[arg(short, long, default_value = "./ifigures")]
+    #[arg(short, long, default_value = "./pxu-gui/dist/data/")]
     pub output_dir: String,
     #[arg(short, long)]
     pub rebuild: bool,
