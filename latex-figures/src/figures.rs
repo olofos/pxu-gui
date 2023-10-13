@@ -369,10 +369,10 @@ fn fig_x_regions_outside(
     let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
     let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
 
-    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
-    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
-    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
-    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in pxu
         .contours
@@ -552,6 +552,82 @@ fn fig_x_regions_inside(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_u_regions_outside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-outside",
+        -5.0..5.0,
+        -0.5,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Outside,
+        ::pxu::kinematics::UBranch::Outside,
+    );
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -0.5),
+            Complex64::new(10.0, -0.5),
+            Complex64::new(10.0, -10.0),
+            Complex64::new(0.0, -10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -0.5),
+            Complex64::new(-10.0, -0.5),
+            Complex64::new(-10.0, -10.0),
+            Complex64::new(0.0, -10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -0.5),
+            Complex64::new(10.0, -0.5),
+            Complex64::new(10.0, 10.0),
+            Complex64::new(0.0, 10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -0.5),
+            Complex64::new(-10.0, -0.5),
+            Complex64::new(-10.0, 10.0),
+            Complex64::new(0.0, 10.0),
+        ],
+    )?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+    {
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_u_regions_between(
     pxu: Arc<Pxu>,
     cache: Arc<cache::Cache>,
@@ -560,7 +636,7 @@ fn fig_u_regions_between(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-between",
-        -6.0..4.0,
+        -5.0..5.0,
         0.75,
         Size {
             width: 5.0,
@@ -576,8 +652,6 @@ fn fig_u_regions_between(
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
-
-    figure.add_grid_lines(&pxu, &[])?;
 
     for i in -2..=3 {
         let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
@@ -633,6 +707,82 @@ fn fig_u_regions_between(
                     | pxu::CutType::UShortScallion(pxu::Component::Xp)
             )
         })
+    {
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_inside(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-inside",
+        -5.0..5.0,
+        -3.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Inside,
+        ::pxu::kinematics::UBranch::Inside,
+    );
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -3.0),
+            Complex64::new(10.0, -3.0),
+            Complex64::new(10.0, -10.0),
+            Complex64::new(0.0, -10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -3.0),
+            Complex64::new(-10.0, -3.0),
+            Complex64::new(-10.0, -10.0),
+            Complex64::new(0.0, -10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -3.0),
+            Complex64::new(10.0, -3.0),
+            Complex64::new(10.0, 10.0),
+            Complex64::new(0.0, 10.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25"],
+        &vec![
+            Complex64::new(0.0, -3.0),
+            Complex64::new(-10.0, -3.0),
+            Complex64::new(-10.0, 10.0),
+            Complex64::new(0.0, 10.0),
+        ],
+    )?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
     {
         figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
     }
@@ -3106,5 +3256,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,
+    fig_u_regions_outside,
     fig_u_regions_between,
+    fig_u_regions_inside,
 ];
