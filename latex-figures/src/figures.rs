@@ -402,8 +402,8 @@ fn fig_x_regions_between(
         -3.1..3.1,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 5.0,
+            height: 5.0,
         },
         pxu::Component::Xp,
         settings,
@@ -490,8 +490,8 @@ fn fig_x_regions_inside(
         -1.1..1.1,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 5.0,
+            height: 5.0,
         },
         pxu::Component::Xp,
         settings,
@@ -560,7 +560,7 @@ fn fig_u_regions_outside(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-outside",
-        -5.0..5.0,
+        -7.5..7.5,
         -0.5,
         Size {
             width: 5.0,
@@ -581,42 +581,42 @@ fn fig_u_regions_outside(
     figure.component_indicator("u");
 
     figure.add_plot(
-        &["fill=green", "fill opacity=0.25"],
+        &["fill=green", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -0.5),
-            Complex64::new(10.0, -0.5),
-            Complex64::new(10.0, -10.0),
-            Complex64::new(0.0, -10.0),
+            Complex64::new(20.0, -0.5),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(0.0, -20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=red", "fill opacity=0.25"],
+        &["fill=red", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -0.5),
-            Complex64::new(-10.0, -0.5),
-            Complex64::new(-10.0, -10.0),
-            Complex64::new(0.0, -10.0),
+            Complex64::new(-20.0, -0.5),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(0.0, -20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=yellow", "fill opacity=0.25"],
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -0.5),
-            Complex64::new(10.0, -0.5),
-            Complex64::new(10.0, 10.0),
-            Complex64::new(0.0, 10.0),
+            Complex64::new(20.0, -0.5),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(0.0, 20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=blue", "fill opacity=0.25"],
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -0.5),
-            Complex64::new(-10.0, -0.5),
-            Complex64::new(-10.0, 10.0),
-            Complex64::new(0.0, 10.0),
+            Complex64::new(-20.0, -0.5),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(0.0, 20.0),
         ],
     )?;
 
@@ -639,11 +639,11 @@ fn fig_u_regions_between(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-between",
-        -5.0..5.0,
+        -7.5..7.5,
         0.75,
         Size {
             width: 5.0,
-            height: 12.5,
+            height: 5.0,
         },
         pxu::Component::U,
         settings,
@@ -663,41 +663,41 @@ fn fig_u_regions_between(
         let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
 
         figure.add_plot(
-            &["fill=green", "fill opacity=0.25"],
+            &["fill=green", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
-                Complex64::new(10.0, -0.5) + shift,
-                Complex64::new(10.0, -3.0) + shift,
+                Complex64::new(20.0, -0.5) + shift,
+                Complex64::new(20.0, -3.0) + shift,
                 Complex64::new(0.0, -3.0) + shift,
             ],
         )?;
 
         figure.add_plot(
-            &["fill=red", "fill opacity=0.25"],
+            &["fill=red", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
-                Complex64::new(-10.0, -0.5) + shift,
-                Complex64::new(-10.0, -3.0) + shift,
+                Complex64::new(-20.0, -0.5) + shift,
+                Complex64::new(-20.0, -3.0) + shift,
                 Complex64::new(0.0, -3.0) + shift,
             ],
         )?;
 
         figure.add_plot(
-            &["fill=yellow", "fill opacity=0.25"],
+            &["fill=yellow", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
-                Complex64::new(10.0, -0.5) + shift,
-                Complex64::new(10.0, 2.0) + shift,
+                Complex64::new(20.0, -0.5) + shift,
+                Complex64::new(20.0, 2.0) + shift,
                 Complex64::new(0.0, 2.0) + shift,
             ],
         )?;
 
         figure.add_plot(
-            &["fill=blue", "fill opacity=0.25"],
+            &["fill=blue", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
-                Complex64::new(-10.0, -0.5) + shift,
-                Complex64::new(-10.0, 2.0) + shift,
+                Complex64::new(-20.0, -0.5) + shift,
+                Complex64::new(-20.0, 2.0) + shift,
                 Complex64::new(0.0, 2.0) + shift,
             ],
         )?;
@@ -728,7 +728,7 @@ fn fig_u_regions_inside(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-inside",
-        -5.0..5.0,
+        -7.5..7.5,
         -3.0,
         Size {
             width: 5.0,
@@ -749,42 +749,42 @@ fn fig_u_regions_inside(
     figure.component_indicator("u");
 
     figure.add_plot(
-        &["fill=green", "fill opacity=0.25"],
+        &["fill=green", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
-            Complex64::new(10.0, -3.0),
-            Complex64::new(10.0, -10.0),
-            Complex64::new(0.0, -10.0),
+            Complex64::new(20.0, -3.0),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(0.0, -20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=red", "fill opacity=0.25"],
+        &["fill=red", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
-            Complex64::new(-10.0, -3.0),
-            Complex64::new(-10.0, -10.0),
-            Complex64::new(0.0, -10.0),
+            Complex64::new(-20.0, -3.0),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(0.0, -20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=yellow", "fill opacity=0.25"],
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
-            Complex64::new(10.0, -3.0),
-            Complex64::new(10.0, 10.0),
-            Complex64::new(0.0, 10.0),
+            Complex64::new(20.0, -3.0),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(0.0, 20.0),
         ],
     )?;
 
     figure.add_plot(
-        &["fill=blue", "fill opacity=0.25"],
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
-            Complex64::new(-10.0, -3.0),
-            Complex64::new(-10.0, 10.0),
-            Complex64::new(0.0, 10.0),
+            Complex64::new(-20.0, -3.0),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(0.0, 20.0),
         ],
     )?;
 
@@ -1678,8 +1678,8 @@ fn fig_xp_crossing_all(
         -5.0..5.0,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 5.0,
+            height: 5.0,
         },
         pxu::Component::Xp,
         settings,
