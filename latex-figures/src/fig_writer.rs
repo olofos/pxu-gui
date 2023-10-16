@@ -431,6 +431,25 @@ progress_file=io.open(""#;
         )
     }
 
+    pub fn add_axis_origin(&mut self, origin: impl Into<Complex64>) -> Result<()> {
+        let options = ["very thin", "black"];
+        let origin = origin.into();
+        self.add_plot(
+            &options,
+            &vec![
+                Complex64::new(self.bounds.x_range.start - 1.0, origin.im),
+                Complex64::new(self.bounds.x_range.end + 1.0, origin.im),
+            ],
+        )?;
+        self.add_plot(
+            &options,
+            &vec![
+                Complex64::new(origin.re, self.bounds.y_range.start - 1.0),
+                Complex64::new(origin.re, self.bounds.y_range.end + 1.0),
+            ],
+        )
+    }
+
     pub fn add_path(
         &mut self,
         pxu: &pxu::Pxu,
