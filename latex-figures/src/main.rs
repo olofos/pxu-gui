@@ -107,32 +107,35 @@ fn main() -> std::io::Result<()> {
         ProgressBar::hidden()
     };
 
-    let saved_paths = make_paths::get_plot_paths(&pxu.contours, pxu.consts);
+    let saved_paths_len = make_paths::PLOT_PATHS.len();
     pb.set_style(spinner_style.clone());
-    pb.set_length(saved_paths.len() as u64);
+    pb.set_length(saved_paths_len as u64);
+    pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
     let pool = threadpool::ThreadPool::new(num_threads);
     let (tx, rx) = std::sync::mpsc::channel();
 
-    let saved_paths_len = saved_paths.len();
-
-    for saved_path in saved_paths {
+    for path_func in make_paths::PLOT_PATHS {
         let tx = tx.clone();
         let contours = pxu.contours.clone();
-        let consts = pxu.consts;
         let spinner_style = spinner_style_no_progress.clone();
         let settings = settings.clone();
         let mb = mb.clone();
         pool.execute(move || {
             let pb = if settings.verbose == 0 {
-                mb.add(ProgressBar::new_spinner())
+                mb.add(ProgressBar::new(1))
             } else {
                 ProgressBar::hidden()
             };
             pb.set_style(spinner_style);
             pb.enable_steady_tick(std::time::Duration::from_millis(100));
 
+            pb.set_message("Generating path");
+
+            let saved_path = path_func(&contours, consts);
+
             pb.set_message(saved_path.name.clone());
+            pb.tick();
             let path = pxu::path::Path::from_base_path(saved_path.into(), &contours, consts);
             tx.send(path).unwrap();
             pb.finish_and_clear();
