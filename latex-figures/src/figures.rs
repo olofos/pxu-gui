@@ -554,6 +554,85 @@ fn fig_x_regions_inside(
 
     figure.finish(cache, settings, pb)
 }
+
+fn fig_x_regions_long(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "x-regions-long",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_axis()?;
+
+    let mut vertical_path: Vec<Complex64> = vec![];
+
+    for segment in pxu.get_path_by_name("u vertical inside").unwrap().segments[0]
+        .iter()
+        .rev()
+    {
+        vertical_path.extend(segment.xp.iter().rev());
+    }
+
+    for segment in pxu.get_path_by_name("u vertical between").unwrap().segments[0]
+        .iter()
+        .rev()
+    {
+        vertical_path.extend(segment.xp.iter().rev());
+    }
+
+    for segment in pxu.get_path_by_name("u vertical outside").unwrap().segments[0].iter() {
+        vertical_path.extend(&segment.xp);
+    }
+
+    let mut q4_path = vec![Complex64::from(0.0)];
+
+    q4_path.extend(&vertical_path);
+    q4_path.extend([
+        Complex64::new(4.0, vertical_path.last().unwrap().im),
+        Complex64::from(4.0),
+        Complex64::zero(),
+    ]);
+
+    let mut q3_path = vec![Complex64::from(0.0)];
+
+    q3_path.extend(&vertical_path);
+    q3_path.extend([
+        Complex64::new(-4.0, vertical_path.last().unwrap().im),
+        Complex64::from(-4.0),
+        Complex64::zero(),
+    ]);
+
+    let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+    let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
+
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
+
+    for cut in pxu
+        .contours
+        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                // pxu::CutType::UShortKidney(pxu::Component::Xp)
+                pxu::CutType::ULongPositive(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
             )
         })
     {
@@ -808,6 +887,448 @@ fn fig_u_regions_inside(
         .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
     {
         figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_between_small(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-between-small",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 0.0),
+            Complex64::new(20.0, 0.0),
+            Complex64::new(20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 0.0),
+            Complex64::new(-20.0, 0.0),
+            Complex64::new(-20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 0.0),
+            Complex64::new(20.0, 0.0),
+            Complex64::new(20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 0.0),
+            Complex64::new(-20.0, 0.0),
+            Complex64::new(-20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
+    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![us, Complex64::from(-20.0)],
+            Some(us),
+            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(20.0) + ikh],
+            Some(-us + ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(20.0) - ikh],
+            Some(-us - ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(-20.0) + ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(-20.0) - ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_inside_small_upper(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-inside-small-upper",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(-20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
+    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(20.0) + ikh],
+            Some(-us + ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(-20.0) + ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_inside_small_lower(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-inside-small-lower",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, -20.0),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, -20.0),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(-20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
+    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(20.0) - ikh],
+            Some(-us - ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(-20.0) - ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_long_upper(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-between-long-upper",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(0.0, -20.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(0.0, -20.0),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
+    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![us, Complex64::from(20.0)],
+            Some(us),
+            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(-20.0) - ikh],
+            Some(-us - ikh),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_long_lower(
+    pxu: Arc<Pxu>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let mut figure = FigureWriter::new(
+        "u-regions-between-long-lower",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    let mut pxu = (*pxu).clone();
+    pxu.state.points[0].sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&pxu, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(0.0, -20.0),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(0.0, -20.0),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
+    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![us, Complex64::from(20.0)],
+            Some(us),
+            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(-20.0) + ikh],
+            Some(-us + ikh),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -3279,7 +3800,13 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,
+    fig_x_regions_long,
     fig_u_regions_outside,
     fig_u_regions_between,
     fig_u_regions_inside,
+    fig_u_regions_between_small,
+    fig_u_regions_inside_small_upper,
+    fig_u_regions_inside_small_lower,
+    fig_u_regions_long_upper,
+    fig_u_regions_long_lower,
 ];
