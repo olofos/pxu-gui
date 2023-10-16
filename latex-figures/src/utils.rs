@@ -54,6 +54,7 @@ impl Summary {
     \usepackage[justification=centering]{caption}
     \captionsetup{labelformat=empty}
     \usepackage{pdflscape}
+    \usepackage{float}
     \pagestyle{empty}
     \begin{document}
     ";
@@ -88,7 +89,7 @@ impl Summary {
             let includegraphics = format!(
                 "\\includegraphics[width={width}cm,height={height}cm]{{{output_dir}/{name}}}"
             );
-            write!(writer, "\\begin{{figure}}\\centering")?;
+            write!(writer, "\\begin{{figure}}[H]\\centering")?;
             write!(writer, "{includegraphics}")?;
             write!(writer, "\\cprotect\\caption{{")?;
             write!(writer, "\\verb|{includegraphics}|")?;
