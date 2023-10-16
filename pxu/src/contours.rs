@@ -429,9 +429,17 @@ impl Contours {
         component: Component,
         active_point: usize,
     ) -> impl Iterator<Item = &Cut> {
-        let mut pt = pxu.state.points[active_point].clone();
-        pt.u += 2.0 * (pt.sheet_data.log_branch_p * pxu.consts.k()) as f64 * Complex64::i()
-            / pxu.consts.h;
+        self.get_visible_cuts_from_point(&pxu.state.points[active_point], component, pxu.consts)
+    }
+
+    pub fn get_visible_cuts_from_point(
+        &self,
+        pt: &Point,
+        component: Component,
+        consts: CouplingConstants,
+    ) -> impl Iterator<Item = &Cut> {
+        let mut pt = pt.clone();
+        pt.u += 2.0 * (pt.sheet_data.log_branch_p * consts.k()) as f64 * Complex64::i() / consts.h;
 
         self.cuts
             .iter()
