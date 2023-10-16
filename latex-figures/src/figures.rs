@@ -319,8 +319,8 @@ fn fig_x_regions_outside(
         -3.1..3.1,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 5.0,
+            height: 5.0,
         },
         pxu::Component::Xp,
         settings,
@@ -382,6 +382,7 @@ fn fig_x_regions_outside(
                 cut.typ,
                 pxu::CutType::UShortKidney(pxu::Component::Xp)
                     | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
             )
         })
     {
@@ -457,10 +458,10 @@ fn fig_x_regions_between(
     let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
     let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
 
-    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
-    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
-    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
-    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in pxu
         .contours
@@ -470,6 +471,7 @@ fn fig_x_regions_between(
                 cut.typ,
                 pxu::CutType::UShortKidney(pxu::Component::Xp)
                     | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
             )
         })
     {
@@ -530,10 +532,10 @@ fn fig_x_regions_inside(
     let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
     let q2_path = q3_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
 
-    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q1_path)?;
-    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q2_path)?;
-    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q3_path)?;
-    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q4_path)?;
+    figure.add_plot(&["fill=yellow", "fill opacity=0.25", "draw=none"], &q1_path)?;
+    figure.add_plot(&["fill=blue", "fill opacity=0.25", "draw=none"], &q2_path)?;
+    figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
+    figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in pxu
         .contours
@@ -543,6 +545,15 @@ fn fig_x_regions_inside(
                 cut.typ,
                 pxu::CutType::UShortKidney(pxu::Component::Xp)
                     | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
             )
         })
     {
@@ -560,7 +571,7 @@ fn fig_u_regions_outside(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-outside",
-        -7.5..7.5,
+        -7.25..7.25,
         -0.5,
         Size {
             width: 5.0,
@@ -579,6 +590,7 @@ fn fig_u_regions_outside(
 
     figure.add_grid_lines(&pxu, &[])?;
     figure.component_indicator("u");
+    figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
@@ -639,8 +651,8 @@ fn fig_u_regions_between(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-between",
-        -7.5..7.5,
-        0.75,
+        -7.25..7.25,
+        -0.5,
         Size {
             width: 5.0,
             height: 5.0,
@@ -658,12 +670,13 @@ fn fig_u_regions_between(
 
     figure.add_grid_lines(&pxu, &[])?;
     figure.component_indicator("u");
+    figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
     for i in -2..=3 {
         let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
 
         figure.add_plot(
-            &["fill=green", "fill opacity=0.25", "draw=none"],
+            &["fill=yellow", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(20.0, -0.5) + shift,
@@ -673,7 +686,7 @@ fn fig_u_regions_between(
         )?;
 
         figure.add_plot(
-            &["fill=red", "fill opacity=0.25", "draw=none"],
+            &["fill=blue", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(-20.0, -0.5) + shift,
@@ -683,7 +696,7 @@ fn fig_u_regions_between(
         )?;
 
         figure.add_plot(
-            &["fill=yellow", "fill opacity=0.25", "draw=none"],
+            &["fill=green", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(20.0, -0.5) + shift,
@@ -693,7 +706,7 @@ fn fig_u_regions_between(
         )?;
 
         figure.add_plot(
-            &["fill=blue", "fill opacity=0.25", "draw=none"],
+            &["fill=red", "fill opacity=0.25", "draw=none"],
             &vec![
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(-20.0, -0.5) + shift,
@@ -728,8 +741,8 @@ fn fig_u_regions_inside(
 ) -> Result<FigureCompiler> {
     let mut figure = FigureWriter::new(
         "u-regions-inside",
-        -7.5..7.5,
-        -3.0,
+        -7.25..7.25,
+        -0.5,
         Size {
             width: 5.0,
             height: 5.0,
@@ -747,9 +760,10 @@ fn fig_u_regions_inside(
 
     figure.add_grid_lines(&pxu, &[])?;
     figure.component_indicator("u");
+    figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
     figure.add_plot(
-        &["fill=green", "fill opacity=0.25", "draw=none"],
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
             Complex64::new(20.0, -3.0),
@@ -759,7 +773,7 @@ fn fig_u_regions_inside(
     )?;
 
     figure.add_plot(
-        &["fill=red", "fill opacity=0.25", "draw=none"],
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
             Complex64::new(-20.0, -3.0),
@@ -769,7 +783,7 @@ fn fig_u_regions_inside(
     )?;
 
     figure.add_plot(
-        &["fill=yellow", "fill opacity=0.25", "draw=none"],
+        &["fill=green", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
             Complex64::new(20.0, -3.0),
@@ -779,7 +793,7 @@ fn fig_u_regions_inside(
     )?;
 
     figure.add_plot(
-        &["fill=blue", "fill opacity=0.25", "draw=none"],
+        &["fill=red", "fill opacity=0.25", "draw=none"],
         &vec![
             Complex64::new(0.0, -3.0),
             Complex64::new(-20.0, -3.0),
