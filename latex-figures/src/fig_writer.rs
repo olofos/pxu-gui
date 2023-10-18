@@ -314,8 +314,8 @@ progress_file=io.open(""#;
         Ok(())
     }
 
-    pub fn add_grid_lines(&mut self, pxu: &pxu::Pxu, options: &[&str]) -> Result<()> {
-        for contour in pxu.contours.get_grid(self.component).iter() {
+    pub fn add_grid_lines(&mut self, contours: &pxu::Contours, options: &[&str]) -> Result<()> {
+        for contour in contours.get_grid(self.component).iter() {
             self.add_grid_line(contour, options)?;
         }
         if matches!(self.component, pxu::Component::Xp | pxu::Component::Xm) {
@@ -387,20 +387,25 @@ progress_file=io.open(""#;
         Ok(())
     }
 
-    pub fn add_cuts(&mut self, pxu: &pxu::Pxu, options: &[&str]) -> Result<()> {
+    pub fn add_cuts(
+        &mut self,
+        contours: &pxu::Contours,
+        pt: &pxu::Point,
+        consts: CouplingConstants,
+        options: &[&str],
+    ) -> Result<()> {
         use pxu::{kinematics::UBranch, CutType::*};
 
-        for cut in pxu
-            .contours
-            .get_visible_cuts(pxu, self.component, 0)
+        for cut in contours
+            .get_visible_cuts_from_point(pt, self.component, consts)
             .filter(|cut| match cut.typ {
                 Log(comp) | ULongPositive(comp) => {
                     (comp == pxu::Component::Xp
                         && cut.component == pxu::Component::Xp
-                        && pxu.state.points[0].sheet_data.u_branch.1 != UBranch::Between)
+                        && pt.sheet_data.u_branch.1 != UBranch::Between)
                         || (comp == pxu::Component::Xm
                             && cut.component == pxu::Component::Xm
-                            && pxu.state.points[0].sheet_data.u_branch.0 != UBranch::Between)
+                            && pt.sheet_data.u_branch.0 != UBranch::Between)
                 }
                 ULongNegative(_) => false,
                 UShortScallion(_) | UShortKidney(_) => true,
@@ -408,7 +413,7 @@ progress_file=io.open(""#;
                 DebugPath => false,
             })
         {
-            self.add_cut(cut, options, pxu.consts)?;
+            self.add_cut(cut, options, consts)?;
         }
         Ok(())
     }
@@ -452,8 +457,8 @@ progress_file=io.open(""#;
 
     pub fn add_path(
         &mut self,
-        pxu: &pxu::Pxu,
         path: &pxu::path::Path,
+        pt: &pxu::Point,
         options: &[&str],
     ) -> Result<()> {
         let mut straight_segments = vec![];
@@ -463,9 +468,7 @@ progress_file=io.open(""#;
         let mut points = vec![];
 
         for segment in &path.segments[0] {
-            let segment_same_branch = segment
-                .sheet_data
-                .is_same(&pxu.state.points[0].sheet_data, self.component);
+            let segment_same_branch = segment.sheet_data.is_same(&pt.sheet_data, self.component);
 
             if segment_same_branch != same_branch && !points.is_empty() {
                 if same_branch {

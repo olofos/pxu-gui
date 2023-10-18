@@ -4,10 +4,11 @@ use crate::fig_writer::{FigureWriter, Node};
 use crate::utils::{error, Settings, Size};
 use indicatif::ProgressBar;
 
+use make_paths::PxuProvider;
 use num::complex::Complex64;
 use num::Zero;
-use pxu::GridLineComponent;
-use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch, Pxu};
+use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch};
+use pxu::{CouplingConstants, GridLineComponent};
 use std::io::Result;
 use std::sync::Arc;
 
@@ -23,11 +24,14 @@ fn load_states(state_strings: &[&str]) -> Result<Vec<pxu::State>> {
 }
 
 fn fig_p_xpl_preimage(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "p-xpL-preimage",
         -2.6..2.6,
@@ -41,19 +45,19 @@ fn fig_p_xpl_preimage(
         pb,
     )?;
 
-    figure.add_grid_lines(&pxu, &[])?;
+    let contours = pxu_provider.get_contours(consts).unwrap().clone();
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
         .filter(|cut| matches!(cut.typ, pxu::CutType::E))
     {
-        figure.add_cut(cut, &[], pxu.consts)?;
+        figure.add_cut(cut, &[], consts)?;
     }
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -69,10 +73,10 @@ fn fig_p_xpl_preimage(
             pxu::CutType::ULongPositive(_) => &["Red!50!white", "densely dashed", "very thick"],
             _ => &[],
         };
-        figure.add_cut(cut, options, pxu.consts)?;
+        figure.add_cut(cut, options, consts)?;
     }
 
-    let k = pxu.consts.k() as f64;
+    let k = consts.k() as f64;
 
     for p_range in -3..=2 {
         let p_start = p_range as f64;
@@ -80,46 +84,46 @@ fn fig_p_xpl_preimage(
         let bp1 = pxu::compute_branch_point(
             p_range,
             pxu::BranchPointType::XpPositiveAxisImXmNegative,
-            pxu.consts,
+            consts,
         )
         .unwrap();
 
         let bp2 = pxu::compute_branch_point(
             p_range,
             pxu::BranchPointType::XpNegativeAxisFromAboveWithImXmNegative,
-            pxu.consts,
+            consts,
         )
         .unwrap();
 
         let p0 = p_start + (bp1.p + bp2.p) / 2.0;
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
 
         for m in 1..=15 {
             p_int.goto_m(m as f64);
-            p_int.write_m_node(&mut figure, "south", 1, pxu.consts)?;
+            p_int.write_m_node(&mut figure, "south", 1, consts)?;
         }
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
 
         for m in (-15..=0).rev() {
             p_int.goto_m(m as f64);
-            p_int.write_m_node(&mut figure, "south", 1, pxu.consts)?;
+            p_int.write_m_node(&mut figure, "south", 1, consts)?;
         }
 
         // let p0 = p_start + 0.5;
         let p1 = p_start + bp1.p - 0.003;
 
-        let m = p_range * pxu.consts.k() + 2;
+        let m = p_range * consts.k() + 2;
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_m(m as f64 + 1.0 * (p_start + 0.5).signum());
         p_int.goto_p(p1);
 
         p_int.goto_m(m as f64);
         if p_range >= 0 {
-            p_int.write_m_node(&mut figure, "north", 1, pxu.consts)?;
+            p_int.write_m_node(&mut figure, "north", 1, consts)?;
         } else {
-            p_int.write_m_node(&mut figure, "north", -1, pxu.consts)?;
+            p_int.write_m_node(&mut figure, "north", -1, consts)?;
         }
 
         let p2 = p_start + bp1.p + 0.01;
@@ -128,7 +132,7 @@ fn fig_p_xpl_preimage(
 
             for dm in (1..=4).rev() {
                 p_int.goto_m((m - dm) as f64);
-                p_int.write_m_node(&mut figure, "south", -1, pxu.consts)?;
+                p_int.write_m_node(&mut figure, "south", -1, consts)?;
             }
         }
 
@@ -151,15 +155,15 @@ fn fig_p_xpl_preimage(
 
         let p2 = p_start + 0.2;
         if p_range != 0 {
-            let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+            let mut p_int = PInterpolatorMut::xp(p0, consts);
             p_int
                 .goto_m(-p_start * k + 1.0)
                 .goto_p(p_start + 0.1)
                 .goto_conj()
                 .goto_p(p2);
-            for dm in 0..=pxu.consts.k() {
+            for dm in 0..=consts.k() {
                 p_int.goto_m(-p_start * k - dm as f64);
-                p_int.write_m_node(&mut figure, "south", -1, pxu.consts)?;
+                p_int.write_m_node(&mut figure, "south", -1, consts)?;
             }
         }
     }
@@ -168,11 +172,13 @@ fn fig_p_xpl_preimage(
 }
 
 fn fig_p_plane_e_cuts(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let mut figure = FigureWriter::new(
         "p-plane-e-cuts",
         -2.6..2.6,
@@ -186,14 +192,17 @@ fn fig_p_plane_e_cuts(
         pb,
     )?;
 
-    figure.add_grid_lines(&pxu, &[])?;
+    let contours = pxu_provider.get_contours(consts).unwrap().clone();
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+    figure.add_grid_lines(&contours, &[])?;
+
+    let pt = pxu::Point::new(0.5, consts);
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
         .filter(|cut| matches!(cut.typ, pxu::CutType::E))
     {
-        figure.add_cut(cut, &[], pxu.consts)?;
+        figure.add_cut(cut, &[], consts)?;
     }
 
     figure.add_plot(
@@ -239,11 +248,14 @@ fn fig_p_plane_e_cuts(
 }
 
 fn fig_scallion_and_kidney(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+
     let mut figure = FigureWriter::new(
         "scallion-and-kidney",
         -3.1..3.1,
@@ -256,14 +268,14 @@ fn fig_scallion_and_kidney(
         settings,
         pb,
     )?;
+    let pt = pxu::Point::new(0.5, consts);
 
     figure.no_component_indicator();
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.add_axis()?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -272,7 +284,7 @@ fn fig_scallion_and_kidney(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.add_node("Scallion", Complex64::new(1.5, -2.0), &["anchor=west"])?;
@@ -284,13 +296,14 @@ fn fig_scallion_and_kidney(
 }
 
 fn get_cut_path(
-    pxu: &Arc<Pxu>,
+    contours: &pxu::Contours,
+    pt: &pxu::Point,
     component: pxu::Component,
+    consts: CouplingConstants,
     cut_type: pxu::CutType,
 ) -> Vec<Complex64> {
-    let cut_paths = pxu
-        .contours
-        .get_visible_cuts(pxu, component, 0)
+    let cut_paths = contours
+        .get_visible_cuts_from_point(pt, component, consts)
         .filter(|cut| cut.typ == cut_type)
         .collect::<Vec<_>>();
 
@@ -309,11 +322,15 @@ fn get_cut_path(
 }
 
 fn fig_x_regions_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "x-regions-outside",
         -3.1..3.1,
@@ -328,29 +345,35 @@ fn fig_x_regions_outside(
     )?;
 
     figure.component_indicator("x");
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.add_axis()?;
 
     let scallion_path = get_cut_path(
-        &pxu,
+        &contours,
+        &pt,
         pxu::Component::Xp,
+        consts,
         pxu::CutType::UShortScallion(pxu::Component::Xp),
     );
 
-    let (scallion_left, scallion_right) = scallion_path.split_at(
-        scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
-    );
+    let (scallion_left, scallion_right) = scallion_path
+        .split_at(scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path: Vec<Complex64> = vec![];
-    for segment in pxu.get_path_by_name("u vertical outside").unwrap().segments[0].iter() {
+    for segment in pxu_provider
+        .get_path("u vertical outside")
+        .unwrap()
+        .segments[0]
+        .iter()
+    {
         vertical_path.extend(&segment.xp);
     }
 
-    let mut q4_path = vec![pxu.consts.s().into()];
+    let mut q4_path = vec![consts.s().into()];
 
     q4_path.extend(scallion_right);
     q4_path.extend([
-        Complex64::from(pxu.consts.s()),
+        Complex64::from(consts.s()),
         Complex64::from(4.0),
         Complex64::new(4.0, vertical_path.last().unwrap().im),
     ]);
@@ -363,7 +386,7 @@ fn fig_x_regions_outside(
     q3_path.extend([
         Complex64::new(-4.0, vertical_path.last().unwrap().im),
         Complex64::from(-4.0),
-        Complex64::from(-1.0 / pxu.consts.s()),
+        Complex64::from(-1.0 / consts.s()),
     ]);
 
     let q1_path = q4_path.iter().map(|z| z.conj()).collect::<Vec<_>>();
@@ -374,9 +397,8 @@ fn fig_x_regions_outside(
     figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -386,18 +408,22 @@ fn fig_x_regions_outside(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_x_regions_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "x-regions-between",
         -3.1..3.1,
@@ -412,44 +438,48 @@ fn fig_x_regions_between(
     )?;
 
     figure.component_indicator("x");
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.add_axis()?;
 
     let scallion_path = get_cut_path(
-        &pxu,
+        &contours,
+        &pt,
         pxu::Component::Xp,
+        consts,
         pxu::CutType::UShortScallion(pxu::Component::Xp),
     );
 
     let kidney_path = get_cut_path(
-        &pxu,
+        &contours,
+        &pt,
         pxu::Component::Xp,
+        consts,
         pxu::CutType::UShortKidney(pxu::Component::Xp),
     );
 
-    let (scallion_left, scallion_right) = scallion_path.split_at(
-        scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
-    );
+    let (scallion_left, scallion_right) = scallion_path
+        .split_at(scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
-    let (kidney_left, kidney_right) = kidney_path.split_at(
-        kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
-    );
+    let (kidney_left, kidney_right) = kidney_path
+        .split_at(kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path = vec![];
-    for segment in pxu.get_path_by_name("u vertical between").unwrap().segments[0].iter() {
+    for segment in pxu_provider
+        .get_path("u vertical between")
+        .unwrap()
+        .segments[0]
+        .iter()
+    {
         vertical_path.extend(&segment.xp);
     }
 
-    let mut q4_path = vec![*kidney_right.last().unwrap(), pxu.consts.s().into()];
+    let mut q4_path = vec![*kidney_right.last().unwrap(), consts.s().into()];
 
     q4_path.extend(scallion_right.iter().rev());
     q4_path.extend(&vertical_path);
     q4_path.extend(kidney_right);
 
-    let mut q3_path = vec![
-        Complex64::from(-1.0 / pxu.consts.s()),
-        Complex64::from(-4.0),
-    ];
+    let mut q3_path = vec![Complex64::from(-1.0 / consts.s()), Complex64::from(-4.0)];
 
     q3_path.extend(scallion_left);
     q3_path.extend(&vertical_path);
@@ -463,9 +493,8 @@ fn fig_x_regions_between(
     figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -475,18 +504,22 @@ fn fig_x_regions_between(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_x_regions_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "x-regions-inside",
         -1.1..1.1,
@@ -501,21 +534,22 @@ fn fig_x_regions_inside(
     )?;
 
     figure.component_indicator("x");
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.add_axis()?;
 
     let kidney_path = get_cut_path(
-        &pxu,
+        &contours,
+        &pt,
         pxu::Component::Xp,
+        consts,
         pxu::CutType::UShortKidney(pxu::Component::Xp),
     );
 
-    let (kidney_left, kidney_right) = kidney_path.split_at(
-        kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, pxu.consts).re < 0.0),
-    );
+    let (kidney_left, kidney_right) = kidney_path
+        .split_at(kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path = vec![];
-    for segment in pxu.get_path_by_name("u vertical inside").unwrap().segments[0].iter() {
+    for segment in pxu_provider.get_path("u vertical inside").unwrap().segments[0].iter() {
         vertical_path.extend(&segment.xp);
     }
 
@@ -524,7 +558,7 @@ fn fig_x_regions_inside(
     q4_path.extend(kidney_right.iter().rev());
     q4_path.extend(&vertical_path);
 
-    let mut q3_path = vec![Complex64::zero(), Complex64::from(-1.0 / pxu.consts.s())];
+    let mut q3_path = vec![Complex64::zero(), Complex64::from(-1.0 / consts.s())];
 
     q3_path.extend(kidney_left);
     q3_path.extend(&vertical_path);
@@ -537,9 +571,8 @@ fn fig_x_regions_inside(
     figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -549,18 +582,22 @@ fn fig_x_regions_inside(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_x_regions_long(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "x-regions-long",
         -3.1..3.1,
@@ -575,26 +612,34 @@ fn fig_x_regions_long(
     )?;
 
     figure.component_indicator("x");
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.add_axis()?;
 
     let mut vertical_path: Vec<Complex64> = vec![];
 
-    for segment in pxu.get_path_by_name("u vertical inside").unwrap().segments[0]
+    for segment in pxu_provider.get_path("u vertical inside").unwrap().segments[0]
         .iter()
         .rev()
     {
         vertical_path.extend(segment.xp.iter().rev());
     }
 
-    for segment in pxu.get_path_by_name("u vertical between").unwrap().segments[0]
+    for segment in pxu_provider
+        .get_path("u vertical between")
+        .unwrap()
+        .segments[0]
         .iter()
         .rev()
     {
         vertical_path.extend(segment.xp.iter().rev());
     }
 
-    for segment in pxu.get_path_by_name("u vertical outside").unwrap().segments[0].iter() {
+    for segment in pxu_provider
+        .get_path("u vertical outside")
+        .unwrap()
+        .segments[0]
+        .iter()
+    {
         vertical_path.extend(&segment.xp);
     }
 
@@ -624,9 +669,8 @@ fn fig_x_regions_long(
     figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::Xp, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -636,18 +680,22 @@ fn fig_x_regions_long(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-outside",
         -7.25..7.25,
@@ -661,13 +709,12 @@ fn fig_u_regions_outside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Outside,
         ::pxu::kinematics::UBranch::Outside,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
@@ -711,23 +758,26 @@ fn fig_u_regions_outside(
         ],
     )?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
         .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-between",
         -7.25..7.25,
@@ -741,18 +791,17 @@ fn fig_u_regions_between(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
     for i in -2..=3 {
-        let shift = Complex64::new(0.0, i as f64 * pxu.consts.k() as f64);
+        let shift = Complex64::new(0.0, i as f64 * consts.k() as f64);
 
         figure.add_plot(
             &["fill=yellow", "fill opacity=0.25", "draw=none"],
@@ -795,9 +844,8 @@ fn fig_u_regions_between(
         )?;
     }
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -806,18 +854,22 @@ fn fig_u_regions_between(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-inside",
         -7.25..7.25,
@@ -831,13 +883,12 @@ fn fig_u_regions_inside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Inside,
         ::pxu::kinematics::UBranch::Inside,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
 
@@ -881,23 +932,26 @@ fn fig_u_regions_inside(
         ],
     )?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::U, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
         .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
     {
-        figure.add_cut(cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_between_small(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-between-small",
         -7.25..7.25,
@@ -911,13 +965,12 @@ fn fig_u_regions_between_small(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis()?;
 
@@ -961,8 +1014,8 @@ fn fig_u_regions_between_small(
         ],
     )?;
 
-    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
-    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
         pxu::Cut::new(
             pxu::Component::U,
@@ -1012,18 +1065,22 @@ fn fig_u_regions_between_small(
     ];
 
     for cut in cuts {
-        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_inside_small_upper(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-inside-small-upper",
         -7.25..7.25,
@@ -1037,13 +1094,12 @@ fn fig_u_regions_inside_small_upper(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis()?;
 
@@ -1067,8 +1123,8 @@ fn fig_u_regions_inside_small_upper(
         ],
     )?;
 
-    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
-    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
         pxu::Cut::new(
             pxu::Component::U,
@@ -1091,18 +1147,22 @@ fn fig_u_regions_inside_small_upper(
     ];
 
     for cut in cuts {
-        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_inside_small_lower(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-inside-small-lower",
         -7.25..7.25,
@@ -1116,13 +1176,12 @@ fn fig_u_regions_inside_small_lower(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis()?;
 
@@ -1146,8 +1205,8 @@ fn fig_u_regions_inside_small_lower(
         ],
     )?;
 
-    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
-    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
         pxu::Cut::new(
             pxu::Component::U,
@@ -1170,18 +1229,22 @@ fn fig_u_regions_inside_small_lower(
     ];
 
     for cut in cuts {
-        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_long_upper(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-between-long-upper",
         -7.25..7.25,
@@ -1195,13 +1258,12 @@ fn fig_u_regions_long_upper(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis()?;
 
@@ -1225,8 +1287,8 @@ fn fig_u_regions_long_upper(
         ],
     )?;
 
-    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
-    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
         pxu::Cut::new(
             pxu::Component::U,
@@ -1249,18 +1311,22 @@ fn fig_u_regions_long_upper(
     ];
 
     for cut in cuts {
-        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_u_regions_long_lower(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "u-regions-between-long-lower",
         -7.25..7.25,
@@ -1274,13 +1340,12 @@ fn fig_u_regions_long_lower(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
     figure.component_indicator("u");
     figure.add_axis()?;
 
@@ -1304,8 +1369,8 @@ fn fig_u_regions_long_lower(
         ],
     )?;
 
-    let us = pxu::kinematics::u_of_x(pxu.consts.s(), pxu.consts);
-    let ikh = Complex64::new(0.0, pxu.consts.k() as f64 / pxu.consts.h);
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
         pxu::Cut::new(
             pxu::Component::U,
@@ -1328,18 +1393,21 @@ fn fig_u_regions_long_lower(
     ];
 
     for cut in cuts {
-        figure.add_cut(&cut, &["black", "very thick"], pxu.consts)?;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_xpl_cover(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+
     let mut figure = FigureWriter::new(
         "xpL-cover",
         -5.0..5.0,
@@ -1355,7 +1423,7 @@ fn fig_xpl_cover(
     figure.no_component_indicator();
 
     figure.add_axis()?;
-    for contour in pxu.contours.get_grid(pxu::Component::Xp).iter().filter(
+    for contour in contours.get_grid(pxu::Component::Xp).iter().filter(
         |line| matches!(line.component, GridLineComponent::Xp(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xp(1.0) {
@@ -1368,11 +1436,14 @@ fn fig_xpl_cover(
 }
 
 fn fig_xml_cover(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+
     let mut figure = FigureWriter::new(
         "xmL-cover",
         -5.0..5.0,
@@ -1388,7 +1459,7 @@ fn fig_xml_cover(
     figure.no_component_indicator();
 
     figure.add_axis()?;
-    for contour in pxu.contours.get_grid(pxu::Component::Xm).iter().filter(
+    for contour in contours.get_grid(pxu::Component::Xm).iter().filter(
         |line| matches!(line.component, GridLineComponent::Xm(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xm(1.0) {
@@ -1401,11 +1472,15 @@ fn fig_xml_cover(
 }
 
 fn fig_p_plane_short_cuts(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "p-plane-short-cuts",
         -2.6..2.6,
@@ -1419,11 +1494,10 @@ fn fig_p_plane_short_cuts(
         pb,
     )?;
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, pxu::Component::P, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -1434,18 +1508,22 @@ fn fig_p_plane_short_cuts(
             )
         })
     {
-        figure.add_cut(cut, &[], pxu.consts)?;
+        figure.add_cut(cut, &[], consts)?;
     }
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_xp_cuts_1(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "xp-cuts-1",
         -4.0..4.0,
@@ -1460,7 +1538,7 @@ fn fig_xp_cuts_1(
     )?;
 
     figure.add_axis()?;
-    for contour in pxu.contours
+    for contour in contours
         .get_grid(pxu::Component::Xp)
         .iter()
         .filter(|line| matches!(line.component, GridLineComponent::Xp(m) | GridLineComponent::Xm(m) if (-10.0..).contains(&m)))
@@ -1468,98 +1546,102 @@ fn fig_xp_cuts_1(
         figure.add_grid_line(contour, &[])?;
     }
 
-    figure.add_cuts(&pxu, &[])?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
 
     figure.finish(cache, settings, pb)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_path_figure(
-    mut figure: FigureWriter,
+    figure: FigureWriter,
     paths: &[&str],
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    pt: &pxu::Point,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let mut pxu = (*pxu).clone();
-    if let Some(name) = paths.first() {
-        let path = pxu
-            .get_path_by_name(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
-    }
+    let dummy_str: &[&str] = &[];
+    let dummy_f64: &[f64] = &[];
 
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &["semithick"])?;
+    #[allow(clippy::type_complexity)]
+    let paths: Vec<(&str, &[&str], Option<&[&str]>, &[f64])> = paths
+        .iter()
+        .map(|&name| (name, dummy_str, None, dummy_f64))
+        .collect::<Vec<_>>();
 
-    for name in paths {
-        let path = pxu
-            .get_path_by_name(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        figure.add_path(&pxu, path, &[])?;
-    }
-
-    figure.finish(cache, settings, pb)
+    draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
+        figure,
+        &paths,
+        &[],
+        pxu_provider,
+        pt,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_path_figure_with_options(
-    mut figure: FigureWriter,
+    figure: FigureWriter,
     paths: &[(&str, &[&str])],
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    pt: &pxu::Point,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let mut pxu = (*pxu).clone();
-    if let Some((name, _)) = paths.first() {
-        let path = pxu
-            .get_path_by_name(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
-    }
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &["semithick"])?;
+    let dummy_f64: &[f64] = &[];
 
-    for (name, options) in paths {
-        let path = pxu
-            .get_path_by_name(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        figure.add_path(&pxu, path, options)?;
-    }
+    #[allow(clippy::type_complexity)]
+    let paths: Vec<(&str, &[&str], Option<&[&str]>, &[f64])> = paths
+        .iter()
+        .map(|&(name, options)| (name, options, None, dummy_f64))
+        .collect::<Vec<_>>();
 
-    figure.finish(cache, settings, pb)
+    draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
+        figure,
+        &paths,
+        &[],
+        pxu_provider,
+        pt,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
-#[allow(clippy::type_complexity)]
+#[allow(clippy::type_complexity, clippy::too_many_arguments)]
 fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
     mut figure: FigureWriter,
     paths: &[(&str, &[&str], Option<&[&str]>, &[f64])],
     labels: &[(&str, Complex64, &[&str])],
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    pt: &pxu::Point,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let mut pxu = (*pxu).clone();
-    if let Some((name, _, _, _)) = paths.first() {
-        let path = pxu
-            .get_path_by_name(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        pxu.state.points[0].sheet_data = path.segments[0][0].sheet_data.clone();
-    }
+    let contours = pxu_provider.get_contours(consts).unwrap();
 
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &["semithick"])?;
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_cuts(&contours, pt, consts, &["semithick"])?;
 
     for (name, options, mark_options, arrow_pos) in paths {
-        let path = pxu
-            .get_path_by_name(name)
+        let path = pxu_provider
+            .get_path(name)
             .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        figure.add_path(&pxu, path, options)?;
+        figure.add_path(&path, pt, options)?;
         if let Some(mark_options) = mark_options {
-            figure.add_path_start_end_mark(path, mark_options)?;
+            figure.add_path_start_end_mark(&path, mark_options)?;
         }
-        figure.add_path_arrows(path, arrow_pos, options)?;
+        figure.add_path_arrows(&path, arrow_pos, options)?;
     }
 
     for (text, pos, options) in labels {
@@ -1570,11 +1652,14 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
 }
 
 fn fig_u_period_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-period-between-between",
         -6.0..4.0,
@@ -1588,8 +1673,7 @@ fn fig_u_period_between_between(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Between,
     );
@@ -1597,7 +1681,9 @@ fn fig_u_period_between_between(
     draw_path_figure(
         figure,
         &["U period between/between"],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1605,11 +1691,14 @@ fn fig_u_period_between_between(
 }
 
 fn fig_u_band_between_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-band-between-outside",
         -6.0..4.0,
@@ -1623,8 +1712,7 @@ fn fig_u_band_between_outside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Outside,
     );
@@ -1632,7 +1720,9 @@ fn fig_u_band_between_outside(
     draw_path_figure(
         figure,
         &["U band between/outside"],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1640,11 +1730,14 @@ fn fig_u_band_between_outside(
 }
 
 fn fig_u_band_between_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-band-between-inside",
         -6.0..4.0,
@@ -1658,8 +1751,7 @@ fn fig_u_band_between_inside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (
+    pt.sheet_data.u_branch = (
         ::pxu::kinematics::UBranch::Between,
         ::pxu::kinematics::UBranch::Inside,
     );
@@ -1667,7 +1759,9 @@ fn fig_u_band_between_inside(
     draw_path_figure(
         figure,
         &["U band between/inside"],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1675,11 +1769,14 @@ fn fig_u_band_between_inside(
 }
 
 fn fig_p_band_between_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "p-band-between-outside",
         -2.6..2.6,
@@ -1696,7 +1793,9 @@ fn fig_p_band_between_outside(
     draw_path_figure(
         figure,
         &["U band between/outside"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1704,11 +1803,14 @@ fn fig_p_band_between_outside(
 }
 
 fn fig_p_band_between_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "p-band-between-inside",
         -2.6..2.6,
@@ -1722,15 +1824,27 @@ fn fig_p_band_between_inside(
         pb,
     )?;
 
-    draw_path_figure(figure, &["U band between/inside"], pxu, cache, settings, pb)
+    draw_path_figure(
+        figure,
+        &["U band between/inside"],
+        pxu_provider,
+        &pt,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_xp_band_between_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-band-between-inside",
         -3.1..2.1,
@@ -1744,16 +1858,17 @@ fn fig_xp_band_between_inside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (UBranch::Between, UBranch::Inside);
-    pxu.state.points[0].sheet_data.log_branch_p = 0;
-    pxu.state.points[0].sheet_data.log_branch_m = -1;
-    pxu.state.points[0].sheet_data.im_x_sign = (1, -1);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Inside);
+    pt.sheet_data.log_branch_p = 0;
+    pt.sheet_data.log_branch_m = -1;
+    pt.sheet_data.im_x_sign = (1, -1);
 
     draw_path_figure_with_options(
         figure,
         &[("U band between/inside (single)", &["solid"])],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1761,11 +1876,14 @@ fn fig_xp_band_between_inside(
 }
 
 fn fig_xp_band_between_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-band-between-outside",
         -3.1..2.1,
@@ -1779,16 +1897,17 @@ fn fig_xp_band_between_outside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (UBranch::Between, UBranch::Outside);
-    pxu.state.points[0].sheet_data.log_branch_p = 0;
-    pxu.state.points[0].sheet_data.log_branch_m = -1;
-    pxu.state.points[0].sheet_data.im_x_sign = (1, -1);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Outside);
+    pt.sheet_data.log_branch_p = 0;
+    pt.sheet_data.log_branch_m = -1;
+    pt.sheet_data.im_x_sign = (1, -1);
 
     draw_path_figure_with_options(
         figure,
         &[("U band between/outside (single)", &["solid"])],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1796,11 +1915,14 @@ fn fig_xp_band_between_outside(
 }
 
 fn fig_xm_band_between_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-band-between-inside",
         -0.8..0.4,
@@ -1814,16 +1936,17 @@ fn fig_xm_band_between_inside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (UBranch::Between, UBranch::Inside);
-    pxu.state.points[0].sheet_data.log_branch_p = 0;
-    pxu.state.points[0].sheet_data.log_branch_m = -1;
-    pxu.state.points[0].sheet_data.im_x_sign = (1, -1);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Inside);
+    pt.sheet_data.log_branch_p = 0;
+    pt.sheet_data.log_branch_m = -1;
+    pt.sheet_data.im_x_sign = (1, -1);
 
     draw_path_figure(
         figure,
         &["U band between/inside"],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1831,11 +1954,14 @@ fn fig_xm_band_between_inside(
 }
 
 fn fig_xm_band_between_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-band-between-outside",
         -7.0..7.0,
@@ -1849,16 +1975,17 @@ fn fig_xm_band_between_outside(
         pb,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.u_branch = (UBranch::Between, UBranch::Outside);
-    pxu.state.points[0].sheet_data.log_branch_p = 0;
-    pxu.state.points[0].sheet_data.log_branch_m = -1;
-    pxu.state.points[0].sheet_data.im_x_sign = (1, -1);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Outside);
+    pt.sheet_data.log_branch_p = 0;
+    pt.sheet_data.log_branch_m = -1;
+    pt.sheet_data.im_x_sign = (1, -1);
 
     draw_path_figure(
         figure,
         &["U band between/outside"],
-        Arc::new(pxu),
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1866,11 +1993,14 @@ fn fig_xm_band_between_outside(
 }
 
 fn fig_xp_period_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-period-between-between",
         -3.1..2.1,
@@ -1887,7 +2017,9 @@ fn fig_xp_period_between_between(
     draw_path_figure_with_options(
         figure,
         &[("U period between/between (single)", &["solid"])],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1895,11 +2027,14 @@ fn fig_xp_period_between_between(
 }
 
 fn fig_xm_period_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-period-between-between",
         -3.1..2.1,
@@ -1916,7 +2051,9 @@ fn fig_xm_period_between_between(
     draw_path_figure_with_options(
         figure,
         &[("U period between/between (single)", &["solid"])],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1924,11 +2061,14 @@ fn fig_xm_period_between_between(
 }
 
 fn fig_p_period_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "p-period-between-between",
         -0.15..0.15,
@@ -1945,7 +2085,9 @@ fn fig_p_period_between_between(
     draw_path_figure(
         figure,
         &["U period between/between (single)"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1953,11 +2095,14 @@ fn fig_p_period_between_between(
 }
 
 fn fig_p_circle_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "p-circle-between-between",
         -0.15..0.15,
@@ -1974,7 +2119,9 @@ fn fig_p_circle_between_between(
     draw_path_figure(
         figure,
         &["xp circle between/between (single)"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -1982,11 +2129,14 @@ fn fig_p_circle_between_between(
 }
 
 fn fig_xp_circle_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-circle-between-between",
         -3.1..2.1,
@@ -2003,7 +2153,9 @@ fn fig_xp_circle_between_between(
     draw_path_figure_with_options(
         figure,
         &[("xp circle between/between (single)", &["solid"])],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2011,11 +2163,14 @@ fn fig_xp_circle_between_between(
 }
 
 fn fig_xm_circle_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-circle-between-between",
         -3.1..2.1,
@@ -2032,7 +2187,9 @@ fn fig_xm_circle_between_between(
     draw_path_figure_with_options(
         figure,
         &[("xp circle between/between (single)", &["solid"])],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2040,11 +2197,14 @@ fn fig_xm_circle_between_between(
 }
 
 fn fig_u_circle_between_between(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-circle-between-between",
         -6.0..4.0,
@@ -2061,7 +2221,9 @@ fn fig_u_circle_between_between(
     draw_path_figure(
         figure,
         &["xp circle between/between"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2069,11 +2231,14 @@ fn fig_u_circle_between_between(
 }
 
 fn fig_u_circle_between_outside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-circle-between-outside",
         -6.0..4.0,
@@ -2090,7 +2255,9 @@ fn fig_u_circle_between_outside(
     draw_path_figure(
         figure,
         &["xp circle between/outside L", "xp circle between/outside R"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2098,11 +2265,14 @@ fn fig_u_circle_between_outside(
 }
 
 fn fig_u_circle_between_inside(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-circle-between-inside",
         -6.0..4.0,
@@ -2119,7 +2289,9 @@ fn fig_u_circle_between_inside(
     draw_path_figure(
         figure,
         &["xp circle between/inside L", "xp circle between/inside R"],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2127,11 +2299,14 @@ fn fig_u_circle_between_inside(
 }
 
 fn fig_p_crossing_all(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "p-crossing-all",
         -1.1..1.1,
@@ -2195,7 +2370,9 @@ fn fig_p_crossing_all(
                 &["anchor=north west", "magenta"],
             ),
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2203,11 +2380,14 @@ fn fig_p_crossing_all(
 }
 
 fn fig_xp_crossing_all(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-crossing-all",
         -5.0..5.0,
@@ -2261,7 +2441,9 @@ fn fig_xp_crossing_all(
                 &["anchor=west", "magenta"],
             ),
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2269,11 +2451,14 @@ fn fig_xp_crossing_all(
 }
 
 fn fig_xm_crossing_all(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-crossing-all",
         -5.0..5.0,
@@ -2327,7 +2512,9 @@ fn fig_xm_crossing_all(
                 &["anchor=west", "magenta"],
             ),
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2335,11 +2522,14 @@ fn fig_xm_crossing_all(
 }
 
 fn fig_u_crossing_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "u-crossing-0",
         -3.0..3.0,
@@ -2359,7 +2549,9 @@ fn fig_u_crossing_0(
             "U crossing from 0-2pi path A",
             "U crossing from 0-2pi path B",
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2367,11 +2559,14 @@ fn fig_u_crossing_0(
 }
 
 fn fig_xp_crossing_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xp-crossing-0",
         -3.0..3.0,
@@ -2391,7 +2586,9 @@ fn fig_xp_crossing_0(
             "U crossing from 0-2pi path A",
             "U crossing from 0-2pi path B",
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2399,11 +2596,14 @@ fn fig_xp_crossing_0(
 }
 
 fn fig_xm_crossing_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pt = pxu::Point::new(0.5, consts);
+
     let figure = FigureWriter::new(
         "xm-crossing-0",
         -1.5..4.4,
@@ -2423,7 +2623,9 @@ fn fig_xm_crossing_0(
             "U crossing from 0-2pi path A",
             "U crossing from 0-2pi path B",
         ],
-        pxu,
+        pxu_provider,
+        &pt,
+        consts,
         cache,
         settings,
         pb,
@@ -2433,18 +2635,17 @@ fn fig_xm_crossing_0(
 fn draw_state_figure(
     mut figure: FigureWriter,
     state_strings: &[&str],
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let states = load_states(state_strings)?;
+    let contours = pxu_provider.get_contours(consts).unwrap();
 
-    let mut pxu = (*pxu).clone();
-    pxu.state = states[0].clone();
-
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
 
     let colors = ["Blue", "MediumOrchid", "Coral", "DarkOrange", "DarkViolet"];
 
@@ -2469,11 +2670,13 @@ fn draw_state_figure(
 }
 
 fn fig_p_two_particle_bs_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "p-two-particle-bs-0",
         -0.05..1.0,
@@ -2493,15 +2696,26 @@ fn fig_p_two_particle_bs_0(
         "(points:[(p:(0.2955484673695275,-0.07853446096510001),xp:(1.503716303147816,2.0656922379697886),xm:(0.9506849827846514,-1.236725796907908),u:(0.9875645002911329,0.49999999999534983),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,1))),(p:(0.0041589403041424845,0.07853446096569741),xp:(0.9506849827846514,-1.2367257969079077),xm:(1.5037163031519056,-2.0656922379786726),u:(0.9875645002911335,-0.5000000000046495),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,1)))])",
     ];
 
-    draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
+    draw_state_figure(
+        figure,
+        &state_strings,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_xp_typical_bound_state(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+
     let mut figure = FigureWriter::new(
         "xp-typical-bound-states",
         -3.5..6.5,
@@ -2526,22 +2740,18 @@ fn fig_xp_typical_bound_state(
         .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
         .collect::<Result<Vec<_>>>()?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state = states[0].clone();
-
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
 
     figure.add_plot(
         &["very thin", "lightgray"],
         &vec![Complex64::from(-10.0), Complex64::from(10.0)],
     )?;
 
-    for cut in pxu
-        .contours
-        .get_visible_cuts(&pxu, figure.component, 0)
+    for cut in contours
+        .get_visible_cuts_from_point(&states[0].points[0], figure.component, consts)
         .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
     {
-        figure.add_cut(cut, &[], pxu.consts)?;
+        figure.add_cut(cut, &[], consts)?;
     }
 
     for state in states {
@@ -2575,11 +2785,13 @@ fn fig_xp_typical_bound_state(
 }
 
 fn fig_xp_two_particle_bs_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xp-two-particle-bs-0",
         -2.2..4.8,
@@ -2599,15 +2811,25 @@ fn fig_xp_two_particle_bs_0(
         "(points:[(p:(0.2955484673695275,-0.07853446096510001),xp:(1.503716303147816,2.0656922379697886),xm:(0.9506849827846514,-1.236725796907908),u:(0.9875645002911329,0.49999999999534983),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,1))),(p:(0.0041589403041424845,0.07853446096569741),xp:(0.9506849827846514,-1.2367257969079077),xm:(1.5037163031519056,-2.0656922379786726),u:(0.9875645002911335,-0.5000000000046495),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,1)))])",
     ];
 
-    draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
+    draw_state_figure(
+        figure,
+        &state_strings,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_xm_two_particle_bs_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xm-two-particle-bs-0",
         -2.2..4.8,
@@ -2628,15 +2850,24 @@ fn fig_xm_two_particle_bs_0(
 
     ];
 
-    draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
+    draw_state_figure(
+        figure,
+        &state_strings,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_u_two_particle_bs_0(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
     let figure = FigureWriter::new(
         "u-two-particle-bs-0",
         -2.2..4.8,
@@ -2657,15 +2888,25 @@ fn fig_u_two_particle_bs_0(
 
     ];
 
-    draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
+    draw_state_figure(
+        figure,
+        &state_strings,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_u_bs_1_4_same_energy(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let mut figure = FigureWriter::new(
         "u-bs-1-4-same-energy",
         -5.4..5.4,
@@ -2686,21 +2927,33 @@ fn fig_u_bs_1_4_same_energy(
 
     figure.set_caption("A single particle state and a four particle bound state with the same total energy and momentum and opposite charge.");
 
-    draw_state_figure(figure, &state_strings, pxu, cache, settings, pb)
+    draw_state_figure(
+        figure,
+        &state_strings,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn draw_p_region_plot(
     mut figure: FigureWriter,
     e_branch: i32,
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+    // We first extract the contours below assuming that e_branch == +1
+
     let mut xp_scallion_path = {
-        let mut xp_scallions = pxu
-            .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        let mut xp_scallions = contours
+            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
             .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
             .map(|cut| cut.path.clone())
             .collect::<Vec<_>>();
@@ -2726,9 +2979,8 @@ fn draw_p_region_plot(
 
         let min_1_path = left_paths.pop().unwrap();
 
-        let mut e_cuts = pxu
-            .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        let mut e_cuts = contours
+            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
             .filter(|cut| {
                 matches!(cut.typ, pxu::CutType::E)
                     && cut.path[0].im < 0.0
@@ -2774,9 +3026,8 @@ fn draw_p_region_plot(
     };
 
     let mut xp_kidney_path = {
-        let mut xp_kidneys = pxu
-            .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        let mut xp_kidneys = contours
+            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
             .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
             .map(|cut| cut.path.clone())
             .filter(|path| path[0].re > 0.0 || path[0].im < 0.2)
@@ -2801,9 +3052,8 @@ fn draw_p_region_plot(
             }
         }
 
-        let mut e_cut = pxu
-            .contours
-            .get_visible_cuts(&pxu, pxu::Component::P, 0)
+        let mut e_cut = contours
+            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
             .filter(|cut| {
                 matches!(cut.typ, pxu::CutType::E)
                     && cut.path[0].im > 0.0
@@ -2866,10 +3116,8 @@ fn draw_p_region_plot(
         xp_between_path,
     )?;
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.e_branch = e_branch;
-
-    figure.add_cuts(&pxu, &[])?;
+    pt.sheet_data.e_branch = e_branch;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
 
     let mut node = |text1: &str, text2: &str, x: f64, y: f64| -> Result<()> {
         let options = &[
@@ -2916,11 +3164,13 @@ fn draw_p_region_plot(
 }
 
 fn fig_p_short_cut_regions_e_plus(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "p-short-cut-regions-e-plus",
         -2.6..2.6,
@@ -2934,15 +3184,17 @@ fn fig_p_short_cut_regions_e_plus(
         pb,
     )?;
 
-    draw_p_region_plot(figure, 1, pxu, cache, settings, pb)
+    draw_p_region_plot(figure, 1, pxu_provider, consts, cache, settings, pb)
 }
 
 fn fig_p_short_cut_regions_e_min(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "p-short-cut-regions-e-min",
         -2.6..2.6,
@@ -2956,23 +3208,16 @@ fn fig_p_short_cut_regions_e_min(
         pb,
     )?;
 
-    draw_p_region_plot(figure, -1, pxu, cache, settings, pb)
+    draw_p_region_plot(figure, -1, pxu_provider, consts, cache, settings, pb)
 }
 
-type FigureFunction = fn(
-    pxu: Arc<Pxu>,
-    cache: Arc<cache::Cache>,
-    settings: &Settings,
-    pb: &ProgressBar,
-) -> Result<FigureCompiler>;
-
-fn get_physical_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
+fn get_physical_region(consts: CouplingConstants) -> Vec<Vec<Complex64>> {
     let mut physical_region = vec![];
 
     for p_start in [-3, -2, 1, 2] {
         let p_start = p_start as f64;
         let p0 = p_start + 1.0 / 16.0;
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_m(2.0);
 
         let line = p_int.contour();
@@ -2989,12 +3234,12 @@ fn get_physical_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
         let p_start = 0.0;
         let p0 = p_start + 1.0 / 16.0;
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_conj();
         p_int.goto_m(0.0);
         line.extend(p_int.contour().iter().rev());
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_m(0.0);
         line.extend(p_int.contour());
 
@@ -3011,15 +3256,15 @@ fn get_physical_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
         let p0 = p_start + 1.0 / 16.0;
         let p2 = p_start + 15.0 / 16.0;
 
-        let mut p_int = PInterpolatorMut::xp(p2, pxu.consts);
-        p_int.goto_m(pxu.consts.k() as f64);
+        let mut p_int = PInterpolatorMut::xp(p2, consts);
+        p_int.goto_m(consts.k() as f64);
         line.extend(p_int.contour().iter().rev().map(|z| z.conj()));
 
-        let mut p_int = PInterpolatorMut::xp(p2, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p2, consts);
         p_int.goto_conj().goto_m(0.0);
         line.extend(p_int.contour().iter());
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_m(0.0);
         line.extend(p_int.contour().iter().rev());
 
@@ -3032,7 +3277,7 @@ fn get_physical_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
     physical_region
 }
 
-fn get_crossed_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
+fn get_crossed_region(consts: CouplingConstants) -> Vec<Vec<Complex64>> {
     let mut crossed_region = vec![];
 
     {
@@ -3041,12 +3286,12 @@ fn get_crossed_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
         let p_start = 0.0;
         let p0 = p_start + 1.0 / 16.0;
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_conj();
         p_int.goto_m(0.0);
         line.extend(p_int.contour().iter().rev());
 
-        let mut p_int = PInterpolatorMut::xp(p0, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p0, consts);
         p_int.goto_m(-1.0).goto_im(0.0);
         let im_z = line.last().unwrap().im;
         line.extend(p_int.contour().into_iter().filter(|z| z.im < im_z));
@@ -3061,15 +3306,15 @@ fn get_crossed_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
         let p_start = -1.0;
         let p2 = p_start + 15.0 / 16.0;
 
-        let mut p_int = PInterpolatorMut::xp(p2, pxu.consts);
-        p_int.goto_m(pxu.consts.k() as f64);
+        let mut p_int = PInterpolatorMut::xp(p2, consts);
+        p_int.goto_m(consts.k() as f64);
         line.extend(p_int.contour().iter().rev().map(|z| z.conj()));
 
-        let mut p_int = PInterpolatorMut::xp(p2, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p2, consts);
         p_int.goto_conj().goto_m(0.0);
         line.extend(p_int.contour().iter());
 
-        let mut p_int = PInterpolatorMut::xp(p2, pxu.consts);
+        let mut p_int = PInterpolatorMut::xp(p2, consts);
         p_int.goto_im(0.0);
         let im_z = line.last().unwrap().im;
         line.extend(p_int.contour().iter().rev().filter(|z| z.im < im_z));
@@ -3082,11 +3327,15 @@ fn get_crossed_region(pxu: &Pxu) -> Vec<Vec<Complex64>> {
 }
 
 fn fig_p_physical_region_e_plus(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "p-physical-region-e-plus",
         -2.6..2.6,
@@ -3100,10 +3349,10 @@ fn fig_p_physical_region_e_plus(
         pb,
     )?;
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
 
-    let physical_region = get_physical_region(&pxu);
-    let crossed_region = get_crossed_region(&pxu);
+    let physical_region = get_physical_region(consts);
+    let crossed_region = get_crossed_region(consts);
 
     for region in physical_region {
         figure.add_plot_all(&["draw=none", "fill=Blue", "opacity=0.5"], region)?;
@@ -3113,17 +3362,21 @@ fn fig_p_physical_region_e_plus(
         figure.add_plot_all(&["draw=none", "fill=Red", "opacity=0.5"], region)?;
     }
 
-    figure.add_cuts(&pxu, &[])?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
 
     figure.finish(cache, settings, pb)
 }
 
 fn fig_p_physical_region_e_minus(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts).unwrap();
+    let mut pt = pxu::Point::new(0.5, consts);
+
     let mut figure = FigureWriter::new(
         "p-physical-region-e-min",
         -2.6..2.6,
@@ -3137,10 +3390,10 @@ fn fig_p_physical_region_e_minus(
         pb,
     )?;
 
-    figure.add_grid_lines(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
 
-    let crossed_region = get_physical_region(&pxu);
-    let physical_region = get_crossed_region(&pxu);
+    let crossed_region = get_physical_region(consts);
+    let physical_region = get_crossed_region(consts);
 
     for region in physical_region {
         figure.add_plot_all(&["draw=none", "fill=Blue", "opacity=0.5"], region)?;
@@ -3150,17 +3403,18 @@ fn fig_p_physical_region_e_minus(
         figure.add_plot_all(&["draw=none", "fill=Red", "opacity=0.5"], region)?;
     }
 
-    let mut pxu = (*pxu).clone();
-    pxu.state.points[0].sheet_data.e_branch = -1;
+    pt.sheet_data.e_branch = -1;
 
-    figure.add_cuts(&pxu, &[])?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
 
     figure.finish(cache, settings, pb)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw_singlet(
     mut figure: FigureWriter,
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
+    consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
@@ -3168,11 +3422,11 @@ fn draw_singlet(
     marked_indices: &[usize],
 ) -> Result<FigureCompiler> {
     let state = load_state(state_string)?;
-    let mut pxu = (*pxu).clone();
-    pxu.state = state.clone();
+    let pt = &state.points[0];
+    let contours = pxu_provider.get_contours(consts).unwrap();
 
-    figure.add_grid_lines(&pxu, &[])?;
-    figure.add_cuts(&pxu, &[])?;
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_cuts(&contours, pt, consts, &[])?;
 
     for (i, point) in state.points.into_iter().enumerate() {
         let color = if marked_indices.contains(&i) {
@@ -3187,11 +3441,13 @@ fn draw_singlet(
 }
 
 fn fig_xp_singlet_41(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xp-singlet-41",
         -1.1..1.9,
@@ -3211,7 +3467,8 @@ fn fig_xp_singlet_41(
 
     draw_singlet(
         figure,
-        pxu,
+        pxu_provider,
+        consts,
         cache,
         settings,
         pb,
@@ -3221,11 +3478,13 @@ fn fig_xp_singlet_41(
 }
 
 fn fig_xm_singlet_41(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xm-singlet-41",
         -1.1..1.9,
@@ -3245,7 +3504,8 @@ fn fig_xm_singlet_41(
 
     draw_singlet(
         figure,
-        pxu,
+        pxu_provider,
+        consts,
         cache,
         settings,
         pb,
@@ -3255,11 +3515,13 @@ fn fig_xm_singlet_41(
 }
 
 fn fig_u_singlet_41(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "u-singlet-41",
         -3.1..4.6,
@@ -3276,7 +3538,8 @@ fn fig_u_singlet_41(
     let state_string ="(points:[(p:(-0.06481769289200064,-0.04632014396084205),xp:(0.6773737156527935,0.24101679937073833),xm:(0.39355556208794307,0.3659765169104283),u:(2.2503158561824144,-0.9972640693939946),x:(0.5207960049771001,0.3382736317263967),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134065179824,-0.04287934452264521),xp:(0.3935555620861755,0.3659765169090202),xm:(0.22233500515739787,0.34507249230177073),u:(2.250315856189289,-1.997264069401408),x:(0.29603586257460585,0.36274180923791544),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216060976681002,0.042633420284661425),xp:(0.22233500515775476,0.34507249230145126),xm:(0.3923377926330045,-0.3660664539125623),u:(2.2503158561923926,-2.9972640693996655),x:(0.16710333623086243,0.3211911819475663),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.0645947551037885,0.04632338280244304),xp:(0.3923377926336257,-0.36606645391208686),xm:(0.6755998929977572,-0.24272408911183854),u:(2.2503158561943186,-3.9972640694026023),x:(0.5192267118211283,-0.33884808844761033),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.10930011368445881,0.00024268539559447655),xp:(0.6755998929977572,-0.2427240891118387),xm:(0.6773737156462706,0.24101679936958165),u:(2.2503158561943186,0.002735930597398628),x:(0.7857319077395628,-0.0016758790700285356),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)";
     draw_singlet(
         figure,
-        pxu,
+        pxu_provider,
+        consts,
         cache,
         settings,
         pb,
@@ -3286,11 +3549,13 @@ fn fig_u_singlet_41(
 }
 
 fn fig_xp_singlet_32(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xp-singlet-32",
         -1.1..1.9,
@@ -3308,15 +3573,26 @@ fn fig_xp_singlet_32(
         "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2, 3])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2, 3],
+    )
 }
 
 fn fig_xm_singlet_32(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xm-singlet-32",
         -1.1..1.9,
@@ -3334,15 +3610,26 @@ fn fig_xm_singlet_32(
         "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2, 3])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2, 3],
+    )
 }
 
 fn fig_u_singlet_32(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "u-singlet-32",
         -3.1..4.6,
@@ -3360,15 +3647,26 @@ fn fig_u_singlet_32(
         "(points:[(p:(-0.0918635850967006,-0.037587502213391646),xp:(0.785884223705366,0.0000000000000002220446049250313),xm:(0.5200361660196523,0.3386309516954546),u:(2.2500748563450794,-0.5000000000000003),x:(0.6765622619422568,0.24195091368028965),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.04931502967968751,-0.044946057622269636),xp:(0.5200361660196524,0.3386309516954545),xm:(0.29556714680693774,0.3627151161370183),u:(2.2500748563450794,-1.5),x:(0.392950187668455,0.36607556161166316),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7176427704472238,-0.000000000000000019937695239947602),xp:(0.2955671468069379,0.36271511613701846),xm:(0.29556714680693785,-0.3627151161370184),u:(2.2500748563450785,-2.499999999999999),x:(0.2219764434485283,0.34498404739256483),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931502967968751,0.044946057622269636),xp:(0.29556714680693774,-0.3627151161370183),xm:(0.5200361660196524,-0.3386309516954545),u:(2.2500748563450794,-3.4999999999999996),x:(0.39295018766845496,-0.36607556161166327),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09186358509670066,0.03758750221339164),xp:(0.5200361660196525,-0.33863095169545443),xm:(0.785884223705366,0.0000000000000003608224830031759),u:(2.2500748563450794,0.4999999999999998),x:(0.676562261942257,-0.2419509136802895),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2, 3])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2, 3],
+    )
 }
 
 fn fig_xp_singlet_23(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xp-singlet-23",
         -1.1..1.9,
@@ -3386,15 +3684,26 @@ fn fig_xp_singlet_23(
         "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2],
+    )
 }
 
 fn fig_xm_singlet_23(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xm-singlet-23",
         -1.1..1.9,
@@ -3412,15 +3721,26 @@ fn fig_xm_singlet_23(
         "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2],
+    )
 }
 
 fn fig_u_singlet_23(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "u-singlet-23",
         -3.1..4.6,
@@ -3438,15 +3758,26 @@ fn fig_u_singlet_23(
         "(points:[(p:(-0.064817690638922,-0.04632014058248584),xp:(0.6773736720447697,0.24101678917659286),xm:(0.39355554871074094,0.3659764991995006),u:(2.250315939687509,-0.9972641231359414),x:(0.5207959807194622,0.33827361344245904),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.03968134011794477,-0.042879342951094745),xp:(0.39355554871074067,0.3659764991995013),xm:(0.22233500194749478,0.34507247933376406),u:(2.250315939687506,-1.9972641231359423),x:(0.2960358555274206,0.3627417937862914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7216061057006049,0.04263342355344563),xp:(0.22233500194749445,0.3450724793337641),xm:(0.3923378032288628,-0.3660664344918713),u:(2.2503159396875043,-2.9972641231359445),x:(0.16710333534746072,0.32119117129204844),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.06459475724215495,0.04632337938493029),xp:(0.39233780322886325,-0.36606643449187204),xm:(0.6755998845174871,-0.24272404535577444),u:(2.2503159396875008,1.0027358768640537),x:(0.5192267310835156,-0.3388480606808871),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10930010734366312,0.00024268100631728482),xp:(0.6755998866881463,-0.2427240505990194),xm:(0.6773736772251796,0.2410167915569991),u:(2.2503159279047136,0.0027358814445184176),x:(0.7857318639819022,-0.0016758487182760083),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[1, 2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[1, 2],
+    )
 }
 
 fn fig_xp_singlet_14(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xp-singlet-14",
         -1.1..1.9,
@@ -3464,15 +3795,26 @@ fn fig_xp_singlet_14(
         "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[2],
+    )
 }
 
 fn fig_xm_singlet_14(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "xm-singlet-14",
         -1.1..1.9,
@@ -3490,15 +3832,26 @@ fn fig_xm_singlet_14(
         "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[2],
+    )
 }
 
 fn fig_u_singlet_14(
-    pxu: Arc<Pxu>,
+    pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+
     let figure = FigureWriter::new(
         "u-singlet-14",
         -3.1..4.6,
@@ -3516,7 +3869,16 @@ fn fig_u_singlet_14(
         "(points:[(p:(-0.09185221149636245,-0.037572722189714455),xp:(0.7857363886452503,0.0000004328254604446524),xm:(0.5200106363475369,0.3385618195950395),u:(2.2503161408013796,-0.5000007065959058),x:(0.676486747365414,0.24187289813934523),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.04931600633410893,-0.0449403973338789),xp:(0.5200106363475344,0.338561819595029),xm:(0.29557299472051746,0.3626743175215065),u:(2.2503161408014147,-1.5000007065959013),x:(0.392946068121917,0.36602187168832023),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.717663444470969,0.00000006054071687339567),xp:(0.2955729947205189,0.3626743175215076),xm:(0.2955732335644112,-0.36267435245574203),u:(2.2503161408014094,-2.500000706595892),x:(0.22198686543101423,0.3449533442179103),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.04931603946892371,0.044940403147529916),xp:(0.2955732335644095,-0.36267435245574087),xm:(0.5200110416414399,-0.3385616712335204),u:(2.2503161408014156,1.499999293404119),x:(0.392946382629357,-0.36602184846097735),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.09185229822963642,0.03757265583534658),xp:(0.5200110416414421,-0.33856167123353087),xm:(0.7857363886452495,0.00000043282544220923924),u:(2.250316140801381,0.4999992934041242),x:(0.6764872054840881,-0.24187245720745892),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
     ;
 
-    draw_singlet(figure, pxu, cache, settings, pb, state_string, &[2])
+    draw_singlet(
+        figure,
+        pxu_provider,
+        consts,
+        cache,
+        settings,
+        pb,
+        state_string,
+        &[2],
+    )
 }
 
 const BS_AXIS_OPTIONS: &[&str] = &[
@@ -3536,7 +3898,7 @@ const BS_AXIS_OPTIONS: &[&str] = &[
 ];
 
 fn fig_bs_disp_rel_large(
-    _pxu: Arc<Pxu>,
+    _pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
@@ -3599,7 +3961,7 @@ fn fig_bs_disp_rel_large(
 }
 
 fn fig_bs_disp_rel_small(
-    _pxu: Arc<Pxu>,
+    _pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
@@ -3654,7 +4016,7 @@ fn fig_bs_disp_rel_small(
 }
 
 fn fig_bs_disp_rel_lr0(
-    _pxu: Arc<Pxu>,
+    _pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
@@ -3739,6 +4101,13 @@ fn fig_bs_disp_rel_lr0(
 // (points:[(p:(0.00843676807928177,-0.03513199668600366),xp:(2.0225004379092395,4.602739443684855),xm:(1.8151844324034783,3.5999287328595337),u:(0.8174037933349869,3.0001004136552805),x:(1.9257976541383772,4.100498780991189),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010086307097622923,-0.04551165207354569),xp:(1.8151844324034787,3.5999287328595337),xm:(1.5322869268709625,2.612807837068172),u:(0.8174037933349876,2.0001004136552805),x:(0.13168703015727753,-0.622206072424072),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.007768687086187467,-0.0634999265708896),xp:(1.532286926870964,2.612807837068173),xm:(1.1124878377536462,1.700946307309016),u:(0.8174037933349889,1.000100413655282),x:(1.3441760320480471,2.1387617830721486),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(-0.012760439221813963,-0.08110003527870467),xp:(1.112487837753648,1.7009463073090156),xm:(0.5843461131739043,1.0720980362612633),u:(0.8174037933349905,0.00010041365528257185),x:(0.8440193678103955,-1.3365693652418347),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.03128471282788021,-0.07223884819342559),xp:(0.5843461131739062,1.0720980362612622),xm:(0.2310100029006664,0.7403195868810634),u:(0.8174037933349938,-0.9998995863447169),x:(0.378046642973153,0.8845879443155366),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.568576186421524,-0.06102657076356458),xp:(0.23101000290066678,0.7403195868810637),xm:(0.06768228089702588,-0.5241780118357348),u:(0.8174037933349938,-1.9998995863447153),x:(-0.016668802918680562,0.169551123545851),sheet_data:(log_branch_p:0,log_branch_m:-1,log_branch_x:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.027695577907200265,0.06101340663270868),xp:(0.06768228089702624,-0.5241780118357348),xm:(0.23096142338091374,-0.7402675516939287),u:(0.8174037933349955,-2.999899586344716),x:(0.13168703015727876,-0.6222060724240701),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Between),im_x_sign:(1,-1))),(p:(-0.03128565068050761,0.07223598695607951),xp:(0.23096142338091474,-0.7402675516939278),xm:(0.5842509144477248,-1.0720099109472596),u:(0.8174037933349994,-3.999899586344717),x:(0.37797625143095687,-0.8845230268536034),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.012766176787802407,0.08110093906354647),xp:(0.5842509144477261,-1.0720099109472587),xm:(1.1123857641281532,-1.7007823370614374),u:(0.8174037933350016,-4.999899586344718),x:(0.8440193678104028,-1.3365693652418285),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,-1))),(p:(0.0077669385438059015,0.06350442729062239),xp:(1.1123857641281547,-1.7007823370614383),xm:(1.5322189416726264,-2.6126133875158106),u:(0.8174037933350022,-5.999899586344719),x:(1.344092177901383,-2.138576719172685),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.01008651372735086,0.045514355358441116),xp:(1.5322189416726266,-2.6126133875158115),xm:(1.8151366715985073,-3.59972820026474),u:(0.8174037933350025,-6.9998995863447195),x:(2.8704197488363055,-13.151476411498896),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.008437134840079658,0.03513359697474945),xp:(1.815136671598508,-3.5997282002647424),xm:(2.022463942971389,-4.602537513548278),u:(0.8174037933350022,-7.999899586344722),x:(1.9257562622871796,-4.100297311354334),sheet_data:(log_branch_p:1,log_branch_m:-1,log_branch_x:-1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1)))],unlocked:false)
 // (points:[(p:(0.008504583798772088,-0.035116319700573294),xp:(2.0310602321435156,4.601192336448928),xm:(1.8236860657460943,3.5979038213284),u:(0.8259153367490619,3.0001001254211848),x:(1.9343383671092051,4.098744023547635),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010200969845901249,-0.04550261494750871),xp:(1.8236860657460947,3.5979038213284005),xm:(1.5405330621577877,2.609924132829659),u:(0.8259153367490621,2.000100125421185),x:(0.13351168692396484,-0.6208463450691568),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.007960192001555002,-0.06357382171119046),xp:(1.5405330621577886,2.6099241328296587),xm:(1.11944336273788,1.6966093669966547),u:(0.8259153367490633,1.0001001254211848),x:(1.352025969780485,2.135202745026528),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(-0.012722182657881366,-0.08134458093418913),xp:(1.1194433627378806,1.6966093669966533),xm:(0.5880727927249432,1.0680517330150374),u:(0.8259153367490646,0.00010012542118420509),x:(0.8493750305023915,-1.3318868074347914),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.03140689089138959,-0.07227848066337073),xp:(0.5880727927249434,1.0680517330150365),xm:(0.2332084780767102,0.7382567722288272),u:(0.8259153367490658,-0.9998998745788164),x:(0.380789270523584,0.8815982816018764),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.02777035244194526,-0.060942522213294804),xp:(0.23320847807671063,0.7382567722288274),xm:(0.06921300804414522,0.5233589956165808),u:(0.8259153367490667,-1.999899874578815),x:(-0.016428179656077273,0.16956485311996405),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.018153512014311726,-0.05298576814605994),xp:(0.06921300804414529,0.5233589956165808),xm:(0.006592886744828705,0.37836736667440274),u:(0.825915336749067,-2.999899874578815),x:(1.9342970833496362,-4.098543038080382),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Inside),im_x_sign:(1,-1))),(p:(-0.009985077989350393,-0.04484655870383054),xp:(0.00659288674482856,0.37836736667440285),xm:(-0.01293303863452533,0.28520580704222387),u:(0.8259153367490659,-3.999899874578815),x:(-0.006223493995138852,0.3265423856854216),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-1.485574288950221,-0.000008180452225970939),xp:(-0.012933038634525393,0.28520580704222437),xm:(-0.01293489175771858,-0.28519103385426203),u:(0.8259153367490643,-4.999899874578809),x:(2.746936330172484,-11.142155843007524),sheet_data:(log_branch_p:0,log_branch_m:-2,log_branch_x:1,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(1,1))),(p:(-0.009983772843950994,0.04484493726643239),xp:(-0.012934891757718534,-0.28519103385426203),xm:(0.006586037849219721,-0.37834417705667645),u:(0.8259153367490649,-5.999899874578817),x:(-0.0062271846585451925,-0.32652389514860536),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(-1,1))),(p:(-0.01815159635002861,0.05298417576951007),xp:(0.006586037849219725,-0.3783441770566764),xm:(0.06919284241842479,-0.5233235398438041),u:(0.825915336749065,-6.999899874578816),x:(0.1335437484364576,0.6208891544601038),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(-1,1))),(p:(-0.027768641516948026,0.060940799026703206),xp:(0.06919284241842472,-0.5233235398438043),xm:(0.23315986602397537,-0.7382052120657752),u:(0.8259153367490644,-7.999899874578816),x:(0.13351168692396545,-0.6208463450691566),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:-1,u_branch:(Inside,Between),im_x_sign:(-1,1))),(p:(-0.03140781971284981,0.07227558488286355),xp:(0.23315986602397598,-0.7382052120657749),xm:(0.5879773385079586,-1.0679642572576211),u:(0.8259153367490659,-8.999899874578817),x:(0.3807187988870824,-0.8815339636510102),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.01272796844009084,0.0813454787332294),xp:(0.5879773385079594,-1.0679642572576202),xm:(1.1193410772171217,-1.6964455857607974),u:(0.8259153367490678,-9.999899874578816),x:(0.8493750305023934,-1.3318868074347894),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:1,u_branch:(Between,Outside),im_x_sign:(-1,1))),(p:(0.007958457995764022,0.06357834537780237),xp:(1.1193410772171222,-1.6964455857607976),xm:(1.5404651704138481,-2.609730008600267),u:(0.8259153367490673,-10.999899874578817),x:(1.3519421219160495,-2.135017906474365),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(0.010201189133454311,0.04550531504147031),xp:(1.5404651704138483,-2.609730008600268),xm:(1.8236384201059015,-3.597703740169742),u:(0.8259153367490671,-11.99989987457882),x:(3.1358188803934888,-18.16733474231712),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(0.00850495587109817,0.035117915121075954),xp:(1.823638420105902,-3.5977037401697416),xm:(2.031023836785722,-4.600990912521743),u:(0.8259153367490675,-12.999899874578817),x:(1.934297083349637,-4.0985430380803844),sheet_data:(log_branch_p:2,log_branch_m:-2,log_branch_x:-2,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1)))],unlocked:false)
 // (points:[(p:(0.00850451567122419,-0.0351163366428777),xp:(2.0310515783264487,4.601193769786978),xm:(1.8236774624129255,3.5979057375562773),u:(0.8259067559962097,3.000099999989294),x:(1.93432972901603,4.098745666617839),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010200854291000724,-0.04550262603714801),xp:(1.8236774624129262,3.597905737556278),xm:(1.5405247013607068,2.6099269202774904),u:(0.8259067559962101,2.0000999999892946),x:(0.1335098726834099,-0.6208477455958303),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.007959997082149057,-0.06357375026038176),xp:(1.5405247013607066,2.60992692027749),xm:(1.1194362803928564,1.69661364718726),u:(0.8259067559962101,1.0000999999892937),x:(1.352017996815633,2.1352062219696677),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(-0.012722224785590501,-0.08134433357584302),xp:(1.1194362803928557,1.6966136471872597),xm:(0.5880689843184308,1.0680557686233254),u:(0.8259067559962098,0.0000999999892933312),x:(0.849369701941432,-1.331891622661128),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.03140676738687043,-0.07227843902770795),xp:(0.5880689843184305,1.0680557686233256),xm:(0.2332062381776739,0.7382588231196434),u:(0.8259067559962091,-0.9999000000107066),x:(0.38078647020266615,0.8816012612265064),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Outside,Between),im_x_sign:(1,-1))),(p:(-0.027770277529154154,-0.06094259444272281),xp:(0.23320623817767397,0.7382588231196433),xm:(0.06921147606791347,0.5233598375865766),u:(0.8259067559962093,-1.9999000000107068),x:(-0.016428422019962932,0.1695648360578815),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.018153442581473014,-0.052985849236542905),xp:(0.06921147606791343,0.5233598375865767),xm:(0.006591888732602278,0.37836764565645814),u:(0.8259067559962092,-2.9999000000107072),x:(1.9342884969851755,-4.098544933029524),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Inside),im_x_sign:(1,-1))),(p:(-0.00998500769250728,-0.044846613616642786),xp:(0.0065918887326022226,0.378367645656458),xm:(-0.01293367285536308,0.2852058772051723),u:(0.8259067559962093,-3.999900000010708),x:(-0.006224288663879103,0.326542532266881),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.00504454849795598,-0.037273352266220736),xp:(-0.012933672855363176,0.28520587720517243),xm:(-0.01737926285524494,0.22521931099646053),u:(0.8259067559962077,-4.999900000010707),x:(-0.01613831014380371,0.25206198159240306),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.002444001225971159,-0.0311580515212133),xp:(-0.01737926285524475,0.22521931099646045),xm:(-0.01713100290273024,0.18493402813542317),u:(0.8259067559962114,-5.999900000010708),x:(0.38078647020266637,0.881601261226505),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.001107047302755978,-0.026473566594018966),xp:(-0.017131002902730157,0.18493402813542284),xm:(-0.015594721972887067,0.15648999637430783),u:(0.8259067559962135,-6.999900000010719),x:(-0.01642842201996279,0.16956483605788117),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-2.469490518301797,0.026467846111587222),xp:(-0.015594721972887044,0.15648999637430758),xm:(-0.01713076618032053,-0.18492734608997766),u:(0.8259067559962137,-7.9999000000107285),x:(2.9374736459666977,-14.154798684335006),sheet_data:(log_branch_p:0,log_branch_m:-3,log_branch_x:1,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.002443635689955469,0.031156981066727794),xp:(-0.017130766180320594,-0.18492734608997763),xm:(-0.017379500127251722,-0.22520962585015392),u:(0.8259067559962111,-8.999900000010724),x:(-0.013017598277623029,0.12694382857518613),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.005043836866204629,0.03727197299065966),xp:(-0.01737950012725175,-0.22520962585015392),xm:(-0.012935523601068057,-0.2851911225008308),u:(0.825906755996211,-9.999900000010722),x:(-0.016139122690666204,-0.2520500961959419),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.009983704183199597,0.04484499420457478),xp:(-0.012935523601068168,-0.2851911225008307),xm:(0.006585048506230251,-0.3783444850201329),u:(0.8259067559962098,-10.999900000010722),x:(-0.006227974631957518,-0.32652406485302565),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.018151529315943035,0.052984258851600366),xp:(0.006585048506230137,-0.3783444850201332),xm:(0.06919133582369916,-0.5233244260619485),u:(0.8259067559962082,-11.999900000010726),x:(-0.01642842201996293,0.16956483605788097),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-1,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,-1))),(p:(-0.0277685687530608,0.060940873423300734),xp:(0.06919133582369891,-0.5233244260619482),xm:(0.23315768719594876,-0.7382073272200409),u:(0.8259067559962081,-12.999900000010722),x:(0.13350987268341222,-0.6208477455958343),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Inside,Between),im_x_sign:(1,-1))),(p:(-0.03140769505134425,0.07227554691810695),xp:(0.23315768719594848,-0.7382073272200408),xm:(0.5879736502152035,-1.0679684020490827),u:(0.8259067559962082,-13.999900000010722),x:(0.3807160871328493,-0.8815370234323279),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.012728003253993338,0.08134523025357689),xp:(0.5879736502152039,-1.0679684020490832),xm:(1.119334123519768,-1.6964500714143518),u:(0.8259067559962079,-14.999900000010722),x:(0.8493697019414395,-1.3318916226611388),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Between,Outside),im_x_sign:(1,-1))),(p:(0.0079582652388391,0.06357826822367572),xp:(1.119334123519768,-1.6964500714143518),xm:(1.5404568947697497,-2.609733039471947),u:(0.8259067559962079,-15.999900000010722),x:(1.3519342542269488,-2.135021615283242),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.010201073290449466,0.045505322744012554),xp:(1.5404568947697506,-2.6097330394719482),xm:(1.8236298764824674,-3.597705907174023),u:(0.8259067559962082,-16.999900000010726),x:(3.329264545743063,-23.178646433207852),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:1,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1))),(p:(0.008504887271023925,0.03511793006501657),xp:(1.8236298764824672,-3.5977059071740234),xm:(2.031015228567917,-4.6009925982671325),u:(0.8259067559962083,-17.999900000010726),x:(1.9342884969851784,-4.098544933029543),sheet_data:(log_branch_p:3,log_branch_m:-3,log_branch_x:-3,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,-1)))],unlocked:false)
+
+type FigureFunction = fn(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xp_circle_between_between,

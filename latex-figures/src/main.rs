@@ -1,4 +1,5 @@
-use pxu::{kinematics::CouplingConstants, Pxu};
+use make_paths::PxuProvider;
+use pxu::kinematics::CouplingConstants;
 use std::io::Result;
 use std::sync::Arc;
 
@@ -37,8 +38,9 @@ fn check_for_gs() -> bool {
 
 fn main() -> std::io::Result<()> {
     let mut settings = Settings::parse();
+    let verbose = settings.verbose > 0;
 
-    if settings.verbose > 0 {
+    if verbose {
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
             .with_file(true)
@@ -57,8 +59,9 @@ fn main() -> std::io::Result<()> {
         jobs
     } else {
         num_cpus::get()
-    }
-    .min(ALL_FIGURES.len());
+    };
+
+    let pool = threadpool::ThreadPool::new(num_threads);
 
     if settings.rebuild {
         println!(" ---  Rebuilding all figures");
@@ -75,91 +78,26 @@ fn main() -> std::io::Result<()> {
 
     let cache = cache::Cache::load(&settings.output_dir)?;
 
-    let consts = CouplingConstants::new(2.0, 5);
+    let consts_list = vec![CouplingConstants::new(2.0, 5)];
 
-    let mut contours = pxu::Contours::new();
+    let mut pxu_provider = PxuProvider::new();
 
-    let pb = if settings.verbose == 0 {
-        println!("[1/5] Generating contours");
-        ProgressBar::new(1)
-    } else {
-        ProgressBar::hidden()
-    };
-    pb.set_style(spinner_style.clone());
-    loop {
-        pb.set_length(contours.progress().1 as u64);
-        pb.set_position(contours.progress().0 as u64);
-        if contours.update(0, consts) {
-            pb.finish_and_clear();
-            break;
-        }
-    }
+    println!("[1/5] Generating figures");
+    pxu_provider.generate_contours(consts_list, verbose, &pool, &spinner_style);
 
-    let mut pxu = Pxu::new(consts);
-    pxu.contours = contours;
-    pxu.state = pxu::State::new(1, consts);
+    println!("[2/5] Loading paths");
+    pxu_provider.load_paths(
+        make_paths::PLOT_PATHS,
+        verbose,
+        &pool,
+        &spinner_style,
+        &spinner_style_no_progress,
+    );
 
-    let mb = Arc::new(MultiProgress::new());
-    let pb = if settings.verbose == 0 {
-        println!("[2/5] Loading paths");
-        mb.add(ProgressBar::new(1))
-    } else {
-        ProgressBar::hidden()
-    };
+    let pxu_provider = Arc::new(pxu_provider);
+    let cache = Arc::new(cache);
 
-    let saved_paths_len = make_paths::PLOT_PATHS.len();
-    pb.set_style(spinner_style.clone());
-    pb.set_length(saved_paths_len as u64);
-    pb.enable_steady_tick(std::time::Duration::from_millis(100));
-
-    let pool = threadpool::ThreadPool::new(num_threads);
-    let (tx, rx) = std::sync::mpsc::channel();
-
-    for path_func in make_paths::PLOT_PATHS {
-        let tx = tx.clone();
-        let contours = pxu.contours.clone();
-        let spinner_style = spinner_style_no_progress.clone();
-        let settings = settings.clone();
-        let mb = mb.clone();
-        pool.execute(move || {
-            let pb = if settings.verbose == 0 {
-                mb.add(ProgressBar::new(1))
-            } else {
-                ProgressBar::hidden()
-            };
-            pb.set_style(spinner_style);
-            pb.enable_steady_tick(std::time::Duration::from_millis(100));
-
-            pb.set_message("Generating path");
-
-            let saved_path = path_func(&contours, consts);
-
-            pb.set_message(saved_path.name.clone());
-            pb.tick();
-            let path = pxu::path::Path::from_base_path(saved_path.into(), &contours, consts);
-            tx.send(path).unwrap();
-            pb.finish_and_clear();
-        });
-    }
-
-    pxu.paths = rx
-        .into_iter()
-        .take(saved_paths_len)
-        .map(|r| {
-            pb.inc(1);
-            r
-        })
-        .collect::<Vec<_>>();
-
-    pool.join();
-    pb.finish_and_clear();
-
-    pb.finish_and_clear();
-
-    let pxu_ref = Arc::new(pxu);
-    let cache_ref = Arc::new(cache);
-
-    if settings.verbose == 0 {
+    if !verbose {
         if settings.rebuild {
             println!("[3/5] Building figures (ignoring cache)");
         } else {
@@ -168,10 +106,9 @@ fn main() -> std::io::Result<()> {
     }
     let mb = Arc::new(MultiProgress::new());
 
-    let pool = threadpool::ThreadPool::new(num_threads);
     let (tx, rx) = std::sync::mpsc::channel();
 
-    let pb = if settings.verbose == 0 {
+    let pb = if !verbose {
         mb.add(ProgressBar::new_spinner())
     } else {
         ProgressBar::hidden()
@@ -183,20 +120,21 @@ fn main() -> std::io::Result<()> {
     pb.enable_steady_tick(std::time::Duration::from_millis(250));
 
     for (i, f) in ALL_FIGURES.iter().enumerate() {
-        let pxu_ref = pxu_ref.clone();
-        let cache_ref = cache_ref.clone();
+        let pxu_provider = pxu_provider.clone();
+        let cache_ref = cache.clone();
         let spinner_style = spinner_style.clone();
         let settings = settings.clone();
         let mb = mb.clone();
         let tx = tx.clone();
         pool.execute(move || {
-            let pb = if settings.verbose == 0 {
+            let pb = if !verbose {
                 mb.add(ProgressBar::new_spinner())
             } else {
                 ProgressBar::hidden()
             };
             pb.set_style(spinner_style);
-            match f(pxu_ref, cache_ref, &settings, &pb) {
+
+            match f(pxu_provider, cache_ref, &settings, &pb) {
                 Ok(figure) => {
                     let result = figure.wait(&pb, &settings);
                     pb.finish_and_clear();
@@ -231,16 +169,16 @@ fn main() -> std::io::Result<()> {
         summary.add(finished_figure);
     }
 
-    if settings.verbose == 0 {
+    if !verbose {
         println!("[4/5] Saving cache");
     }
     new_cache.save()?;
 
-    if settings.verbose == 0 {
+    if !verbose {
         println!("[5/5] Building summary");
     }
 
-    let pb = if settings.verbose == 0 {
+    let pb = if !verbose {
         ProgressBar::new_spinner()
     } else {
         ProgressBar::hidden()
