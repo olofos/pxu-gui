@@ -1,3 +1,4 @@
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use std::{collections::HashMap, sync::Arc};
 
 use pxu::CouplingConstants;
@@ -108,7 +109,7 @@ impl PxuProvider {
         consts_list: Vec<CouplingConstants>,
         verbose: bool,
         pool: &threadpool::ThreadPool,
-        spinner_style: &indicatif::ProgressStyle,
+        spinner_style: &ProgressStyle,
     ) {
         Arc::get_mut(&mut self.contours).unwrap().generate(
             consts_list,
@@ -123,8 +124,8 @@ impl PxuProvider {
         paths: &[crate::PathFunction],
         verbose: bool,
         pool: &threadpool::ThreadPool,
-        spinner_style: &indicatif::ProgressStyle,
-        spinner_style_no_progress: &indicatif::ProgressStyle,
+        spinner_style: &ProgressStyle,
+        spinner_style_no_progress: &ProgressStyle,
     ) {
         Arc::get_mut(&mut self.paths).unwrap().load(
             paths,
@@ -143,15 +144,15 @@ impl ContourProvider {
         consts_list: Vec<CouplingConstants>,
         verbose: bool,
         pool: &threadpool::ThreadPool,
-        spinner_style: &indicatif::ProgressStyle,
+        spinner_style: &ProgressStyle,
     ) {
         let consts_list_len = consts_list.len();
 
-        let mb = std::sync::Arc::new(indicatif::MultiProgress::new());
+        let mb = Arc::new(MultiProgress::new());
         let pb = if !verbose {
-            mb.add(indicatif::ProgressBar::new(1))
+            mb.add(ProgressBar::new(1))
         } else {
-            indicatif::ProgressBar::hidden()
+            ProgressBar::hidden()
         };
 
         pb.set_style(spinner_style.clone());
@@ -167,9 +168,9 @@ impl ContourProvider {
 
             pool.execute(move || {
                 let pb = if verbose {
-                    mb.add(indicatif::ProgressBar::new(1))
+                    mb.add(ProgressBar::new(1))
                 } else {
-                    indicatif::ProgressBar::hidden()
+                    ProgressBar::hidden()
                 };
                 pb.set_style(spinner_style.clone());
                 pb.enable_steady_tick(std::time::Duration::from_millis(100));
@@ -208,14 +209,14 @@ impl PathProvider {
         contour_provider: Arc<ContourProvider>,
         verbose: bool,
         pool: &threadpool::ThreadPool,
-        spinner_style: &indicatif::ProgressStyle,
-        spinner_style_no_progress: &indicatif::ProgressStyle,
+        spinner_style: &ProgressStyle,
+        spinner_style_no_progress: &ProgressStyle,
     ) {
-        let mb = std::sync::Arc::new(indicatif::MultiProgress::new());
+        let mb = Arc::new(MultiProgress::new());
         let pb = if !verbose {
-            mb.add(indicatif::ProgressBar::new(1))
+            mb.add(ProgressBar::new(1))
         } else {
-            indicatif::ProgressBar::hidden()
+            ProgressBar::hidden()
         };
 
         pb.set_style(spinner_style.clone());
@@ -232,9 +233,9 @@ impl PathProvider {
 
             pool.execute(move || {
                 let pb = if !verbose {
-                    mb.add(indicatif::ProgressBar::new(1))
+                    mb.add(ProgressBar::new(1))
                 } else {
-                    indicatif::ProgressBar::hidden()
+                    ProgressBar::hidden()
                 };
                 pb.set_style(spinner_style);
                 pb.enable_steady_tick(std::time::Duration::from_millis(100));
