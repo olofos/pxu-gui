@@ -9,4 +9,5 @@ pub struct FigureDescription {
     pub name: String,
     pub description: String,
     pub filename: String,
+    pub consts: pxu::CouplingConstants,
 }
