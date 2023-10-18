@@ -69,7 +69,7 @@ fn main() -> std::io::Result<()> {
         description: "x⁺ goes in a circle around the kidney with x⁻ staying inside the scallion.",
         path_names: vec!["xp circle between/inside L", "xp circle between/inside R"],
         state: None,
-        consts: (2.0, 0),
+        consts: (2.0, 5),
     }];
 
     let settings = Settings::parse();
