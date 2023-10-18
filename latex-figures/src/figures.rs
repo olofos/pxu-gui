@@ -2510,7 +2510,10 @@ fn fig_u_crossing_0(
 
     draw_path_figure(
         figure,
-        &["U crossing from 0-2pi path A"],
+        &[
+            "U crossing from 0-2pi path A",
+            "U crossing from 0-2pi path B",
+        ],
         pxu_provider,
         consts,
         cache,
@@ -2542,7 +2545,10 @@ fn fig_xp_crossing_0(
 
     draw_path_figure(
         figure,
-        &["U crossing from 0-2pi path A"],
+        &[
+            "U crossing from 0-2pi path A",
+            "U crossing from 0-2pi path B",
+        ],
         pxu_provider,
         consts,
         cache,
@@ -2574,7 +2580,10 @@ fn fig_xm_crossing_0(
 
     draw_path_figure(
         figure,
-        &["U crossing from 0-2pi path A"],
+        &[
+            "U crossing from 0-2pi path A",
+            "U crossing from 0-2pi path B",
+        ],
         pxu_provider,
         consts,
         cache,
