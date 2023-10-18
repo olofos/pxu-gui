@@ -1,8 +1,11 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use pxu::CouplingConstants;
+use std::io::Result;
 use std::{collections::HashMap, sync::Arc};
 
-use pxu::CouplingConstants;
-
+fn error(message: &str) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::Other, message)
+}
 struct LossyHashCouplingConstants {
     consts: CouplingConstants,
 }
@@ -55,8 +58,11 @@ impl ContourProvider {
         self.contours.insert(consts.into(), Arc::new(contours));
     }
 
-    pub fn get(&self, consts: pxu::CouplingConstants) -> Option<Arc<pxu::Contours>> {
-        self.contours.get(&consts.into()).cloned()
+    pub fn get(&self, consts: pxu::CouplingConstants) -> Result<Arc<pxu::Contours>> {
+        self.contours
+            .get(&consts.into())
+            .cloned()
+            .ok_or_else(|| error(&format!("Could not find contour for {consts:?}")))
     }
 }
 
@@ -66,12 +72,18 @@ impl PathProvider {
         self.starts.insert(name.to_owned(), Arc::new(start));
     }
 
-    pub fn get_path(&self, name: &str) -> Option<Arc<pxu::Path>> {
-        self.paths.get(name).cloned()
+    pub fn get_path(&self, name: &str) -> Result<Arc<pxu::Path>> {
+        self.paths
+            .get(name)
+            .cloned()
+            .ok_or_else(|| error(&format!("Could not find path for {name}")))
     }
 
-    pub fn get_start(&self, name: &str) -> Option<Arc<pxu::State>> {
-        self.starts.get(name).cloned()
+    pub fn get_start(&self, name: &str) -> Result<Arc<pxu::State>> {
+        self.starts
+            .get(name)
+            .cloned()
+            .ok_or_else(|| error(&format!("Could not find start for {name}")))
     }
 }
 
@@ -86,7 +98,7 @@ impl PxuProvider {
             .add(consts, contours)
     }
 
-    pub fn get_contours(&self, consts: pxu::CouplingConstants) -> Option<Arc<pxu::Contours>> {
+    pub fn get_contours(&self, consts: pxu::CouplingConstants) -> Result<Arc<pxu::Contours>> {
         self.contours.get(consts)
     }
 
@@ -96,11 +108,11 @@ impl PxuProvider {
             .add(name, path, start);
     }
 
-    pub fn get_path(&self, name: &str) -> Option<Arc<pxu::Path>> {
+    pub fn get_path(&self, name: &str) -> Result<Arc<pxu::Path>> {
         self.paths.get_path(name)
     }
 
-    pub fn get_start(&self, name: &str) -> Option<Arc<pxu::State>> {
+    pub fn get_start(&self, name: &str) -> Result<Arc<pxu::State>> {
         self.paths.get_start(name)
     }
 

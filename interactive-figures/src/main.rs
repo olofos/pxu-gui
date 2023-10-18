@@ -141,14 +141,14 @@ fn main() -> std::io::Result<()> {
             pb.set_message(fig.filename);
 
             for name in fig.path_names.iter() {
-                if pxu_provider.get_path(name).is_none() {
+                if pxu_provider.get_path(name).is_err() {
                     panic!("Path {name} not found");
                 }
             }
 
             let state = if fig.state.is_some() {
                 fig.state.unwrap()
-            } else if let Some(start) = pxu_provider.get_start(fig.path_names[0]) {
+            } else if let Ok(start) = pxu_provider.get_start(fig.path_names[0]) {
                 (*start).clone()
             } else {
                 panic!("Figure {} is empty", fig.name);

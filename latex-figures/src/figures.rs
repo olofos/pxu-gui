@@ -45,7 +45,7 @@ fn fig_p_xpl_preimage(
         pb,
     )?;
 
-    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+    let contours = pxu_provider.get_contours(consts)?.clone();
 
     figure.add_grid_lines(&contours, &[])?;
 
@@ -192,7 +192,7 @@ fn fig_p_plane_e_cuts(
         pb,
     )?;
 
-    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+    let contours = pxu_provider.get_contours(consts)?.clone();
 
     figure.add_grid_lines(&contours, &[])?;
 
@@ -254,7 +254,7 @@ fn fig_scallion_and_kidney(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+    let contours = pxu_provider.get_contours(consts)?.clone();
 
     let mut figure = FigureWriter::new(
         "scallion-and-kidney",
@@ -302,7 +302,7 @@ fn fig_scallion_and_kidney_3_70(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(7.0, 3);
-    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+    let contours = pxu_provider.get_contours(consts)?.clone();
 
     let mut figure = FigureWriter::new(
         "scallion-and-kidney-3-70",
@@ -371,7 +371,7 @@ fn fig_x_regions_outside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -403,12 +403,7 @@ fn fig_x_regions_outside(
         .split_at(scallion_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path: Vec<Complex64> = vec![];
-    for segment in pxu_provider
-        .get_path("u vertical outside")
-        .unwrap()
-        .segments[0]
-        .iter()
-    {
+    for segment in pxu_provider.get_path("u vertical outside")?.segments[0].iter() {
         vertical_path.extend(&segment.xp);
     }
 
@@ -464,7 +459,7 @@ fn fig_x_regions_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -507,12 +502,7 @@ fn fig_x_regions_between(
         .split_at(kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path = vec![];
-    for segment in pxu_provider
-        .get_path("u vertical between")
-        .unwrap()
-        .segments[0]
-        .iter()
-    {
+    for segment in pxu_provider.get_path("u vertical between")?.segments[0].iter() {
         vertical_path.extend(&segment.xp);
     }
 
@@ -560,7 +550,7 @@ fn fig_x_regions_inside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -592,7 +582,7 @@ fn fig_x_regions_inside(
         .split_at(kidney_path.partition_point(|x| pxu::kinematics::u_of_x(*x, consts).re < 0.0));
 
     let mut vertical_path = vec![];
-    for segment in pxu_provider.get_path("u vertical inside").unwrap().segments[0].iter() {
+    for segment in pxu_provider.get_path("u vertical inside")?.segments[0].iter() {
         vertical_path.extend(&segment.xp);
     }
 
@@ -638,7 +628,7 @@ fn fig_x_regions_long(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -660,29 +650,21 @@ fn fig_x_regions_long(
 
     let mut vertical_path: Vec<Complex64> = vec![];
 
-    for segment in pxu_provider.get_path("u vertical inside").unwrap().segments[0]
+    for segment in pxu_provider.get_path("u vertical inside")?.segments[0]
         .iter()
         .rev()
     {
         vertical_path.extend(segment.xp.iter().rev());
     }
 
-    for segment in pxu_provider
-        .get_path("u vertical between")
-        .unwrap()
-        .segments[0]
+    for segment in pxu_provider.get_path("u vertical between")?.segments[0]
         .iter()
         .rev()
     {
         vertical_path.extend(segment.xp.iter().rev());
     }
 
-    for segment in pxu_provider
-        .get_path("u vertical outside")
-        .unwrap()
-        .segments[0]
-        .iter()
-    {
+    for segment in pxu_provider.get_path("u vertical outside")?.segments[0].iter() {
         vertical_path.extend(&segment.xp);
     }
 
@@ -736,7 +718,7 @@ fn fig_u_regions_outside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -818,7 +800,7 @@ fn fig_u_regions_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -910,7 +892,7 @@ fn fig_u_regions_inside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -992,7 +974,7 @@ fn fig_u_regions_between_small(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1121,7 +1103,7 @@ fn fig_u_regions_inside_small_upper(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1203,7 +1185,7 @@ fn fig_u_regions_inside_small_lower(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1285,7 +1267,7 @@ fn fig_u_regions_long_upper(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1367,7 +1349,7 @@ fn fig_u_regions_long_lower(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1449,7 +1431,7 @@ fn fig_xpl_cover(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
     let mut figure = FigureWriter::new(
         "xpL-cover",
@@ -1485,7 +1467,7 @@ fn fig_xml_cover(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
     let mut figure = FigureWriter::new(
         "xmL-cover",
@@ -1521,7 +1503,7 @@ fn fig_p_plane_short_cuts(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1564,7 +1546,7 @@ fn fig_xp_cuts_1(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -1666,11 +1648,10 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
-    // let pt = &pxu_provider.get_start(paths[0].0).unwrap().points[0];
     let mut pt = pxu::Point::new(0.5, consts);
-    pt.sheet_data = pxu_provider.get_path(paths[0].0).unwrap().segments[0][0]
+    pt.sheet_data = pxu_provider.get_path(paths[0].0)?.segments[0][0]
         .sheet_data
         .clone();
 
@@ -1678,9 +1659,7 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
     figure.add_cuts(&contours, &pt, consts, &["semithick"])?;
 
     for (name, options, mark_options, arrow_pos) in paths {
-        let path = pxu_provider
-            .get_path(name)
-            .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
+        let path = pxu_provider.get_path(name)?;
         figure.add_path(&path, &pt, options)?;
         if let Some(mark_options) = mark_options {
             figure.add_path_start_end_mark(&path, mark_options)?;
@@ -2645,7 +2624,7 @@ fn draw_state_figure(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let states = load_states(state_strings)?;
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
     figure.add_grid_lines(&contours, &[])?;
     figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
@@ -2717,7 +2696,7 @@ fn fig_xp_typical_bound_state(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
     let mut figure = FigureWriter::new(
         "xp-typical-bound-states",
@@ -2950,7 +2929,7 @@ fn draw_p_region_plot(
     settings: &Settings,
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
     // We first extract the contours below assuming that e_branch == +1
 
@@ -3336,7 +3315,7 @@ fn fig_p_physical_region_e_plus(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -3377,7 +3356,7 @@ fn fig_p_physical_region_e_minus(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
     let mut pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
@@ -3426,7 +3405,7 @@ fn draw_singlet(
 ) -> Result<FigureCompiler> {
     let state = load_state(state_string)?;
     let pt = &state.points[0];
-    let contours = pxu_provider.get_contours(consts).unwrap();
+    let contours = pxu_provider.get_contours(consts)?;
 
     figure.add_grid_lines(&contours, &[])?;
     figure.add_cuts(&contours, pt, consts, &[])?;
