@@ -1556,7 +1556,6 @@ fn draw_path_figure(
     figure: FigureWriter,
     paths: &[&str],
     pxu_provider: Arc<PxuProvider>,
-    pt: &pxu::Point,
     consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
@@ -1576,7 +1575,6 @@ fn draw_path_figure(
         &paths,
         &[],
         pxu_provider,
-        pt,
         consts,
         cache,
         settings,
@@ -1589,7 +1587,6 @@ fn draw_path_figure_with_options(
     figure: FigureWriter,
     paths: &[(&str, &[&str])],
     pxu_provider: Arc<PxuProvider>,
-    pt: &pxu::Point,
     consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
@@ -1608,7 +1605,6 @@ fn draw_path_figure_with_options(
         &paths,
         &[],
         pxu_provider,
-        pt,
         consts,
         cache,
         settings,
@@ -1622,7 +1618,6 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
     paths: &[(&str, &[&str], Option<&[&str]>, &[f64])],
     labels: &[(&str, Complex64, &[&str])],
     pxu_provider: Arc<PxuProvider>,
-    pt: &pxu::Point,
     consts: CouplingConstants,
     cache: Arc<cache::Cache>,
     settings: &Settings,
@@ -1630,14 +1625,20 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
 ) -> Result<FigureCompiler> {
     let contours = pxu_provider.get_contours(consts).unwrap();
 
+    // let pt = &pxu_provider.get_start(paths[0].0).unwrap().points[0];
+    let mut pt = pxu::Point::new(0.5, consts);
+    pt.sheet_data = pxu_provider.get_path(paths[0].0).unwrap().segments[0][0]
+        .sheet_data
+        .clone();
+
     figure.add_grid_lines(&contours, &[])?;
-    figure.add_cuts(&contours, pt, consts, &["semithick"])?;
+    figure.add_cuts(&contours, &pt, consts, &["semithick"])?;
 
     for (name, options, mark_options, arrow_pos) in paths {
         let path = pxu_provider
             .get_path(name)
             .ok_or_else(|| error(&format!("Path \"{name}\" not found")))?;
-        figure.add_path(&path, pt, options)?;
+        figure.add_path(&path, &pt, options)?;
         if let Some(mark_options) = mark_options {
             figure.add_path_start_end_mark(&path, mark_options)?;
         }
@@ -1682,7 +1683,6 @@ fn fig_u_period_between_between(
         figure,
         &["U period between/between"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1721,7 +1721,6 @@ fn fig_u_band_between_outside(
         figure,
         &["U band between/outside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1760,7 +1759,6 @@ fn fig_u_band_between_inside(
         figure,
         &["U band between/inside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1775,7 +1773,6 @@ fn fig_p_band_between_outside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "p-band-between-outside",
@@ -1794,7 +1791,6 @@ fn fig_p_band_between_outside(
         figure,
         &["U band between/outside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1809,7 +1805,6 @@ fn fig_p_band_between_inside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "p-band-between-inside",
@@ -1828,7 +1823,6 @@ fn fig_p_band_between_inside(
         figure,
         &["U band between/inside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1867,7 +1861,6 @@ fn fig_xp_band_between_inside(
         figure,
         &[("U band between/inside (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1906,7 +1899,6 @@ fn fig_xp_band_between_outside(
         figure,
         &[("U band between/outside (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1945,7 +1937,6 @@ fn fig_xm_band_between_inside(
         figure,
         &["U band between/inside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1984,7 +1975,6 @@ fn fig_xm_band_between_outside(
         figure,
         &["U band between/outside"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -1999,7 +1989,6 @@ fn fig_xp_period_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xp-period-between-between",
@@ -2018,7 +2007,6 @@ fn fig_xp_period_between_between(
         figure,
         &[("U period between/between (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2033,7 +2021,6 @@ fn fig_xm_period_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xm-period-between-between",
@@ -2052,7 +2039,6 @@ fn fig_xm_period_between_between(
         figure,
         &[("U period between/between (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2067,7 +2053,6 @@ fn fig_p_period_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "p-period-between-between",
@@ -2086,7 +2071,6 @@ fn fig_p_period_between_between(
         figure,
         &["U period between/between (single)"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2101,7 +2085,6 @@ fn fig_p_circle_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "p-circle-between-between",
@@ -2120,7 +2103,6 @@ fn fig_p_circle_between_between(
         figure,
         &["xp circle between/between (single)"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2135,7 +2117,6 @@ fn fig_xp_circle_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xp-circle-between-between",
@@ -2154,7 +2135,6 @@ fn fig_xp_circle_between_between(
         figure,
         &[("xp circle between/between (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2169,7 +2149,6 @@ fn fig_xm_circle_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xm-circle-between-between",
@@ -2188,7 +2167,6 @@ fn fig_xm_circle_between_between(
         figure,
         &[("xp circle between/between (single)", &["solid"])],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2203,7 +2181,6 @@ fn fig_u_circle_between_between(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "u-circle-between-between",
@@ -2222,7 +2199,6 @@ fn fig_u_circle_between_between(
         figure,
         &["xp circle between/between"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2237,7 +2213,6 @@ fn fig_u_circle_between_outside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "u-circle-between-outside",
@@ -2256,7 +2231,6 @@ fn fig_u_circle_between_outside(
         figure,
         &["xp circle between/outside L", "xp circle between/outside R"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2271,7 +2245,6 @@ fn fig_u_circle_between_inside(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "u-circle-between-inside",
@@ -2290,7 +2263,6 @@ fn fig_u_circle_between_inside(
         figure,
         &["xp circle between/inside L", "xp circle between/inside R"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2305,7 +2277,6 @@ fn fig_p_crossing_all(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "p-crossing-all",
@@ -2371,7 +2342,6 @@ fn fig_p_crossing_all(
             ),
         ],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2386,7 +2356,6 @@ fn fig_xp_crossing_all(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xp-crossing-all",
@@ -2442,7 +2411,6 @@ fn fig_xp_crossing_all(
             ),
         ],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2457,7 +2425,6 @@ fn fig_xm_crossing_all(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xm-crossing-all",
@@ -2513,7 +2480,6 @@ fn fig_xm_crossing_all(
             ),
         ],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2528,7 +2494,6 @@ fn fig_u_crossing_0(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "u-crossing-0",
@@ -2545,12 +2510,8 @@ fn fig_u_crossing_0(
 
     draw_path_figure(
         figure,
-        &[
-            "U crossing from 0-2pi path A",
-            "U crossing from 0-2pi path B",
-        ],
+        &["U crossing from 0-2pi path A"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2565,7 +2526,6 @@ fn fig_xp_crossing_0(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xp-crossing-0",
@@ -2582,12 +2542,8 @@ fn fig_xp_crossing_0(
 
     draw_path_figure(
         figure,
-        &[
-            "U crossing from 0-2pi path A",
-            "U crossing from 0-2pi path B",
-        ],
+        &["U crossing from 0-2pi path A"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
@@ -2602,7 +2558,6 @@ fn fig_xm_crossing_0(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let pt = pxu::Point::new(0.5, consts);
 
     let figure = FigureWriter::new(
         "xm-crossing-0",
@@ -2619,12 +2574,8 @@ fn fig_xm_crossing_0(
 
     draw_path_figure(
         figure,
-        &[
-            "U crossing from 0-2pi path A",
-            "U crossing from 0-2pi path B",
-        ],
+        &["U crossing from 0-2pi path A"],
         pxu_provider,
-        &pt,
         consts,
         cache,
         settings,
