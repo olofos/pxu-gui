@@ -295,6 +295,49 @@ fn fig_scallion_and_kidney(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_scallion_and_kidney_3_70(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(7.0, 3);
+    let contours = pxu_provider.get_contours(consts).unwrap().clone();
+
+    let mut figure = FigureWriter::new(
+        "scallion-and-kidney-3-70",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn get_cut_path(
     contours: &pxu::Contours,
     pt: &pxu::Point,
@@ -4126,6 +4169,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_bs_disp_rel_small,
     fig_bs_disp_rel_lr0,
     fig_scallion_and_kidney,
+    fig_scallion_and_kidney_3_70,
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,

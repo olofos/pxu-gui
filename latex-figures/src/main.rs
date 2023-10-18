@@ -78,7 +78,10 @@ fn main() -> std::io::Result<()> {
 
     let cache = cache::Cache::load(&settings.output_dir)?;
 
-    let consts_list = vec![CouplingConstants::new(2.0, 5)];
+    let consts_list = vec![
+        CouplingConstants::new(2.0, 5),
+        CouplingConstants::new(7.0, 3),
+    ];
 
     let mut pxu_provider = PxuProvider::new();
 
