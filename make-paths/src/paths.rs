@@ -1,3 +1,4 @@
+use crate::ContourProvider;
 use num::complex::Complex64;
 use pxu::{kinematics::CouplingConstants, path::SavedPath};
 use std::f64::consts::{PI, TAU};
@@ -92,15 +93,15 @@ fn create_xp_circle_between_path(
 }
 
 // xp circle between/between
-fn path_xp_circle_between_between(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
-) -> SavedPath {
+fn path_xp_circle_between_between(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -109,21 +110,23 @@ fn path_xp_circle_between_between(
         state,
         -2.5,
         3.5,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // xp circle between/inside
 fn path_xp_circle_between_inside_left(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0], [-0.06, -0.2]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -132,21 +135,23 @@ fn path_xp_circle_between_inside_left(
         state,
         0.0,
         -2.5,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // xp circle between/inside
 fn path_xp_circle_between_inside_right(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0], [-0.06, -0.2]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -155,21 +160,23 @@ fn path_xp_circle_between_inside_right(
         state,
         0.0,
         3.5,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // xp circle between/outside
 fn path_xp_circle_between_outside_left(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.2, 0.0], [0.2, 0.2], [0.78, 0.2]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -178,21 +185,23 @@ fn path_xp_circle_between_outside_left(
         state,
         0.0,
         -2.5,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // xp circle between/outside
 fn path_xp_circle_between_outside_right(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.2, 0.0], [0.2, 0.2], [0.78, 0.2]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -201,21 +210,23 @@ fn path_xp_circle_between_outside_right(
         state,
         0.0,
         3.5,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // xp circle between/between single
 fn path_xp_circle_between_between_single(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
         &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -224,19 +235,22 @@ fn path_xp_circle_between_between_single(
         state,
         0.0,
         1.0,
-        contours,
+        &contours,
         consts,
     )
 }
 
 // p circle origin not through E cut
-fn path_p_circle_origin_not_e(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_circle_origin_not_e(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let center = Complex64::new(0.0, 0.0);
     let radius = 0.05;
     let steps = 128;
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, center + radius, contours, consts, 4);
+    state.goto(pxu::Component::P, center + radius, &contours, consts, 4);
 
     let mut path = vec![];
 
@@ -257,13 +271,16 @@ fn path_p_circle_origin_not_e(contours: &pxu::Contours, consts: CouplingConstant
 }
 
 // P circle around origin through E cuts
-fn path_p_circle_origin_e(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_circle_origin_e(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let center = Complex64::new(0.0, 0.0);
     let radius = 0.10;
     let steps = 128;
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, center + radius, contours, consts, 4);
+    state.goto(pxu::Component::P, center + radius, &contours, consts, 4);
 
     let mut path = vec![];
 
@@ -284,7 +301,10 @@ fn path_p_circle_origin_e(contours: &pxu::Contours, consts: CouplingConstants) -
 }
 
 // U band between/outside
-fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_band_between_outside(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -295,7 +315,7 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
     state.follow_path(
         pxu::Component::U,
         &[[0.0, 0.0], [0.0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -308,7 +328,7 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
             [x0, y0 + k * (y - 1.0)],
         ];
 
-        state.follow_path(pxu::Component::U, &path, contours, consts);
+        state.follow_path(pxu::Component::U, &path, &contours, consts);
     }
 
     let y0 = y0 - 3.0 * k;
@@ -316,7 +336,7 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -328,14 +348,14 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -375,9 +395,11 @@ fn path_u_band_between_outside(contours: &pxu::Contours, consts: CouplingConstan
 
 // U band between/outside (single)
 fn path_u_band_between_outside_single(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -388,7 +410,7 @@ fn path_u_band_between_outside_single(
     state.follow_path(
         pxu::Component::U,
         &[[0.0, 0.0], [0.0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -399,14 +421,14 @@ fn path_u_band_between_outside_single(
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -445,7 +467,10 @@ fn path_u_band_between_outside_single(
 }
 
 // U band between/inside
-fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_band_between_inside(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -456,7 +481,7 @@ fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstant
     state.follow_path(
         pxu::Component::U,
         &[[4.8, 0.0], [4.8, 1.0], [0.0, 1.0], [0.0, -2.5], [-x0, -2.5]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -469,7 +494,7 @@ fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstant
             [x0, y0 + k * (y - 1.0)],
         ];
 
-        state.follow_path(pxu::Component::U, &path, contours, consts);
+        state.follow_path(pxu::Component::U, &path, &contours, consts);
     }
 
     let y0 = y0 - 3.0 * k;
@@ -477,7 +502,7 @@ fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstant
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -489,14 +514,14 @@ fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstant
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -536,9 +561,11 @@ fn path_u_band_between_inside(contours: &pxu::Contours, consts: CouplingConstant
 
 // U band between/inside (single)
 fn path_u_band_between_inside_single(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -548,7 +575,7 @@ fn path_u_band_between_inside_single(
     state.follow_path(
         pxu::Component::U,
         &[[4.8, 0.0], [4.8, 1.0], [0.0, 1.0], [0.0, -2.5], [-x0, -2.5]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -559,14 +586,14 @@ fn path_u_band_between_inside_single(
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -605,10 +632,10 @@ fn path_u_band_between_inside_single(
 }
 
 // U period between/between
-fn path_u_periodic_between_between(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
-) -> SavedPath {
+fn path_u_periodic_between_between(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -619,7 +646,7 @@ fn path_u_periodic_between_between(
     state.follow_path(
         pxu::Component::U,
         &[[4.8, 0.0], [4.8, 1.0], [0.0, 1.0], [0.0, y0], [-x0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -632,7 +659,7 @@ fn path_u_periodic_between_between(
             [x0, y0 + k * (y - 1.0)],
         ];
 
-        state.follow_path(pxu::Component::U, &path, contours, consts);
+        state.follow_path(pxu::Component::U, &path, &contours, consts);
     }
 
     let y0 = y0 - 3.0 * k;
@@ -640,7 +667,7 @@ fn path_u_periodic_between_between(
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -653,14 +680,14 @@ fn path_u_periodic_between_between(
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -700,9 +727,11 @@ fn path_u_periodic_between_between(
 
 // U period between/between single
 fn path_u_periodic_between_between_single(
-    contours: &pxu::Contours,
-    consts: CouplingConstants,
+    contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let x0 = 2.7;
@@ -713,7 +742,7 @@ fn path_u_periodic_between_between_single(
     state.follow_path(
         pxu::Component::U,
         &[[4.8, 0.0], [4.8, 1.0], [0.0, 1.0], [0.0, y0], [-x0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -724,14 +753,14 @@ fn path_u_periodic_between_between_single(
     state.goto(
         pxu::Component::U,
         Complex64::new(-x0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
     state.goto(
         pxu::Component::U,
         Complex64::new(0.0, y0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -770,7 +799,10 @@ fn path_u_periodic_between_between_single(
 }
 
 // U crossing from 0-2pi
-fn path_u_crossing_from_0_a(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_crossing_from_0_a(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let h = consts.h;
@@ -783,7 +815,7 @@ fn path_u_crossing_from_0_a(contours: &pxu::Contours, consts: CouplingConstants)
     state.goto(
         pxu::Component::U,
         Complex64::new(x0, 0.0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -824,7 +856,10 @@ fn path_u_crossing_from_0_a(contours: &pxu::Contours, consts: CouplingConstants)
 }
 
 // U crossing from 0-2pi
-fn path_u_crossing_from_0_b(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_crossing_from_0_b(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let h = consts.h;
@@ -837,7 +872,7 @@ fn path_u_crossing_from_0_b(contours: &pxu::Contours, consts: CouplingConstants)
     state.goto(
         pxu::Component::U,
         Complex64::new(x0, 0.0),
-        contours,
+        &contours,
         consts,
         16,
     );
@@ -878,7 +913,10 @@ fn path_u_crossing_from_0_b(contours: &pxu::Contours, consts: CouplingConstants)
 }
 
 // U crossing from -2pi to 0
-fn path_u_crossing_from_min_1(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_crossing_from_min_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let k = consts.k() as f64;
@@ -898,7 +936,7 @@ fn path_u_crossing_from_min_1(contours: &pxu::Contours, consts: CouplingConstant
             [-3.0, k / h],
             [x0, k / h],
         ],
-        contours,
+        &contours,
         consts,
     );
 
@@ -942,13 +980,16 @@ fn path_u_crossing_from_min_1(contours: &pxu::Contours, consts: CouplingConstant
 }
 
 // p crossing a
-fn path_p_crossing_a(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_crossing_a(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let p0 = 0.15;
     let y0 = 0.08;
     let steps = 100;
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, p0, contours, consts, 4);
+    state.goto(pxu::Component::P, p0, &contours, consts, 4);
 
     let mut path = vec![];
     for i in 0..=steps {
@@ -963,13 +1004,16 @@ fn path_p_crossing_a(contours: &pxu::Contours, consts: CouplingConstants) -> Sav
 }
 
 // p crossing b
-fn path_p_crossing_b(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_crossing_b(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let p0 = 0.15;
     let y0 = 0.08;
     let steps = 100;
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, p0, contours, consts, 4);
+    state.goto(pxu::Component::P, p0, &contours, consts, 4);
 
     let mut path = vec![];
     for i in 0..=steps {
@@ -984,12 +1028,15 @@ fn path_p_crossing_b(contours: &pxu::Contours, consts: CouplingConstants) -> Sav
 }
 
 // p crossing c
-fn path_p_crossing_c(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_crossing_c(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let p0 = 0.15;
     let bp = Complex64::new(0.915, 0.370);
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, p0, contours, consts, 4);
+    state.goto(pxu::Component::P, p0, &contours, consts, 4);
 
     let dp = (bp / bp.norm()) * p0 * (bp.re / bp.norm());
 
@@ -1008,12 +1055,15 @@ fn path_p_crossing_c(contours: &pxu::Contours, consts: CouplingConstants) -> Sav
 }
 
 // p crossing d
-fn path_p_crossing_d(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_p_crossing_d(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let p0 = 0.15;
     let bp = Complex64::new(-0.922, -0.265);
 
     let mut state = pxu::State::new(1, consts);
-    state.goto(pxu::Component::P, p0, contours, consts, 4);
+    state.goto(pxu::Component::P, p0, &contours, consts, 4);
 
     let dp = (bp / bp.norm()) * p0 * (bp.re / bp.norm());
 
@@ -1031,7 +1081,10 @@ fn path_p_crossing_d(contours: &pxu::Contours, consts: CouplingConstants) -> Sav
     pxu::path::SavedPath::new("p crossing d", path, state, pxu::Component::P, 0, consts)
 }
 
-fn path_u_vertical_outside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_vertical_outside(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let steps = 67;
@@ -1041,7 +1094,7 @@ fn path_u_vertical_outside(contours: &pxu::Contours, consts: CouplingConstants) 
     state.follow_path(
         pxu::Component::U,
         &[[3.0, 0.0], [3.0, -2.0], [0.0, -2.0], [0.0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -1062,7 +1115,10 @@ fn path_u_vertical_outside(contours: &pxu::Contours, consts: CouplingConstants) 
     )
 }
 
-fn path_u_vertical_between(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_vertical_between(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let steps = 67;
@@ -1072,7 +1128,7 @@ fn path_u_vertical_between(contours: &pxu::Contours, consts: CouplingConstants) 
     state.follow_path(
         pxu::Component::U,
         &[[3.0, 0.0], [3.0, -2.0], [0.0, -2.0], [0.0, y0]],
-        contours,
+        &contours,
         consts,
     );
 
@@ -1093,7 +1149,10 @@ fn path_u_vertical_between(contours: &pxu::Contours, consts: CouplingConstants) 
     )
 }
 
-fn path_u_vertical_inside(contours: &pxu::Contours, consts: CouplingConstants) -> SavedPath {
+fn path_u_vertical_inside(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
     let mut state = pxu::State::new(1, consts);
 
     let steps = 67;
@@ -1110,7 +1169,7 @@ fn path_u_vertical_inside(contours: &pxu::Contours, consts: CouplingConstants) -
             [0.0, 0.0],
             [0.0, y0],
         ],
-        contours,
+        &contours,
         consts,
     );
 
@@ -1131,9 +1190,7 @@ fn path_u_vertical_inside(contours: &pxu::Contours, consts: CouplingConstants) -
     )
 }
 
-type PathFunction = fn(&pxu::Contours, CouplingConstants) -> SavedPath;
-
-pub const PLOT_PATHS: &[PathFunction] = &[
+pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
     path_xp_circle_between_inside_left,
@@ -1160,7 +1217,7 @@ pub const PLOT_PATHS: &[PathFunction] = &[
     path_u_vertical_inside,
 ];
 
-pub const INTERACTIVE_PATHS: &[PathFunction] = &[
+pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
     path_xp_circle_between_inside_left,

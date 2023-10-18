@@ -1,5 +1,8 @@
+use std::sync::Arc;
+
 use clap::Parser;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressStyle;
+use make_paths::ContourProvider;
 use pxu::kinematics::CouplingConstants;
 
 #[derive(Parser, Clone)]
@@ -15,29 +18,26 @@ struct Settings {
 fn main() -> std::io::Result<()> {
     let settings = Settings::parse();
 
-    let consts = CouplingConstants::new(2.0, 5);
-    let mut contours = pxu::Contours::new();
+    let pool = threadpool::ThreadPool::new(5);
 
     let spinner_style = ProgressStyle::with_template(
         "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
     )
-    .unwrap()
-    .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ");
+    .unwrap();
+
+    let consts_list = vec![CouplingConstants::new(2.0, 5)];
 
     eprintln!("[1/3] Generating contours");
-    let pb = ProgressBar::new(1);
-    pb.set_style(spinner_style);
-    loop {
-        pb.set_length(contours.progress().1 as u64);
-        pb.set_position(contours.progress().0 as u64);
-        if contours.update(0, consts) {
-            pb.finish_and_clear();
-            break;
-        }
-    }
+    let mut contour_provider = ContourProvider::default();
+    contour_provider.generate(consts_list, false, &pool, &spinner_style);
+
+    let contour_provider = Arc::new(contour_provider);
 
     eprintln!("[2/3] Generating paths");
-    let saved_paths = make_paths::get_interactive_paths(&contours, consts);
+    let saved_paths = make_paths::INTERACTIVE_PATHS
+        .iter()
+        .map(|f| f(contour_provider.clone()))
+        .collect::<Vec<_>>();
 
     eprintln!("[3/3] Saving paths");
 
