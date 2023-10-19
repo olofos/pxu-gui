@@ -210,10 +210,7 @@ impl PxuProvider {
     }
 
     pub fn get_statistics(&self) -> String {
-        let contour_statistics = self.contours.get_statistics();
-        let path_statistics = self.paths.get_statistics();
-
-        format!("{contour_statistics}\n\n{path_statistics}")
+        [self.contours.get_statistics(), self.paths.get_statistics()].join("\n")
     }
 }
 
