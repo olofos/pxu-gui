@@ -1682,6 +1682,141 @@ fn fig_u_long_half_circle_4(
     )
 }
 
+fn fig_x_short_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(-0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "x-short-circle",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    let paths = [
+        "x half circle between 1",
+        "x half circle between 2",
+        "x half circle between 3",
+        "x half circle between 4",
+    ];
+
+    for path_name in paths {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::Log(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.add_node("1", Complex64::new(-0.6, 0.8), &["anchor=mid", "Blue"])?;
+    figure.add_node("2", Complex64::new(-0.6, -0.95), &["anchor=mid", "Blue"])?;
+    figure.add_node("3", Complex64::new(-0.6, 1.7), &["anchor=mid", "Blue"])?;
+    figure.add_node("4", Complex64::new(-0.6, -1.85), &["anchor=mid", "Blue"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_short_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "u-short-circle",
+        -4.35..4.35,
+        2.0,
+        Size {
+            width: 3.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    pt.sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis_origin(Complex64::new(0.0, -0.5))?;
+
+    let paths = ["x half circle between 1", "x half circle between 2"];
+
+    for path_name in paths {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
+    }
+
+    let paths = ["x half circle between 3", "x half circle between 4"];
+
+    for path_name in paths {
+        let mut path = (*pxu_provider.get_path(path_name)?).clone();
+
+        for segs in path.segments.iter_mut() {
+            for seg in segs.iter_mut() {
+                for p in seg.u.iter_mut() {
+                    *p += Complex64::new(0.0, 2.0 * consts.k() as f64 / consts.h);
+                }
+            }
+        }
+
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xpl_cover(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
