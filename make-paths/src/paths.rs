@@ -115,8 +115,12 @@ fn path_xp_circle_between_between(contour_provider: std::sync::Arc<ContourProvid
     )
 }
 
-// x circle between upper
-fn path_x_circle_between_upper(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn create_x_circle_between_upper(
+    name: &str,
+    left: f64,
+    right: f64,
+    contour_provider: std::sync::Arc<ContourProvider>,
+) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -127,8 +131,6 @@ fn path_x_circle_between_upper(contour_provider: std::sync::Arc<ContourProvider>
         &contours,
         consts,
     );
-    let left = -1.69;
-    let right = 0.591;
     let center = (right + left) / 2.0;
     let radius = (right - left) / 2.0;
 
@@ -138,24 +140,21 @@ fn path_x_circle_between_upper(contour_provider: std::sync::Arc<ContourProvider>
 
     let mut path = vec![];
 
-    for i in 1..=steps as i32 {
+    for i in 1..=steps {
         let theta = PI * (1.0 - i as f64 / steps as f64);
         let xp = center + Complex64::from_polar(radius, theta);
         path.push(xp);
     }
 
-    pxu::path::SavedPath::new(
-        "x circle between upper",
-        path,
-        state,
-        pxu::Component::Xp,
-        0,
-        consts,
-    )
+    pxu::path::SavedPath::new(name, path, state, pxu::Component::Xp, 0, consts)
 }
 
-// x circle between lower
-fn path_x_circle_between_lower(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn create_x_circle_between_lower(
+    name: &str,
+    left: f64,
+    right: f64,
+    contour_provider: std::sync::Arc<ContourProvider>,
+) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -166,8 +165,6 @@ fn path_x_circle_between_lower(contour_provider: std::sync::Arc<ContourProvider>
         &contours,
         consts,
     );
-    let left = -1.69;
-    let right = 0.591;
     let center = (right + left) / 2.0;
     let radius = (right - left) / 2.0;
 
@@ -175,7 +172,7 @@ fn path_x_circle_between_lower(contour_provider: std::sync::Arc<ContourProvider>
 
     let steps = 16;
 
-    for i in 1..=steps as i32 {
+    for i in 1..=steps {
         let theta = PI * (1.0 - i as f64 / steps as f64);
         let xp = center + Complex64::from_polar(radius, theta);
         state.goto(pxu::Component::Xp, xp, &contours, consts, 2);
@@ -193,20 +190,29 @@ fn path_x_circle_between_lower(contour_provider: std::sync::Arc<ContourProvider>
 
     let mut path = vec![];
 
-    for i in 1..steps as i32 {
+    for i in 1..steps {
         let theta = -PI * i as f64 / steps as f64;
         let xp = center + Complex64::from_polar(radius, theta);
         path.push(xp);
     }
 
-    pxu::path::SavedPath::new(
-        "x circle between lower",
-        path,
-        state,
-        pxu::Component::Xp,
-        0,
-        consts,
-    )
+    pxu::path::SavedPath::new(name, path, state, pxu::Component::Xp, 0, consts)
+}
+
+fn path_x_half_circle_between_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    create_x_circle_between_upper("x half circle between 1", -1.69, 0.591, contour_provider)
+}
+
+fn path_x_half_circle_between_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    create_x_circle_between_lower("x half circle between 2", -1.96, 0.591, contour_provider)
+}
+
+fn path_x_half_circle_between_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    create_x_circle_between_upper("x half circle between 3", -1.96, 0.861, contour_provider)
+}
+
+fn path_x_half_circle_between_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    create_x_circle_between_lower("x half circle between 4", -2.23, 0.861, contour_provider)
 }
 
 // xp circle between/inside
@@ -1291,8 +1297,10 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_inside_right,
     path_xp_circle_between_outside_left,
     path_xp_circle_between_outside_right,
-    path_x_circle_between_upper,
-    path_x_circle_between_lower,
+    path_x_half_circle_between_1,
+    path_x_half_circle_between_2,
+    path_x_half_circle_between_3,
+    path_x_half_circle_between_4,
     path_p_circle_origin_e,
     path_p_circle_origin_not_e,
     path_u_band_between_inside,
@@ -1333,6 +1341,8 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_p_crossing_c,
     path_p_crossing_d,
     path_u_vertical_between,
-    path_x_circle_between_upper,
-    path_x_circle_between_lower,
+    path_x_half_circle_between_1,
+    path_x_half_circle_between_2,
+    path_x_half_circle_between_3,
+    path_x_half_circle_between_4,
 ];

@@ -629,7 +629,6 @@ fn fig_x_regions_long(
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = pxu_provider.get_contours(consts)?;
-    let pt = pxu::Point::new(0.5, consts);
 
     let mut figure = FigureWriter::new(
         "x-regions-long",
@@ -694,18 +693,39 @@ fn fig_x_regions_long(
     figure.add_plot(&["fill=red", "fill opacity=0.25", "draw=none"], &q3_path)?;
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
-    for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
-        .filter(|cut| {
-            matches!(
-                cut.typ,
-                // pxu::CutType::UShortKidney(pxu::Component::Xp)
-                pxu::CutType::ULongPositive(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
-            )
-        })
-    {
-        figure.add_cut(cut, &["black", "very thick"], consts)?;
+    let s = consts.s();
+    let cuts = vec![
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::from(-10.0), Complex64::from(-1.0 / s)],
+            Some(Complex64::from(-1.0 / s)),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::from(-1.0 / s), Complex64::zero()],
+            Some(Complex64::zero()),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::zero(), Complex64::from(10.0)],
+            Some(Complex64::from(s)),
+            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -1319,7 +1339,7 @@ fn fig_u_regions_long_upper(
             pxu::Component::U,
             vec![us, Complex64::from(20.0)],
             Some(us),
-            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            pxu::CutType::ULongPositive(pxu::Component::Xp),
             0,
             false,
             vec![],
@@ -1401,7 +1421,7 @@ fn fig_u_regions_long_lower(
             pxu::Component::U,
             vec![us, Complex64::from(20.0)],
             Some(us),
-            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            pxu::CutType::ULongPositive(pxu::Component::Xp),
             0,
             false,
             vec![],
@@ -1422,6 +1442,244 @@ fn fig_u_regions_long_lower(
     }
 
     figure.finish(cache, settings, pb)
+}
+
+fn fig_x_long_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(-0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "x-long-circle",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    let paths = [
+        "x half circle between 1",
+        "x half circle between 2",
+        "x half circle between 3",
+        "x half circle between 4",
+    ];
+
+    for path_name in paths {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
+    }
+
+    let s = consts.s();
+    let cuts = vec![
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::from(-10.0), Complex64::from(-1.0 / s)],
+            Some(Complex64::from(-1.0 / s)),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::from(-1.0 / s), Complex64::zero()],
+            Some(Complex64::zero()),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::Xp,
+            vec![Complex64::zero(), Complex64::from(10.0)],
+            Some(Complex64::from(s)),
+            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.add_node("1", Complex64::new(-0.6, 0.8), &["anchor=mid", "Blue"])?;
+    figure.add_node("2", Complex64::new(-0.6, -0.95), &["anchor=mid", "Blue"])?;
+    figure.add_node("3", Complex64::new(-0.6, 1.7), &["anchor=mid", "Blue"])?;
+    figure.add_node("4", Complex64::new(-0.6, -1.85), &["anchor=mid", "Blue"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn draw_u_long_half_circle(
+    name: &str,
+    shift: f64,
+    half: i32,
+    label: &str,
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        name,
+        -4.35..4.35,
+        2.0 + shift,
+        Size {
+            width: 3.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    pt.sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis_origin(Complex64::new(0.0, shift - 0.5))?;
+
+    let path: Arc<pxu::Path> = pxu_provider.get_path(&format!("x half circle between {label}"))?;
+
+    figure.add_path(&path, &pt, &["solid"])?;
+    figure.add_path_arrows(&path, &[0.4, 0.7], &["very thick", "Blue"])?;
+
+    let shift = Complex64::new(0.0, -0.5);
+
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![us + shift, Complex64::from(20.0) + shift],
+            Some(us + shift),
+            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![
+                -us - ikh * half.signum() as f64 + shift,
+                Complex64::from(-20.0) - ikh * half.signum() as f64 + shift,
+            ],
+            Some(-us - ikh * half.signum() as f64 + shift),
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.add_node(
+        label,
+        us - ikh * half.signum() as f64 + shift,
+        &["anchor=mid", "Blue"],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_long_half_circle_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_u_long_half_circle(
+        "u-long-half-circle-1",
+        0.0,
+        1,
+        "1",
+        pxu_provider,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_long_half_circle_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_u_long_half_circle(
+        "u-long-half-circle-2",
+        0.0,
+        -1,
+        "2",
+        pxu_provider,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_long_half_circle_3(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_u_long_half_circle(
+        "u-long-half-circle-3",
+        -5.0,
+        1,
+        "3",
+        pxu_provider,
+        cache,
+        settings,
+        pb,
+    )
+}
+
+fn fig_u_long_half_circle_4(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_u_long_half_circle(
+        "u-long-half-circle-4",
+        -5.0,
+        -1,
+        "4",
+        pxu_provider,
+        cache,
+        settings,
+        pb,
+    )
 }
 
 fn fig_xpl_cover(
@@ -4092,6 +4350,11 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_x_long_circle,
+    fig_u_long_half_circle_1,
+    fig_u_long_half_circle_2,
+    fig_u_long_half_circle_3,
+    fig_u_long_half_circle_4,
     fig_xp_circle_between_between,
     fig_p_circle_between_between,
     fig_xm_circle_between_between,
