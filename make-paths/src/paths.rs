@@ -173,13 +173,23 @@ fn path_x_circle_between_lower(contour_provider: std::sync::Arc<ContourProvider>
 
     state.goto(pxu::Component::Xp, left, &contours, consts, 2);
 
-    let steps = 256;
+    let steps = 16;
 
-    for i in 1..=(steps + 1) as i32 {
+    for i in 1..=steps as i32 {
         let theta = PI * (1.0 - i as f64 / steps as f64);
         let xp = center + Complex64::from_polar(radius, theta);
         state.goto(pxu::Component::Xp, xp, &contours, consts, 2);
     }
+
+    let steps = 256;
+
+    state.goto(
+        pxu::Component::Xp,
+        center + Complex64::from_polar(radius, -PI / steps as f64),
+        &contours,
+        consts,
+        2,
+    );
 
     let mut path = vec![];
 
