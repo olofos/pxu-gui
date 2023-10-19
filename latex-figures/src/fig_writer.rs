@@ -14,7 +14,7 @@ use std::sync::Arc;
 
 use crate::cache;
 use crate::fig_compiler::FigureCompiler;
-use crate::utils::{Settings, Size, TEX_EXT};
+use crate::utils::{error, Settings, Size, TEX_EXT};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Bounds {
@@ -110,6 +110,10 @@ progress_file=io.open(""#;
 "#;
 
     fn open_tex_file(name: &str, settings: &Settings, pb: &ProgressBar) -> Result<BufWriter<File>> {
+        if name.contains(' ') {
+            return Err(error(&format!("Unexpected space in filename '{name}'")));
+        }
+
         let mut path = PathBuf::from(&settings.output_dir).join(name);
         path.set_extension(TEX_EXT);
 
