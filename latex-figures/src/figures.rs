@@ -261,8 +261,8 @@ fn fig_scallion_and_kidney(
         -3.1..3.1,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 4.5,
+            height: 4.5,
         },
         pxu::Component::Xp,
         settings,
@@ -295,6 +295,49 @@ fn fig_scallion_and_kidney(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_scallion_and_kidney_7_10(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = pxu_provider.get_contours(consts)?.clone();
+
+    let mut figure = FigureWriter::new(
+        "scallion-and-kidney-7-10",
+        -6.2..6.2,
+        0.0,
+        Size {
+            width: 4.5,
+            height: 4.5,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    figure.no_component_indicator();
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortKidney(pxu::Component::Xp)
+                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_scallion_and_kidney_3_70(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -306,11 +349,11 @@ fn fig_scallion_and_kidney_3_70(
 
     let mut figure = FigureWriter::new(
         "scallion-and-kidney-3-70",
-        -3.1..3.1,
+        -2.7..2.7,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 4.5,
+            height: 4.5,
         },
         pxu::Component::Xp,
         settings,
@@ -1253,6 +1296,126 @@ fn fig_u_regions_inside_small_lower(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(20.0) - ikh],
+            Some(-us - ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us - ikh, Complex64::from(-20.0) - ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+    ];
+
+    for cut in cuts {
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_regions_inside_small(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "u-regions-inside-small",
+        -7.25..7.25,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::U,
+        settings,
+        pb,
+    )?;
+
+    pt.sheet_data.u_branch = (
+        ::pxu::kinematics::UBranch::Between,
+        ::pxu::kinematics::UBranch::Between,
+    );
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.component_indicator("u");
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["fill=green", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(20.0, 20.0),
+            Complex64::new(20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=red", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, 20.0),
+            Complex64::new(-20.0, 20.0),
+            Complex64::new(-20.0, 2.5),
+            Complex64::new(0.0, 2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=yellow", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, -20.0),
+            Complex64::new(20.0, -20.0),
+            Complex64::new(20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    figure.add_plot(
+        &["fill=blue", "fill opacity=0.25", "draw=none"],
+        &vec![
+            Complex64::new(0.0, -20.0),
+            Complex64::new(-20.0, -20.0),
+            Complex64::new(-20.0, -2.5),
+            Complex64::new(0.0, -2.5),
+        ],
+    )?;
+
+    let us = pxu::kinematics::u_of_x(consts.s(), consts);
+    let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
+    let cuts = [
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(20.0) + ikh],
+            Some(-us + ikh),
+            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
+        pxu::Cut::new(
+            pxu::Component::U,
+            vec![-us + ikh, Complex64::from(-20.0) + ikh],
+            None,
+            pxu::CutType::Log(pxu::Component::Xp),
+            0,
+            false,
+            vec![],
+        ),
         pxu::Cut::new(
             pxu::Component::U,
             vec![-us - ikh, Complex64::from(20.0) - ikh],
@@ -4485,6 +4648,8 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_x_short_circle,
+    fig_u_short_circle,
     fig_x_long_circle,
     fig_u_long_half_circle_1,
     fig_u_long_half_circle_2,
@@ -4547,6 +4712,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_bs_disp_rel_lr0,
     fig_scallion_and_kidney,
     fig_scallion_and_kidney_3_70,
+    fig_scallion_and_kidney_7_10,
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,
@@ -4557,6 +4723,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_regions_between_small,
     fig_u_regions_inside_small_upper,
     fig_u_regions_inside_small_lower,
+    fig_u_regions_inside_small,
     fig_u_regions_long_upper,
     fig_u_regions_long_lower,
 ];

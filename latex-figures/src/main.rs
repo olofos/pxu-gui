@@ -81,6 +81,7 @@ fn main() -> std::io::Result<()> {
     let consts_list = vec![
         CouplingConstants::new(2.0, 5),
         CouplingConstants::new(7.0, 3),
+        CouplingConstants::new(1.0, 7),
     ];
 
     let mut pxu_provider = PxuProvider::new();
