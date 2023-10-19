@@ -111,10 +111,10 @@ fn main() -> std::io::Result<()> {
 
     let mut pxu_provider = PxuProvider::new();
 
-    println!("[1/5] Generating figures");
+    eprintln!("[1/5] Generating figures");
     pxu_provider.generate_contours(consts_list, verbose, &pool, &spinner_style);
 
-    println!("[2/5] Loading paths");
+    eprintln!("[2/5] Loading paths");
     pxu_provider.load_paths(
         make_paths::INTERACTIVE_PATHS,
         verbose,
@@ -125,8 +125,8 @@ fn main() -> std::io::Result<()> {
 
     let pxu_provider = Arc::new(pxu_provider);
 
-    let pb = if verbose {
-        println!("[3/5] Generating figures");
+    let pb = if !verbose {
+        eprintln!("[3/5] Generating figures");
         ProgressBar::new(1)
     } else {
         ProgressBar::hidden()
@@ -179,7 +179,7 @@ fn main() -> std::io::Result<()> {
 
     pb.finish_and_clear();
 
-    println!("[4/5] Saving figures");
+    eprintln!("[4/5] Saving figures");
 
     let path = PathBuf::from(settings.output_dir.clone());
     std::fs::create_dir_all(&path)?;
@@ -193,7 +193,7 @@ fn main() -> std::io::Result<()> {
         std::fs::write(path, ron)?;
     }
 
-    println!("[5/5] Saving descriptions");
+    eprintln!("[5/5] Saving descriptions");
 
     let ron = ron::to_string(&descriptions).unwrap();
 
@@ -201,6 +201,11 @@ fn main() -> std::io::Result<()> {
     std::fs::write(path, ron)?;
 
     pool.join();
+
+    eprintln!("");
+    eprintln!("Built {} figures", descriptions.len());
+    eprintln!("");
+    eprintln!("{}", pxu_provider.get_statistics());
 
     Ok(())
 }

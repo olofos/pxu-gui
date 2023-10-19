@@ -199,5 +199,9 @@ fn main() -> std::io::Result<()> {
 
     pb.finish_and_clear();
 
+    eprintln!("\nBuilt {} figures", ALL_FIGURES.len());
+
+    eprintln!("{}", pxu_provider.get_statistics());
+
     Ok(())
 }

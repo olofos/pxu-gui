@@ -1,11 +1,15 @@
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use pxu::CouplingConstants;
+use std::collections::HashSet;
 use std::io::Result;
+use std::sync::Mutex;
 use std::{collections::HashMap, sync::Arc};
 
 fn error(message: &str) -> std::io::Error {
     std::io::Error::new(std::io::ErrorKind::Other, message)
 }
+
+#[derive(Debug)]
 struct LossyHashCouplingConstants {
     consts: CouplingConstants,
 }
@@ -45,12 +49,14 @@ pub struct PxuProvider {
 #[derive(Default)]
 pub struct ContourProvider {
     contours: HashMap<LossyHashCouplingConstants, Arc<pxu::Contours>>,
+    seen_contours: Arc<Mutex<HashSet<LossyHashCouplingConstants>>>,
 }
 
 #[derive(Default)]
 pub struct PathProvider {
     paths: HashMap<String, Arc<pxu::Path>>,
     starts: HashMap<String, Arc<pxu::State>>,
+    seen_paths: Arc<Mutex<HashSet<String>>>,
 }
 
 impl ContourProvider {
@@ -59,10 +65,36 @@ impl ContourProvider {
     }
 
     pub fn get(&self, consts: pxu::CouplingConstants) -> Result<Arc<pxu::Contours>> {
+        self.seen_contours.lock().unwrap().insert(consts.into());
+
         self.contours
             .get(&consts.into())
             .cloned()
             .ok_or_else(|| error(&format!("Could not find contour for {consts:?}")))
+    }
+
+    pub fn get_statistics(&self) -> String {
+        let unused_contours = {
+            let seen_contours = &self.seen_contours.lock().unwrap();
+
+            self.contours
+                .keys()
+                .filter(|k| !seen_contours.contains(*k))
+                .collect::<Vec<_>>()
+        };
+
+        let mut lines: Vec<String> = vec![];
+
+        if unused_contours.is_empty() {
+            lines.push("All contours were used.".into());
+        } else {
+            lines.push("The following contours were not used:".into());
+            for c in unused_contours {
+                lines.push(format!("- {}", c.string_rep()));
+            }
+        }
+
+        lines.join("\n")
     }
 }
 
@@ -73,6 +105,8 @@ impl PathProvider {
     }
 
     pub fn get_path(&self, name: &str) -> Result<Arc<pxu::Path>> {
+        self.seen_paths.lock().unwrap().insert(name.to_owned());
+
         self.paths
             .get(name)
             .cloned()
@@ -80,10 +114,36 @@ impl PathProvider {
     }
 
     pub fn get_start(&self, name: &str) -> Result<Arc<pxu::State>> {
+        self.seen_paths.lock().unwrap().insert(name.to_owned());
+
         self.starts
             .get(name)
             .cloned()
             .ok_or_else(|| error(&format!("Could not find start for {name}")))
+    }
+
+    pub fn get_statistics(&self) -> String {
+        let unused_paths = {
+            let seen_paths = &self.seen_paths.lock().unwrap();
+
+            self.paths
+                .keys()
+                .filter(|k| !seen_paths.contains(*k))
+                .collect::<Vec<_>>()
+        };
+
+        let mut lines: Vec<String> = vec![];
+
+        if unused_paths.is_empty() {
+            lines.push("All paths were used.".into());
+        } else {
+            lines.push("The following paths were not used:".into());
+            for p in unused_paths {
+                lines.push(format!("- \"{p}\""));
+            }
+        }
+
+        lines.join("\n")
     }
 }
 
@@ -147,6 +207,13 @@ impl PxuProvider {
             spinner_style,
             spinner_style_no_progress,
         );
+    }
+
+    pub fn get_statistics(&self) -> String {
+        let contour_statistics = self.contours.get_statistics();
+        let path_statistics = self.paths.get_statistics();
+
+        format!("{contour_statistics}\n\n{path_statistics}")
     }
 }
 
