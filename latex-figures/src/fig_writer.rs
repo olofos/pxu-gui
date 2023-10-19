@@ -114,7 +114,7 @@ progress_file=io.open(""#;
         path.set_extension(TEX_EXT);
 
         log::info!("[{name}]: Creating file {}", path.to_string_lossy());
-        pb.set_message(format!("generating {}", path.to_string_lossy()));
+        pb.set_message(format!("Generating {}", path.to_string_lossy()));
 
         let file = File::create(&path)?;
         let mut writer = BufWriter::new(file);
