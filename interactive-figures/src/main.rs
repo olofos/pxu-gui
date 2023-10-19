@@ -202,9 +202,9 @@ fn main() -> std::io::Result<()> {
 
     pool.join();
 
-    eprintln!("");
+    eprintln!();
     eprintln!("Built {} figures", descriptions.len());
-    eprintln!("");
+    eprintln!();
     eprintln!("{}", pxu_provider.get_statistics());
 
     Ok(())

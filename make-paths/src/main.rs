@@ -49,9 +49,9 @@ fn main() -> std::io::Result<()> {
     .unwrap();
     println!("{result}");
 
-    eprintln!("");
+    eprintln!();
     eprintln!("Built {} paths", make_paths::INTERACTIVE_PATHS.len());
-    eprintln!("");
+    eprintln!();
     eprintln!("{}", contour_provider.get_statistics());
 
     Ok(())
