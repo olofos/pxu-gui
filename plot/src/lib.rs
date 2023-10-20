@@ -1,2 +1,2 @@
 mod plot;
-pub use plot::{CutFilter, Plot, PlotState};
+pub use plot::{CutFilter, Plot, PlotState, Theme};

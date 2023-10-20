@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use egui::{vec2, Pos2};
 use pxu::kinematics::CouplingConstants;
-use pxu::Pxu;
+use pxu::{CutType, Pxu};
 
 use crate::arguments::Arguments;
 use crate::ui_state::UiState;
@@ -304,6 +304,24 @@ impl PxuGuiApp {
             }
         }
     }
+
+    fn is_ux_mode(&self) -> bool {
+        self.ui_state.plot_state.theme == plot::Theme::Black
+    }
+
+    fn set_ux_mode(&mut self) {
+        self.ui_state.plot_state.theme = plot::Theme::Black;
+        self.ui_state.plot_state.cut_filter = plot::CutFilter::Only(vec![
+            CutType::UShortScallion(pxu::Component::Xp),
+            CutType::UShortKidney(pxu::Component::Xp),
+        ]);
+        self.ui_state.plot_state.fullscreen_component = None;
+    }
+
+    fn set_normal_mode(&mut self) {
+        self.ui_state.plot_state.theme = plot::Theme::Normal;
+        self.ui_state.plot_state.cut_filter = plot::CutFilter::All;
+    }
 }
 
 impl eframe::App for PxuGuiApp {
@@ -473,6 +491,24 @@ impl eframe::App for PxuGuiApp {
                 };
 
                 vec![(plot, rect)]
+            } else if self.is_ux_mode() {
+                use egui::Rect;
+                const GAP: f32 = 8.0;
+                let w = (rect.width() - GAP) / 2.0;
+                let size = vec2(w, rect.height());
+
+                let top_left = rect.left_top();
+
+                vec![
+                    (
+                        &mut self.u_plot,
+                        Rect::from_min_size(top_left + vec2(w + GAP, 0.0), size),
+                    ),
+                    (
+                        &mut self.xp_plot,
+                        Rect::from_min_size(top_left + vec2(0.0, 0.0), size),
+                    ),
+                ]
             } else {
                 use egui::Rect;
                 const GAP: f32 = 8.0;
@@ -729,6 +765,27 @@ impl PxuGuiApp {
         let mut new_consts = self.pxu.consts;
 
         ui.add_space(6.0);
+        ui.label(egui::RichText::new("Mode").strong());
+
+        ui.horizontal(|ui| {
+            if ui
+                .add(egui::RadioButton::new(
+                    self.ui_state.plot_state.theme != plot::Theme::Black,
+                    "Full",
+                ))
+                .clicked()
+            {
+                self.set_normal_mode()
+            }
+
+            if ui
+                .add(egui::RadioButton::new(self.is_ux_mode(), "u(x)"))
+                .clicked()
+            {
+                self.set_ux_mode();
+            }
+        });
+
         ui.label(egui::RichText::new("Parameters").strong());
         ui.add_space(6.0);
 

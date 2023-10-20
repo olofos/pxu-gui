@@ -12,6 +12,13 @@ pub struct Plot {
     pub origin: Pos2,
 }
 
+#[derive(Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub enum Theme {
+    #[default]
+    Normal,
+    Black,
+}
+
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 pub enum CutFilter {
     #[default]
@@ -37,6 +44,8 @@ pub struct PlotState {
     pub fullscreen_component: Option<pxu::Component>,
     #[serde(skip)]
     pub cut_filter: CutFilter,
+    #[serde(skip)]
+    pub theme: Theme,
 }
 
 impl PlotState {
@@ -266,49 +275,53 @@ impl Plot {
                                 == UBranch::Between)
                 };
 
-                let color = match cut.typ {
-                    pxu::CutType::E => Color32::BLACK,
+                let color = if plot_state.theme == Theme::Black {
+                    Color32::BLACK
+                } else {
+                    match cut.typ {
+                        pxu::CutType::E => Color32::BLACK,
 
-                    pxu::CutType::Log(comp) => {
-                        if hide_log_cut(comp) {
+                        pxu::CutType::Log(comp) => {
+                            if hide_log_cut(comp) {
+                                continue;
+                            } else if comp == pxu::Component::Xp {
+                                Color32::from_rgb(255, 128, 128)
+                            } else {
+                                Color32::from_rgb(128, 255, 128)
+                            }
+                        }
+
+                        pxu::CutType::ULongNegative(_) => {
                             continue;
-                        } else if comp == pxu::Component::Xp {
-                            Color32::from_rgb(255, 128, 128)
-                        } else {
-                            Color32::from_rgb(128, 255, 128)
                         }
-                    }
 
-                    pxu::CutType::ULongNegative(_) => {
-                        continue;
-                    }
-
-                    pxu::CutType::ULongPositive(comp) => {
-                        if hide_log_cut(comp) {
-                            continue;
-                        } else if comp == pxu::Component::Xp {
-                            Color32::from_rgb(255, 0, 0)
-                        } else {
-                            Color32::from_rgb(0, 192, 0)
+                        pxu::CutType::ULongPositive(comp) => {
+                            if hide_log_cut(comp) {
+                                continue;
+                            } else if comp == pxu::Component::Xp {
+                                Color32::from_rgb(255, 0, 0)
+                            } else {
+                                Color32::from_rgb(0, 192, 0)
+                            }
                         }
-                    }
 
-                    pxu::CutType::UShortScallion(comp) => {
-                        if comp == pxu::Component::Xp {
-                            Color32::from_rgb(255, 0, 0)
-                        } else {
-                            Color32::from_rgb(0, 192, 0)
+                        pxu::CutType::UShortScallion(comp) => {
+                            if comp == pxu::Component::Xp {
+                                Color32::from_rgb(255, 0, 0)
+                            } else {
+                                Color32::from_rgb(0, 192, 0)
+                            }
                         }
-                    }
 
-                    pxu::CutType::UShortKidney(comp) => {
-                        if comp == pxu::Component::Xp {
-                            Color32::from_rgb(255, 0, 0)
-                        } else {
-                            Color32::from_rgb(0, 192, 0)
+                        pxu::CutType::UShortKidney(comp) => {
+                            if comp == pxu::Component::Xp {
+                                Color32::from_rgb(255, 0, 0)
+                            } else {
+                                Color32::from_rgb(0, 192, 0)
+                            }
                         }
+                        _ => Color32::from_rgb(255, 128, 0),
                     }
-                    _ => Color32::from_rgb(255, 128, 0),
                 };
 
                 let period_shifts = if cut.periodic {
@@ -518,7 +531,13 @@ impl Plot {
             let text = match self.component {
                 pxu::Component::P => "p",
                 pxu::Component::U => "u",
-                pxu::Component::Xp => "x⁺",
+                pxu::Component::Xp => {
+                    if plot_state.theme == Theme::Black {
+                        "x"
+                    } else {
+                        "x⁺"
+                    }
+                }
                 pxu::Component::Xm => "x⁻",
             };
 
