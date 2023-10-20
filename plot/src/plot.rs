@@ -183,11 +183,22 @@ impl Plot {
         }
     }
 
-    fn draw_grid(&self, rect: Rect, contours: &pxu::Contours, shapes: &mut Vec<egui::Shape>) {
+    fn draw_grid(
+        &self,
+        rect: Rect,
+        pxu: &pxu::Pxu,
+        plot_state: &PlotState,
+        shapes: &mut Vec<egui::Shape>,
+    ) {
         let to_screen = self.to_screen(rect);
         let visible_rect = self.visible_rect(rect);
         if self.component != pxu::Component::P {
-            let origin = to_screen * egui::pos2(0.0, 0.0);
+            let origin = to_screen
+                * if (plot_state.theme == Theme::Black) && (self.component == pxu::Component::U) {
+                    egui::pos2(0.0, 1.0 / pxu.consts.h as f32)
+                } else {
+                    egui::pos2(0.0, 0.0)
+                };
 
             shapes.extend([
                 egui::epaint::Shape::line(
@@ -195,19 +206,19 @@ impl Plot {
                         egui::pos2(rect.left(), origin.y),
                         egui::pos2(rect.right(), origin.y),
                     ],
-                    Stroke::new(0.75, Color32::DARK_GRAY),
+                    Stroke::new(1.0, Color32::DARK_GRAY),
                 ),
                 egui::epaint::Shape::line(
                     vec![
                         egui::pos2(origin.x, rect.bottom()),
                         egui::pos2(origin.x, rect.top()),
                     ],
-                    Stroke::new(0.75, Color32::DARK_GRAY),
+                    Stroke::new(1.0, Color32::DARK_GRAY),
                 ),
             ]);
         }
 
-        let grid_contours = contours.get_grid(self.component);
+        let grid_contours = pxu.contours.get_grid(self.component);
 
         for grid_line in grid_contours {
             if !grid_line.bounding_box.intersects(visible_rect) {
@@ -460,7 +471,7 @@ impl Plot {
 
         let mut shapes = vec![];
 
-        self.draw_grid(rect, &pxu.contours, &mut shapes);
+        self.draw_grid(rect, pxu, plot_state, &mut shapes);
         self.draw_cuts(rect, pxu, plot_state, &mut shapes);
 
         for &path_index in plot_state.path_indices.iter() {
