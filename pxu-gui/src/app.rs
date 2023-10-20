@@ -883,13 +883,13 @@ impl PxuGuiApp {
         {
             ui.label(egui::RichText::new("State").strong());
 
-            ui.label(format!("Momentum: {:.3}", self.pxu.state.p()));
+            ui.label(format!("Momentum: {:+.3}", self.pxu.state.p()));
             ui.label(format!(
-                "Energy:   {:.3}",
+                "Energy:   {:+.3}",
                 self.pxu.state.en(self.pxu.consts)
             ));
             ui.label(format!(
-                "Charge:   {:.3}",
+                "Charge:   {:+.3}",
                 self.pxu.state.points.len() as f64
                     + self.pxu.consts.k() as f64 * self.pxu.state.p()
             ));
@@ -906,14 +906,17 @@ impl PxuGuiApp {
                 .strong(),
             );
 
-            ui.label(format!("Momentum: {:.3}", active_point.p));
+            ui.label(format!("Momentum: {:+.3}", active_point.p));
 
-            ui.label(format!("Energy:   {:.3}", active_point.en(self.pxu.consts)));
+            ui.label(format!(
+                "Energy:   {:+.3}",
+                active_point.en(self.pxu.consts)
+            ));
 
             ui.add_space(10.0);
-            ui.label(format!("x⁺: {:.3}", active_point.xp));
-            ui.label(format!("x⁻: {:.3}", active_point.xm));
-            ui.label(format!("u:  {:.3}", active_point.u));
+            ui.label(format!("x⁺: {:+.3}", active_point.xp));
+            ui.label(format!("x⁻: {:+.3}", active_point.xm));
+            ui.label(format!("u:  {:+.3}", active_point.u));
 
             ui.add_space(10.0);
             ui.label(egui::RichText::new("Branch info").strong());
@@ -928,7 +931,7 @@ impl PxuGuiApp {
                 active_point.sheet_data.e_branch
             ));
             ui.label(format!(
-                "U branch:   ({:+},{:+})",
+                "U branch:   ({},{:})",
                 active_point.sheet_data.u_branch.0, active_point.sheet_data.u_branch.1
             ));
 
@@ -986,8 +989,8 @@ impl PxuGuiApp {
                 .strong(),
             );
 
-            ui.label(format!("x: {:.3}", active_point.xp));
-            ui.label(format!("u: {:.3}", active_point.u));
+            ui.label(format!("x: {:+.3}", active_point.xp));
+            ui.label(format!("u: {:+.3}", active_point.u));
 
             ui.add_space(10.0);
             ui.label(egui::RichText::new("Branch info").strong());
@@ -1088,7 +1091,7 @@ impl PxuGuiApp {
                     let progress = current as f32 / total as f32;
                     ui.add(
                         egui::ProgressBar::new(progress)
-                            .text(format!("Generating contours   {:.0}%", 100.0 * progress)),
+                            .text(format!("Generating contours {:.0}%", 100.0 * progress)),
                     );
                 } else if let Some((curret, total)) = self.ui_state.path_load_progress {
                     let progress = current as f32 / total as f32;
