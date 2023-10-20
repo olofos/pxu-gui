@@ -3266,7 +3266,7 @@ fn fig_xp_typical_bound_state(
         settings,
         pb,
     )?;
-    figure.no_component_indicator();
+    figure.component_indicator(r"x^{\pm}");
 
     let state_strings = [
         "(points:[(p:(-0.01281836032081622,-0.03617430043713721),xp:(-0.5539661576009564,4.096675591673073),xm:(-0.7024897294980745,3.2176928460399083),u:(-1.7157735474931681,1.9999999999999996),x:(-0.6278118911147218,3.651492613118212),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.019778339646048883,-0.041578695061571934),xp:(-0.7024897294980745,3.2176928460399083),xm:(-0.8439501836107429,2.391751872316718),u:(-1.7157735474931681,0.9999999999999993),x:(-0.7756824568522961,2.7972312015320973),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.6079768155592542,-0.000000000000000025609467106049815),xp:(-0.8439501836107431,2.3917518723167186),xm:(-0.8439501836107433,-2.3917518723167186),u:(-1.7157735474931681,-0.0000000000000004440892098500626),x:(-0.9025872691909044,-2.0021375758700994),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.019778339646048887,0.04157869506157193),xp:(-0.8439501836107434,-2.391751872316718),xm:(-0.7024897294980749,-3.217692846039909),u:(-1.7157735474931686,-0.9999999999999991),x:(-0.7756824568522963,-2.7972312015320973),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-0.01281836032081622,0.0361743004371372),xp:(-0.7024897294980751,-3.217692846039909),xm:(-0.5539661576009569,-4.0966755916730735),u:(-1.7157735474931686,-1.9999999999999998),x:(-0.6278118911147222,-3.651492613118212),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))])",
@@ -3287,12 +3287,19 @@ fn fig_xp_typical_bound_state(
 
     for cut in contours
         .get_visible_cuts_from_point(&states[0].points[0], figure.component, consts)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::UShortScallion(pxu::Component::Xp)
+                    | pxu::CutType::UShortKidney(pxu::Component::Xp)
+            )
+        })
     {
-        figure.add_cut(cut, &[], consts)?;
+        figure.add_cut(cut, &["Black"], consts)?;
     }
 
-    for state in states {
+    let colors = ["Blue", "Red"];
+    for (state, color) in states.into_iter().zip(colors) {
         let mut points = state
             .points
             .iter()
@@ -3316,7 +3323,7 @@ fn fig_xp_typical_bound_state(
             figure.add_node(&text, *pos, &[anchor])?;
         }
 
-        figure.add_plot_all(&["only marks", "Blue", "mark size=0.075cm"], points)?;
+        figure.add_plot_all(&["only marks", color, "mark size=0.05cm"], points)?;
     }
 
     figure.finish(cache, settings, pb)
