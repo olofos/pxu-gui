@@ -973,6 +973,36 @@ impl PxuGuiApp {
         }
     }
 
+    fn draw_state_information_ux(&mut self, ui: &mut egui::Ui) {
+        let active_point = &self.pxu.state.points[self.ui_state.plot_state.active_point];
+        ui.separator();
+
+        {
+            ui.label(
+                egui::RichText::new(format!(
+                    "Active excitation (#{})",
+                    self.ui_state.plot_state.active_point
+                ))
+                .strong(),
+            );
+
+            ui.label(format!("x: {:.3}", active_point.xp));
+            ui.label(format!("u: {:.3}", active_point.u));
+
+            ui.add_space(10.0);
+            ui.label(egui::RichText::new("Branch info").strong());
+
+            ui.label(format!(
+                "Log branch: {:+}",
+                active_point.sheet_data.log_branch_p
+            ));
+            ui.label(format!(
+                "U branch:   {:+}",
+                active_point.sheet_data.u_branch.0
+            ));
+        }
+    }
+
     fn draw_side_panel(&mut self, ctx: &egui::Context) {
         egui::SidePanel::right("side_panel").show(ctx, |ui| {
             self.draw_coupling_controls(ui);
@@ -983,7 +1013,11 @@ impl PxuGuiApp {
 
             ui.checkbox(&mut self.pxu.state.unlocked, "Unlock bound state");
 
-            self.draw_state_information(ui);
+            if self.is_ux_mode() {
+                self.draw_state_information_ux(ui);
+            } else {
+                self.draw_state_information(ui);
+            }
 
             ui.separator();
             ui.horizontal_wrapped(|ui| {
