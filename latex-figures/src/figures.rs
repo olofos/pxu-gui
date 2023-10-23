@@ -4633,6 +4633,103 @@ fn fig_bs_disp_rel_lr0(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_plane_path_between_regions(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "p-plane-path-between-region",
+        -2.6..3.6,
+        0.0,
+        Size {
+            width: 15.5,
+            height: 5.0,
+        },
+        pxu::Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                pxu::CutType::E
+                    | pxu::CutType::Log(_)
+                    | pxu::CutType::UShortKidney(_)
+                    | pxu::CutType::UShortScallion(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    let paths = [
+        ("p from region 0 to region -1", 0.45),
+        ("p from region -1 to region -2", 0.6),
+        ("p from region -2 to region -3", 0.6),
+        ("p from region 0 to region +1", 0.6),
+        ("p from region +1 to region +2", 0.6),
+        ("p from region +2 to region +3", 0.6),
+    ];
+
+    for (path_name, pos) in paths {
+        let path = pxu_provider.get_path(path_name)?;
+        let mut path = (*path).clone();
+
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[pos], &["very thick", "Blue"])?;
+
+        for segs in path.segments.iter_mut() {
+            for seg in segs.iter_mut() {
+                for p in seg.p.iter_mut() {
+                    *p = p.conj();
+                }
+            }
+        }
+
+        figure.add_path(&path, &pt, &["solid"])?;
+        figure.add_path_arrows(&path, &[pos], &["very thick", "Blue"])?;
+    }
+
+    let centers = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5]
+        .map(Complex64::from)
+        .to_vec();
+
+    figure.add_plot_all(&["only marks", "Blue", "mark size=0.05cm"], centers)?;
+
+    for (x, y, label) in [
+        (3.2, 0.12, "3"),
+        (2.2, 0.12, "2"),
+        (1.1, 0.13, "1"),
+        (0.2, 0.12, "-1"),
+        (-0.8, 0.1, "-2"),
+        (-2.0, 0.13, "-3"),
+    ] {
+        figure.add_node(
+            &format!(r"$\scriptstyle {label}$"),
+            Complex64::new(x, y),
+            &["Blue", "anchor=south"],
+        )?;
+        figure.add_node(
+            &format!(r"$\scriptstyle {label}'$"),
+            Complex64::new(x, -y),
+            &["Blue", "anchor=north"],
+        )?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 // Intereseting states:
 // m = 5, p = -1, E = C = 0
 // (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
@@ -4669,6 +4766,7 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_p_plane_path_between_regions,
     fig_x_short_circle,
     fig_u_short_circle,
     fig_x_long_circle,

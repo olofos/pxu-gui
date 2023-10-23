@@ -1270,6 +1270,7 @@ dependencies = [
  "base64",
  "clap",
  "flate2",
+ "flo_curves",
  "indicatif",
  "itertools 0.11.0",
  "log",

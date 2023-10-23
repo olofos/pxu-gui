@@ -20,3 +20,4 @@ base64.workspace = true
 flate2 = "1.0.25"
 ron = "0.8.0"
 threadpool = "1.8.1"
+flo_curves = "0.7.2"
