@@ -163,6 +163,7 @@ fn create_x_circle_between_upper(
     name: &str,
     left: f64,
     right: f64,
+    start_angle: f64,
     contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
@@ -171,21 +172,27 @@ fn create_x_circle_between_upper(
     let mut state = pxu::State::new(1, consts);
     state.follow_path(
         pxu::Component::P,
-        &[[0.03, 0.03], [-0.03, 0.03], [-0.06, 0.0]],
+        &[[0.03, -0.03], [-0.03, -0.03], [-0.06, 0.0]],
         &contours,
         consts,
     );
     let center = (right + left) / 2.0;
     let radius = (right - left) / 2.0;
 
-    state.goto(pxu::Component::Xp, left, &contours, consts, 2);
+    state.goto(
+        pxu::Component::Xp,
+        center + Complex64::from_polar(radius, start_angle + 0.001),
+        &contours,
+        consts,
+        2,
+    );
 
     let steps = 256;
 
     let mut path = vec![];
 
-    for i in 1..=steps {
-        let theta = PI * (1.0 - i as f64 / steps as f64);
+    for i in 1..steps {
+        let theta = start_angle * (1.0 - i as f64 / steps as f64);
         let xp = center + Complex64::from_polar(radius, theta);
         path.push(xp);
     }
@@ -197,6 +204,7 @@ fn create_x_circle_between_lower(
     name: &str,
     left: f64,
     right: f64,
+    end_angle: f64,
     contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
@@ -235,7 +243,7 @@ fn create_x_circle_between_lower(
     let mut path = vec![];
 
     for i in 1..steps {
-        let theta = -PI * i as f64 / steps as f64;
+        let theta = end_angle * i as f64 / steps as f64;
         let xp = center + Complex64::from_polar(radius, theta);
         path.push(xp);
     }
@@ -244,19 +252,43 @@ fn create_x_circle_between_lower(
 }
 
 fn path_x_half_circle_between_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
-    create_x_circle_between_upper("x half circle between 1", -1.69, 0.591, contour_provider)
+    create_x_circle_between_upper(
+        "x half circle between 1",
+        -1.69,
+        0.591,
+        PI * 7.0 / 8.0,
+        contour_provider,
+    )
 }
 
 fn path_x_half_circle_between_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
-    create_x_circle_between_lower("x half circle between 2", -1.96, 0.591, contour_provider)
+    create_x_circle_between_lower(
+        "x half circle between 2",
+        -1.96,
+        0.591,
+        -PI,
+        contour_provider,
+    )
 }
 
 fn path_x_half_circle_between_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
-    create_x_circle_between_upper("x half circle between 3", -1.96, 0.861, contour_provider)
+    create_x_circle_between_upper(
+        "x half circle between 3",
+        -1.96,
+        0.861,
+        PI,
+        contour_provider,
+    )
 }
 
 fn path_x_half_circle_between_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
-    create_x_circle_between_lower("x half circle between 4", -2.23, 0.861, contour_provider)
+    create_x_circle_between_lower(
+        "x half circle between 4",
+        -2.23,
+        0.861,
+        -PI * 7.0 / 8.0,
+        contour_provider,
+    )
 }
 
 // xp circle between/inside

@@ -1655,11 +1655,44 @@ fn fig_x_long_circle(
         "x half circle between 4",
     ];
 
-    for path_name in paths {
-        let path = pxu_provider.get_path(path_name)?;
+    let paths = paths
+        .into_iter()
+        .map(|path_name| pxu_provider.get_path(path_name))
+        .collect::<Result<Vec<_>>>()?;
+
+    let first = *paths
+        .first()
+        .unwrap()
+        .segments
+        .first()
+        .ok_or(error("No path?"))?
+        .first()
+        .ok_or(error("Empty segment?"))?
+        .xp
+        .first()
+        .ok_or(error("Empty segment?"))?;
+
+    let last = *paths
+        .last()
+        .unwrap()
+        .segments
+        .last()
+        .ok_or(error("No path?"))?
+        .last()
+        .ok_or(error("Empty segment?"))?
+        .xp
+        .last()
+        .ok_or(error("Empty segment?"))?;
+
+    for path in paths {
         figure.add_path(&path, &pt, &["solid"])?;
         figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
     }
+
+    figure.add_plot_all(
+        &["only marks", "Blue", "mark size=0.06cm"],
+        vec![first, last],
+    )?;
 
     let s = consts.s();
     let cuts = vec![
@@ -1704,12 +1737,19 @@ fn fig_x_long_circle(
     figure.finish(cache, settings, pb)
 }
 
+enum HalfCircleMark {
+    None,
+    First,
+    Last,
+}
+
 #[allow(clippy::too_many_arguments)]
 fn draw_u_long_half_circle(
     name: &str,
     shift: f64,
     half: i32,
     label: &str,
+    mark: HalfCircleMark,
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
@@ -1743,8 +1783,35 @@ fn draw_u_long_half_circle(
 
     let path: Arc<pxu::Path> = pxu_provider.get_path(&format!("x half circle between {label}"))?;
 
+    let first = path
+        .segments
+        .first()
+        .ok_or(error("No path?"))?
+        .first()
+        .ok_or(error("Empty segment?"))?
+        .u
+        .first()
+        .ok_or(error("Empty segment?"))?;
+
+    let last = path
+        .segments
+        .last()
+        .ok_or(error("No path?"))?
+        .last()
+        .ok_or(error("Empty segment?"))?
+        .u
+        .last()
+        .ok_or(error("Empty segment?"))?;
+
     figure.add_path(&path, &pt, &["solid"])?;
     figure.add_path_arrows(&path, &[0.4, 0.7], &["very thick", "Blue"])?;
+
+    let marks = match mark {
+        HalfCircleMark::First => vec![*first],
+        HalfCircleMark::Last => vec![*last],
+        HalfCircleMark::None => vec![],
+    };
+    figure.add_plot_all(&["only marks", "Blue", "mark size=0.06cm"], marks)?;
 
     let shift = Complex64::new(0.0, -0.5);
 
@@ -1798,6 +1865,7 @@ fn fig_u_long_half_circle_1(
         0.0,
         1,
         "1",
+        HalfCircleMark::First,
         pxu_provider,
         cache,
         settings,
@@ -1816,6 +1884,7 @@ fn fig_u_long_half_circle_2(
         0.0,
         -1,
         "2",
+        HalfCircleMark::None,
         pxu_provider,
         cache,
         settings,
@@ -1834,6 +1903,7 @@ fn fig_u_long_half_circle_3(
         -5.0,
         1,
         "3",
+        HalfCircleMark::None,
         pxu_provider,
         cache,
         settings,
@@ -1852,6 +1922,7 @@ fn fig_u_long_half_circle_4(
         -5.0,
         -1,
         "4",
+        HalfCircleMark::Last,
         pxu_provider,
         cache,
         settings,
@@ -1893,11 +1964,44 @@ fn fig_x_short_circle(
         "x half circle between 4",
     ];
 
-    for path_name in paths {
-        let path = pxu_provider.get_path(path_name)?;
+    let paths = paths
+        .into_iter()
+        .map(|path_name| pxu_provider.get_path(path_name))
+        .collect::<Result<Vec<_>>>()?;
+
+    let first = *paths
+        .first()
+        .unwrap()
+        .segments
+        .first()
+        .ok_or(error("No path?"))?
+        .first()
+        .ok_or(error("Empty segment?"))?
+        .xp
+        .first()
+        .ok_or(error("Empty segment?"))?;
+
+    let last = *paths
+        .last()
+        .unwrap()
+        .segments
+        .last()
+        .ok_or(error("No path?"))?
+        .last()
+        .ok_or(error("Empty segment?"))?
+        .xp
+        .last()
+        .ok_or(error("Empty segment?"))?;
+
+    for path in paths {
         figure.add_path(&path, &pt, &["solid"])?;
         figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
     }
+
+    figure.add_plot_all(
+        &["only marks", "Blue", "mark size=0.06cm"],
+        vec![first, last],
+    )?;
 
     for cut in contours
         .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
@@ -1955,17 +2059,50 @@ fn fig_u_short_circle(
 
     let paths = ["x half circle between 1", "x half circle between 2"];
 
-    for path_name in paths {
-        let path = pxu_provider.get_path(path_name)?;
+    let paths = paths
+        .into_iter()
+        .map(|path_name| pxu_provider.get_path(path_name))
+        .collect::<Result<Vec<_>>>()?;
+
+    let first = *paths
+        .first()
+        .unwrap()
+        .segments
+        .first()
+        .ok_or(error("No path?"))?
+        .first()
+        .ok_or(error("Empty segment?"))?
+        .u
+        .first()
+        .ok_or(error("Empty segment?"))?;
+
+    for path in paths {
         figure.add_path(&path, &pt, &["solid"])?;
         figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
     }
 
     let paths = ["x half circle between 3", "x half circle between 4"];
 
-    for path_name in paths {
-        let mut path = (*pxu_provider.get_path(path_name)?).clone();
+    let paths = paths
+        .into_iter()
+        .map(|path_name| pxu_provider.get_path(path_name))
+        .collect::<Result<Vec<_>>>()?;
 
+    let last = Complex64::new(0.0, 2.0 * consts.k() as f64 / consts.h)
+        + *paths
+            .last()
+            .unwrap()
+            .segments
+            .last()
+            .ok_or(error("No path?"))?
+            .last()
+            .ok_or(error("Empty segment?"))?
+            .u
+            .last()
+            .ok_or(error("Empty segment?"))?;
+
+    for path in paths {
+        let mut path = (*path).clone();
         for segs in path.segments.iter_mut() {
             for seg in segs.iter_mut() {
                 for p in seg.u.iter_mut() {
@@ -1977,6 +2114,11 @@ fn fig_u_short_circle(
         figure.add_path(&path, &pt, &["solid"])?;
         figure.add_path_arrows(&path, &[0.55], &["very thick", "Blue"])?;
     }
+
+    figure.add_plot_all(
+        &["only marks", "Blue", "mark size=0.06cm"],
+        vec![first, last],
+    )?;
 
     for cut in contours
         .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
@@ -2226,7 +2368,7 @@ fn draw_path_figure_with_options_and_start_end_marks_and_arrows_and_labels(
         .clone();
 
     figure.add_grid_lines(&contours, &[])?;
-    figure.add_cuts(&contours, &pt, consts, &["semithick"])?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
 
     for (name, options, mark_options, arrow_pos) in paths {
         let path = pxu_provider.get_path(name)?;
