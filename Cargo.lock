@@ -812,6 +812,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "flo_curves"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "21c3da91984f219319fc08a775ffdbc4962d4a1a6b3181967f64b456ac84d2eb"
+dependencies = [
+ "itertools 0.10.5",
+ "roots",
+ "smallvec",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1095,7 +1106,7 @@ dependencies = [
  "clap",
  "flate2",
  "indicatif",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "make-paths",
  "num",
@@ -1106,6 +1117,15 @@ dependencies = [
  "threadpool",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "itertools"
+version = "0.10.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b0fd2260e829bddf4cb6ea802289de2f86d6a7a690192fbe91b3f46e0f2c8473"
+dependencies = [
+ "either",
 ]
 
 [[package]]
@@ -1174,8 +1194,9 @@ name = "latex-figures"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "flo_curves",
  "indicatif",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "make-paths",
  "md5",
@@ -1250,7 +1271,7 @@ dependencies = [
  "clap",
  "flate2",
  "indicatif",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "md5",
  "num",
@@ -1699,7 +1720,7 @@ dependencies = [
  "eframe",
  "egui",
  "flate2",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "num",
  "pxu",
@@ -1748,7 +1769,7 @@ dependencies = [
  "egui_extras",
  "flate2",
  "image",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "md5",
  "num",
@@ -1807,7 +1828,7 @@ dependencies = [
  "base64",
  "egui",
  "flate2",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "num",
  "ron",
@@ -1829,7 +1850,7 @@ dependencies = [
  "ehttp",
  "flate2",
  "interactive-figures",
- "itertools",
+ "itertools 0.11.0",
  "log",
  "num",
  "plot",
@@ -1917,6 +1938,12 @@ dependencies = [
  "serde",
  "serde_derive",
 ]
+
+[[package]]
+name = "roots"
+version = "0.0.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "082f11ffa03bbef6c2c6ea6bea1acafaade2fd9050ae0234ab44a2153742b058"
 
 [[package]]
 name = "rustls"

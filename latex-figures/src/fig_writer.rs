@@ -12,6 +12,11 @@ use std::ops::Range;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use flo_curves::{
+    bezier::{fit_curve, Curve},
+    BezierCurve, Coord2,
+};
+
 use crate::cache;
 use crate::fig_compiler::FigureCompiler;
 use crate::utils::{error, Settings, Size, TEX_EXT};
@@ -234,12 +239,10 @@ progress_file=io.open(""#;
     }
 
     fn format_contour(&self, contour: Vec<Complex64>) -> Vec<String> {
-        let mut coordinates = contour
+        contour
             .into_iter()
             .map(|z| self.format_coordinate(z))
-            .collect::<Vec<_>>();
-        coordinates.dedup();
-        coordinates
+            .collect::<Vec<_>>()
     }
 
     pub fn crop(&self, contour: &Vec<Complex64>) -> Vec<Complex64> {
@@ -285,7 +288,8 @@ progress_file=io.open(""#;
     }
 
     pub fn add_plot_all(&mut self, options: &[&str], contour: Vec<Complex64>) -> Result<()> {
-        let coordinates = self.format_contour(contour);
+        let mut coordinates = self.format_contour(contour);
+        coordinates.dedup();
 
         if !coordinates.is_empty() {
             writeln!(
@@ -294,6 +298,85 @@ progress_file=io.open(""#;
                 options.join(","),
                 coordinates.join(" ")
             )?;
+            writeln!(self.writer, r#"\directlua{{progress_file:write(".")}}"#)?;
+            writeln!(self.writer, r#"\directlua{{progress_file:flush()}}"#)?;
+            self.plot_count += 1;
+        }
+        Ok(())
+    }
+
+    pub fn add_curve(&mut self, options: &[&str], contour: &Vec<Complex64>) -> Result<()> {
+        self.add_curve_all(options, self.crop(contour))
+    }
+
+    pub fn add_curve_all(&mut self, options: &[&str], mut contour: Vec<Complex64>) -> Result<()> {
+        if !contour.is_empty() {
+            let options = options.join(",");
+
+            contour.dedup();
+
+            if contour.len() > 2 {
+                let points = contour
+                    .into_iter()
+                    .map(|z| Coord2(z.re, z.im + self.y_shift.unwrap_or_default()))
+                    .collect::<Vec<_>>();
+
+                let max_error = 0.005 * self.scale();
+
+                let curves = fit_curve::<Curve<Coord2>>(&points, max_error).unwrap();
+
+                let mut prev_end = None;
+
+                // for (c1, c2) in curves.iter().tuple_windows() {
+                //     let p1 = c1.end_point();
+                //     let p2 = c2.start_point();
+
+                //     if p1.distance_to(&p2) > max_error {
+                //         let start = format!("({},{})", p1.0, p1.1);
+                //         let end = format!("({},{})", p2.0, p2.1);
+
+                //         writeln!(self.writer, r"\draw [{options}] {start} -- {end};")?;
+                //     }
+                // }
+
+                write!(self.writer, r"\draw [{options}] ")?;
+
+                for curve in curves {
+                    let start = format!("({},{})", curve.start_point().0, curve.start_point().1);
+                    let end = format!("({},{})", curve.end_point().0, curve.end_point().1);
+                    let c1 = format!(
+                        "({},{})",
+                        curve.control_points().0 .0,
+                        curve.control_points().0 .1
+                    );
+                    let c2 = format!(
+                        "({},{})",
+                        curve.control_points().1 .0,
+                        curve.control_points().1 .1
+                    );
+
+                    if prev_end.is_none() {
+                        write!(self.writer, "{start}")?;
+                    } else if prev_end.unwrap() != start {
+                        write!(self.writer, " -- {start}")?;
+                    }
+
+                    write!(self.writer, r" .. controls {c1} and {c2} .. {end}")?;
+
+                    prev_end = Some(end);
+                }
+                writeln!(self.writer, ";")?;
+            } else {
+                let mut coordinates = self.format_contour(contour);
+                coordinates.dedup();
+
+                writeln!(
+                    self.writer,
+                    "\\addplot [{}] coordinates {{ {} }};",
+                    options,
+                    coordinates.join(" ")
+                )?;
+            }
             writeln!(self.writer, r#"\directlua{{progress_file:write(".")}}"#)?;
             writeln!(self.writer, r#"\directlua{{progress_file:flush()}}"#)?;
             self.plot_count += 1;
@@ -310,7 +393,7 @@ progress_file=io.open(""#;
     }
 
     pub fn add_grid_line(&mut self, grid_line: &GridLine, options: &[&str]) -> Result<()> {
-        self.add_plot(
+        self.add_curve(
             &[&["very thin", "lightgray"], options].concat(),
             &grid_line.path,
         )?;
@@ -374,9 +457,9 @@ progress_file=io.open(""#;
             self.y_shift = shift;
 
             if style == dashed && options.is_empty() {
-                self.add_plot(&["lightgray", "very thick"], &cut.path)?
+                self.add_curve(&["lightgray", "very thick"], &cut.path)?
             }
-            self.add_plot(&[&[color, style], options].concat(), &cut.path)?;
+            self.add_curve(&[&[color, style], options].concat(), &cut.path)?;
 
             if let Some(branch_point) = cut.branch_point {
                 self.add_plot_all(
@@ -494,14 +577,14 @@ progress_file=io.open(""#;
         }
 
         for points in dotted_segments {
-            self.add_plot(
+            self.add_curve(
                 &[&["very thick", "Blue", "dotted"], options].concat(),
                 &points,
             )?;
         }
 
         for points in straight_segments {
-            self.add_plot(&[&["very thick", "Blue"], options].concat(), &points)?;
+            self.add_curve(&[&["very thick", "Blue"], options].concat(), &points)?;
         }
 
         Ok(())
@@ -644,6 +727,13 @@ progress_file=io.open(""#;
 
     pub fn set_caption(&mut self, caption: &str) {
         self.caption = caption.to_owned();
+    }
+
+    pub fn scale(&self) -> f64 {
+        let scale_x = self.bounds.width() / self.size.width;
+        let scale_y = self.bounds.height() / self.size.height;
+
+        scale_x.max(scale_y)
     }
 }
 
