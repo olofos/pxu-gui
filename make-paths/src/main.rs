@@ -25,7 +25,10 @@ fn main() -> std::io::Result<()> {
     )
     .unwrap();
 
-    let consts_list = vec![CouplingConstants::new(2.0, 5)];
+    let consts_list = vec![
+        CouplingConstants::new(2.0, 5),
+        CouplingConstants::new(1.0, 7),
+    ];
 
     eprintln!("[1/3] Generating contours");
     let mut contour_provider = ContourProvider::default();

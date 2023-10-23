@@ -1546,6 +1546,148 @@ fn path_p_from_region_plus_2_to_region_plus_3(
     )
 }
 
+fn path_p_period_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_str = "(points:[(p:(-0.105,0.0),xp:(-1.4091784817114132,0.48246963269997417),xm:(-1.4091784817114132,-0.48246963269997417),u:(-2.932123375880603,6.999999999999999),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1)))],unlocked:false)";
+    let mut state: pxu::State = load_state(state_str).unwrap();
+    state.goto(pxu::Component::P, -0.105, &contours, consts, 1);
+
+    let full_path = bezier_path(
+        Complex64::from(-0.105),
+        Complex64::new(-0.105, 0.125),
+        Complex64::new(-0.055, 0.125),
+        Complex64::from(-0.055),
+        0.001,
+        0.001,
+    );
+
+    let start = state.clone();
+
+    let mut path = vec![];
+    for p in full_path.into_iter() {
+        state.goto(pxu::Component::P, p, &contours, consts, 1);
+        if state.points[0].sheet_data.e_branch < 0 {
+            break;
+        }
+        path.push(p);
+    }
+
+    pxu::path::SavedPath::new("p period 1", path, start, pxu::Component::P, 0, consts)
+}
+
+fn path_p_period_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_str = "(points:[(p:(-0.105,0.0),xp:(-1.4091784817114132,0.48246963269997417),xm:(-1.4091784817114132,-0.48246963269997417),u:(-2.932123375880603,6.999999999999999),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1)))],unlocked:false)";
+    let mut state: pxu::State = load_state(state_str).unwrap();
+    state.goto(pxu::Component::P, -0.105, &contours, consts, 1);
+
+    let full_path = bezier_path(
+        Complex64::from(-0.105),
+        Complex64::new(-0.105, 0.125),
+        Complex64::new(-0.055, 0.125),
+        Complex64::from(-0.055),
+        0.001,
+        0.001,
+    );
+
+    let mut start = None;
+
+    let mut path = vec![];
+    for p in full_path.into_iter() {
+        state.goto(pxu::Component::P, p, &contours, consts, 1);
+        if state.points[0].sheet_data.e_branch < 0 {
+            path.push(p);
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "p period 2",
+        path,
+        start.unwrap(),
+        pxu::Component::P,
+        0,
+        consts,
+    )
+}
+
+fn path_p_period_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_str = "(points:[(p:(-0.055,0.0),xp:(0.2566971058663987,-0.0448008168070112),xm:(0.2566971058663987,0.0448008168070112),u:(7.033751628965735,0.0000000000000002220446049250313),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1)))],unlocked:false)";
+    let mut state: pxu::State = load_state(state_str).unwrap();
+    state.goto(pxu::Component::P, -0.055, &contours, consts, 1);
+
+    let full_path = bezier_path(
+        Complex64::from(-0.055),
+        Complex64::new(-0.055, -0.125),
+        Complex64::new(-0.105, -0.125),
+        Complex64::from(-0.105),
+        0.001,
+        0.001,
+    );
+
+    let start = state.clone();
+
+    let mut path = vec![];
+    for p in full_path.into_iter() {
+        state.goto(pxu::Component::P, p, &contours, consts, 1);
+        if state.points[0].sheet_data.e_branch > 0 {
+            break;
+        }
+        path.push(p);
+    }
+
+    pxu::path::SavedPath::new("p period 3", path, start, pxu::Component::P, 0, consts)
+}
+
+fn path_p_period_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_str = "(points:[(p:(-0.055,0.0),xp:(0.2566971058663987,-0.0448008168070112),xm:(0.2566971058663987,0.0448008168070112),u:(7.033751628965735,0.0000000000000002220446049250313),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1)))],unlocked:false)";
+    let mut state: pxu::State = load_state(state_str).unwrap();
+    state.goto(pxu::Component::P, -0.055, &contours, consts, 1);
+
+    let full_path = bezier_path(
+        Complex64::from(-0.055),
+        Complex64::new(-0.055, -0.125),
+        Complex64::new(-0.105, -0.125),
+        Complex64::from(-0.105),
+        0.001,
+        0.001,
+    );
+
+    let mut start = None;
+
+    let mut path = vec![];
+    for p in full_path.into_iter() {
+        state.goto(pxu::Component::P, p, &contours, consts, 1);
+        if state.points[0].sheet_data.e_branch > 0 {
+            path.push(p);
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "p period 4",
+        path,
+        start.unwrap(),
+        pxu::Component::P,
+        0,
+        consts,
+    )
+}
+
 pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
@@ -1581,6 +1723,10 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_p_from_region_0_to_region_plus_1,
     path_p_from_region_plus_1_to_region_plus_2,
     path_p_from_region_plus_2_to_region_plus_3,
+    path_p_period_1,
+    path_p_period_2,
+    path_p_period_3,
+    path_p_period_4,
 ];
 
 pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
