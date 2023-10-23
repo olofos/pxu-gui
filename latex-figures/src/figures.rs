@@ -284,11 +284,21 @@ fn fig_scallion_and_kidney(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], consts)?;
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
-    figure.add_node("Scallion", Complex64::new(1.5, -2.0), &["anchor=west"])?;
-    figure.add_node("Kidney", Complex64::new(-1.25, 0.5), &["anchor=east"])?;
+    figure.add_node(
+        "\\footnotesize Scallion",
+        Complex64::new(1.5, -2.0),
+        &["anchor=west"],
+    )?;
+    figure.add_node(
+        "\\footnotesize Kidney",
+        Complex64::new(-1.25, 0.5),
+        &["anchor=east"],
+    )?;
     figure.draw("(1.5,-2.0) to[out=180,in=-45] (0.68,-1.53)", &["->"])?;
     figure.draw("(-1.25,0.5) to[out=0,in=130] (-0.75,0.3)", &["->"])?;
 
@@ -332,7 +342,9 @@ fn fig_scallion_and_kidney_7_10(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], consts)?;
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -375,7 +387,9 @@ fn fig_scallion_and_kidney_3_70(
             )
         })
     {
-        figure.add_cut(cut, &["black", "very thick"], consts)?;
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
     }
 
     figure.finish(cache, settings, pb)
