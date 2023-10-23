@@ -8,7 +8,7 @@ use make_paths::PxuProvider;
 use num::complex::Complex64;
 use num::Zero;
 use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch};
-use pxu::{CouplingConstants, CutType, GridLineComponent};
+use pxu::{Component, CouplingConstants, Cut, CutType, GridLineComponent};
 use std::io::Result;
 use std::sync::Arc;
 
@@ -40,7 +40,7 @@ fn fig_p_xpl_preimage(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -50,27 +50,27 @@ fn fig_p_xpl_preimage(
     figure.add_grid_lines(&contours, &[])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::E))
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
+        .filter(|cut| matches!(cut.typ, CutType::E))
     {
         figure.add_cut(cut, &[], consts)?;
     }
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::E
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
-                    | pxu::CutType::ULongPositive(pxu::Component::Xp)
+                CutType::E
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
+                    | CutType::ULongPositive(Component::Xp)
             )
         })
     {
         let options: &[&str] = match cut.typ {
-            pxu::CutType::Log(_) => &["Red!50!white", "decoration={name=none}", "very thick"],
-            pxu::CutType::ULongPositive(_) => &["Red!50!white", "densely dashed", "very thick"],
+            CutType::Log(_) => &["Red!50!white", "decoration={name=none}", "very thick"],
+            CutType::ULongPositive(_) => &["Red!50!white", "densely dashed", "very thick"],
             _ => &[],
         };
         figure.add_cut(cut, options, consts)?;
@@ -187,7 +187,7 @@ fn fig_p_plane_e_cuts(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -199,8 +199,8 @@ fn fig_p_plane_e_cuts(
     let pt = pxu::Point::new(0.5, consts);
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::E))
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
+        .filter(|cut| matches!(cut.typ, CutType::E))
     {
         figure.add_cut(cut, &[], consts)?;
     }
@@ -264,7 +264,7 @@ fn fig_scallion_and_kidney(
             width: 4.5,
             height: 4.5,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -275,12 +275,11 @@ fn fig_scallion_and_kidney(
     figure.add_axis()?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
             )
         })
     {
@@ -322,7 +321,7 @@ fn fig_scallion_and_kidney_7_10(
             width: 4.5,
             height: 4.5,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -333,12 +332,11 @@ fn fig_scallion_and_kidney_7_10(
     figure.add_axis()?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
             )
         })
     {
@@ -367,7 +365,7 @@ fn fig_scallion_and_kidney_3_70(
             width: 4.5,
             height: 4.5,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -378,12 +376,11 @@ fn fig_scallion_and_kidney_3_70(
     figure.add_axis()?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
             )
         })
     {
@@ -398,9 +395,9 @@ fn fig_scallion_and_kidney_3_70(
 fn get_cut_path(
     contours: &pxu::Contours,
     pt: &pxu::Point,
-    component: pxu::Component,
+    component: Component,
     consts: CouplingConstants,
-    cut_type: pxu::CutType,
+    cut_type: CutType,
 ) -> Vec<Complex64> {
     let cut_paths = contours
         .get_visible_cuts_from_point(pt, component, consts)
@@ -439,7 +436,7 @@ fn fig_x_regions_outside(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -451,9 +448,9 @@ fn fig_x_regions_outside(
     let scallion_path = get_cut_path(
         &contours,
         &pt,
-        pxu::Component::Xp,
+        Component::Xp,
         consts,
-        pxu::CutType::UShortScallion(pxu::Component::Xp),
+        CutType::UShortScallion(Component::Xp),
     );
 
     let (scallion_left, scallion_right) = scallion_path
@@ -493,13 +490,13 @@ fn fig_x_regions_outside(
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp)
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
             )
         })
     {
@@ -527,7 +524,7 @@ fn fig_x_regions_between(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -539,17 +536,17 @@ fn fig_x_regions_between(
     let scallion_path = get_cut_path(
         &contours,
         &pt,
-        pxu::Component::Xp,
+        Component::Xp,
         consts,
-        pxu::CutType::UShortScallion(pxu::Component::Xp),
+        CutType::UShortScallion(Component::Xp),
     );
 
     let kidney_path = get_cut_path(
         &contours,
         &pt,
-        pxu::Component::Xp,
+        Component::Xp,
         consts,
-        pxu::CutType::UShortKidney(pxu::Component::Xp),
+        CutType::UShortKidney(Component::Xp),
     );
 
     let (scallion_left, scallion_right) = scallion_path
@@ -584,13 +581,13 @@ fn fig_x_regions_between(
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp)
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
             )
         })
     {
@@ -618,7 +615,7 @@ fn fig_x_regions_inside(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -630,9 +627,9 @@ fn fig_x_regions_inside(
     let kidney_path = get_cut_path(
         &contours,
         &pt,
-        pxu::Component::Xp,
+        Component::Xp,
         consts,
-        pxu::CutType::UShortKidney(pxu::Component::Xp),
+        CutType::UShortKidney(Component::Xp),
     );
 
     let (kidney_left, kidney_right) = kidney_path
@@ -662,13 +659,13 @@ fn fig_x_regions_inside(
     figure.add_plot(&["fill=green", "fill opacity=0.25", "draw=none"], &q4_path)?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp)
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
             )
         })
     {
@@ -695,7 +692,7 @@ fn fig_x_regions_long(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -752,29 +749,29 @@ fn fig_x_regions_long(
 
     let s = consts.s();
     let cuts = vec![
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::from(-10.0), Complex64::from(-1.0 / s)],
             Some(Complex64::from(-1.0 / s)),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::from(-1.0 / s), Complex64::zero()],
             Some(Complex64::zero()),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::zero(), Complex64::from(10.0)],
             Some(Complex64::from(s)),
-            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            CutType::ULongPositive(Component::Xp),
             0,
             false,
             vec![],
@@ -806,7 +803,7 @@ fn fig_u_regions_outside(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -861,8 +858,8 @@ fn fig_u_regions_outside(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+        .get_visible_cuts_from_point(&pt, Component::U, consts)
+        .filter(|cut| matches!(cut.typ, CutType::UShortScallion(Component::Xp)))
     {
         figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
@@ -888,7 +885,7 @@ fn fig_u_regions_between(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -947,12 +944,11 @@ fn fig_u_regions_between(
     }
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
+        .get_visible_cuts_from_point(&pt, Component::U, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
             )
         })
     {
@@ -980,7 +976,7 @@ fn fig_u_regions_inside(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1035,8 +1031,8 @@ fn fig_u_regions_inside(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
-        .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
+        .get_visible_cuts_from_point(&pt, Component::U, consts)
+        .filter(|cut| matches!(cut.typ, CutType::UShortKidney(Component::Xp)))
     {
         figure.add_cut(cut, &["black", "very thick"], consts)?;
     }
@@ -1062,7 +1058,7 @@ fn fig_u_regions_between_small(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1119,47 +1115,47 @@ fn fig_u_regions_between_small(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![us, Complex64::from(-20.0)],
             Some(us),
-            pxu::CutType::UShortScallion(pxu::Component::Xp),
+            CutType::UShortScallion(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(20.0) + ikh],
             Some(-us + ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(20.0) - ikh],
             Some(-us - ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(-20.0) + ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(-20.0) - ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1191,7 +1187,7 @@ fn fig_u_regions_inside_small_upper(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1228,20 +1224,20 @@ fn fig_u_regions_inside_small_upper(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(20.0) + ikh],
             Some(-us + ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(-20.0) + ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1273,7 +1269,7 @@ fn fig_u_regions_inside_small_lower(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1310,20 +1306,20 @@ fn fig_u_regions_inside_small_lower(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(20.0) - ikh],
             Some(-us - ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(-20.0) - ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1355,7 +1351,7 @@ fn fig_u_regions_inside_small(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1412,38 +1408,38 @@ fn fig_u_regions_inside_small(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(20.0) + ikh],
             Some(-us + ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(-20.0) + ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(20.0) - ikh],
             Some(-us - ikh),
-            pxu::CutType::UShortKidney(pxu::Component::Xp),
+            CutType::UShortKidney(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(-20.0) - ikh],
             None,
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1475,7 +1471,7 @@ fn fig_u_regions_long_upper(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1512,20 +1508,20 @@ fn fig_u_regions_long_upper(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![us, Complex64::from(20.0)],
             Some(us),
-            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            CutType::ULongPositive(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us - ikh, Complex64::from(-20.0) - ikh],
             Some(-us - ikh),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1557,7 +1553,7 @@ fn fig_u_regions_long_lower(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1594,20 +1590,20 @@ fn fig_u_regions_long_lower(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![us, Complex64::from(20.0)],
             Some(us),
-            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            CutType::ULongPositive(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![-us + ikh, Complex64::from(-20.0) + ikh],
             Some(-us + ikh),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1639,7 +1635,7 @@ fn fig_x_long_circle(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -1696,29 +1692,29 @@ fn fig_x_long_circle(
 
     let s = consts.s();
     let cuts = vec![
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::from(-10.0), Complex64::from(-1.0 / s)],
             Some(Complex64::from(-1.0 / s)),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::from(-1.0 / s), Complex64::zero()],
             Some(Complex64::zero()),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::Xp,
+        Cut::new(
+            Component::Xp,
             vec![Complex64::zero(), Complex64::from(10.0)],
             Some(Complex64::from(s)),
-            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            CutType::ULongPositive(Component::Xp),
             0,
             false,
             vec![],
@@ -1767,7 +1763,7 @@ fn draw_u_long_half_circle(
             width: 3.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -1818,23 +1814,23 @@ fn draw_u_long_half_circle(
     let us = pxu::kinematics::u_of_x(consts.s(), consts);
     let ikh = Complex64::new(0.0, consts.k() as f64 / consts.h);
     let cuts = [
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![us + shift, Complex64::from(20.0) + shift],
             Some(us + shift),
-            pxu::CutType::ULongPositive(pxu::Component::Xp),
+            CutType::ULongPositive(Component::Xp),
             0,
             false,
             vec![],
         ),
-        pxu::Cut::new(
-            pxu::Component::U,
+        Cut::new(
+            Component::U,
             vec![
                 -us - ikh * half.signum() as f64 + shift,
                 Complex64::from(-20.0) - ikh * half.signum() as f64 + shift,
             ],
             Some(-us - ikh * half.signum() as f64 + shift),
-            pxu::CutType::Log(pxu::Component::Xp),
+            CutType::Log(Component::Xp),
             0,
             false,
             vec![],
@@ -1948,7 +1944,7 @@ fn fig_x_short_circle(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -2004,13 +2000,13 @@ fn fig_x_short_circle(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::Xp, consts)
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::Log(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp)
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
             )
         })
     {
@@ -2043,7 +2039,7 @@ fn fig_u_short_circle(
             width: 3.0,
             height: 5.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2121,12 +2117,11 @@ fn fig_u_short_circle(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::U, consts)
+        .get_visible_cuts_from_point(&pt, Component::U, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortKidney(pxu::Component::Xp)
-                    | pxu::CutType::UShortScallion(pxu::Component::Xp)
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
             )
         })
     {
@@ -2153,14 +2148,14 @@ fn fig_xpl_cover(
             width: 6.0,
             height: 3.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
     figure.no_component_indicator();
 
     figure.add_axis()?;
-    for contour in contours.get_grid(pxu::Component::Xp).iter().filter(
+    for contour in contours.get_grid(Component::Xp).iter().filter(
         |line| matches!(line.component, GridLineComponent::Xp(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xp(1.0) {
@@ -2189,14 +2184,14 @@ fn fig_xml_cover(
             width: 6.0,
             height: 3.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
     figure.no_component_indicator();
 
     figure.add_axis()?;
-    for contour in contours.get_grid(pxu::Component::Xm).iter().filter(
+    for contour in contours.get_grid(Component::Xm).iter().filter(
         |line| matches!(line.component, GridLineComponent::Xm(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xm(1.0) {
@@ -2226,7 +2221,7 @@ fn fig_p_plane_short_cuts(
             width: 25.0,
             height: 10.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -2234,14 +2229,14 @@ fn fig_p_plane_short_cuts(
     figure.add_grid_lines(&contours, &[])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::E
-                    | pxu::CutType::Log(_)
-                    | pxu::CutType::UShortKidney(_)
-                    | pxu::CutType::UShortScallion(_)
+                CutType::E
+                    | CutType::Log(_)
+                    | CutType::UShortKidney(_)
+                    | CutType::UShortScallion(_)
             )
         })
     {
@@ -2269,14 +2264,14 @@ fn fig_xp_cuts_1(
             width: 12.0,
             height: 12.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
 
     figure.add_axis()?;
     for contour in contours
-        .get_grid(pxu::Component::Xp)
+        .get_grid(Component::Xp)
         .iter()
         .filter(|line| matches!(line.component, GridLineComponent::Xp(m) | GridLineComponent::Xm(m) if (-10.0..).contains(&m)))
     {
@@ -2403,7 +2398,7 @@ fn fig_u_period_between_between(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2441,7 +2436,7 @@ fn fig_u_band_between_outside(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2479,7 +2474,7 @@ fn fig_u_band_between_inside(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2516,7 +2511,7 @@ fn fig_p_band_between_outside(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -2548,7 +2543,7 @@ fn fig_p_band_between_inside(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -2581,7 +2576,7 @@ fn fig_xp_band_between_inside(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -2619,7 +2614,7 @@ fn fig_xp_band_between_outside(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -2657,7 +2652,7 @@ fn fig_xm_band_between_inside(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -2695,7 +2690,7 @@ fn fig_xm_band_between_outside(
             width: 8.0,
             height: 16.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -2732,7 +2727,7 @@ fn fig_xp_period_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -2764,7 +2759,7 @@ fn fig_xm_period_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -2796,7 +2791,7 @@ fn fig_p_period_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -2828,7 +2823,7 @@ fn fig_p_circle_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -2860,7 +2855,7 @@ fn fig_xp_circle_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -2892,7 +2887,7 @@ fn fig_xm_circle_between_between(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -2924,7 +2919,7 @@ fn fig_u_circle_between_between(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2956,7 +2951,7 @@ fn fig_u_circle_between_outside(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -2988,7 +2983,7 @@ fn fig_u_circle_between_inside(
             width: 5.0,
             height: 12.5,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -3020,7 +3015,7 @@ fn fig_p_crossing_all(
             width: 8.0,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -3099,7 +3094,7 @@ fn fig_xp_crossing_all(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -3168,7 +3163,7 @@ fn fig_xm_crossing_all(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -3237,7 +3232,7 @@ fn fig_u_crossing_0(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -3272,7 +3267,7 @@ fn fig_xp_crossing_0(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -3307,7 +3302,7 @@ fn fig_xm_crossing_0(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -3379,7 +3374,7 @@ fn fig_p_two_particle_bs_0(
             width: 8.0,
             height: 4.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -3418,7 +3413,7 @@ fn fig_xp_typical_bound_state(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -3446,8 +3441,7 @@ fn fig_xp_typical_bound_state(
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::UShortScallion(pxu::Component::Xp)
-                    | pxu::CutType::UShortKidney(pxu::Component::Xp)
+                CutType::UShortScallion(Component::Xp) | CutType::UShortKidney(Component::Xp)
             )
         })
     {
@@ -3459,9 +3453,9 @@ fn fig_xp_typical_bound_state(
         let mut points = state
             .points
             .iter()
-            .map(|pt| pt.get(pxu::Component::Xp))
+            .map(|pt| pt.get(Component::Xp))
             .collect::<Vec<_>>();
-        points.push(state.points.last().unwrap().get(pxu::Component::Xm));
+        points.push(state.points.last().unwrap().get(Component::Xm));
 
         for (i, pos) in points.iter().enumerate() {
             let text = if i == 0 {
@@ -3501,7 +3495,7 @@ fn fig_xp_two_particle_bs_0(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -3539,7 +3533,7 @@ fn fig_xm_two_particle_bs_0(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -3577,7 +3571,7 @@ fn fig_u_two_particle_bs_0(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -3616,7 +3610,7 @@ fn fig_u_bs_1_4_same_energy(
             width: 8.0,
             height: 8.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -3654,8 +3648,8 @@ fn draw_p_region_plot(
 
     let mut xp_scallion_path = {
         let mut xp_scallions = contours
-            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
-            .filter(|cut| matches!(cut.typ, pxu::CutType::UShortScallion(pxu::Component::Xp)))
+            .get_visible_cuts_from_point(&pt, Component::P, consts)
+            .filter(|cut| matches!(cut.typ, CutType::UShortScallion(Component::Xp)))
             .map(|cut| cut.path.clone())
             .collect::<Vec<_>>();
 
@@ -3681,9 +3675,9 @@ fn draw_p_region_plot(
         let min_1_path = left_paths.pop().unwrap();
 
         let mut e_cuts = contours
-            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+            .get_visible_cuts_from_point(&pt, Component::P, consts)
             .filter(|cut| {
-                matches!(cut.typ, pxu::CutType::E)
+                matches!(cut.typ, CutType::E)
                     && cut.path[0].im < 0.0
                     && (-1.0..0.0).contains(&cut.path[0].re)
             })
@@ -3728,8 +3722,8 @@ fn draw_p_region_plot(
 
     let mut xp_kidney_path = {
         let mut xp_kidneys = contours
-            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
-            .filter(|cut| matches!(cut.typ, pxu::CutType::UShortKidney(pxu::Component::Xp)))
+            .get_visible_cuts_from_point(&pt, Component::P, consts)
+            .filter(|cut| matches!(cut.typ, CutType::UShortKidney(Component::Xp)))
             .map(|cut| cut.path.clone())
             .filter(|path| path[0].re > 0.0 || path[0].im < 0.2)
             .collect::<Vec<_>>();
@@ -3754,9 +3748,9 @@ fn draw_p_region_plot(
         }
 
         let mut e_cut = contours
-            .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+            .get_visible_cuts_from_point(&pt, Component::P, consts)
             .filter(|cut| {
-                matches!(cut.typ, pxu::CutType::E)
+                matches!(cut.typ, CutType::E)
                     && cut.path[0].im > 0.0
                     && (-0.5..0.0).contains(&cut.path[0].re)
             })
@@ -3880,7 +3874,7 @@ fn fig_p_short_cut_regions_e_plus(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -3904,7 +3898,7 @@ fn fig_p_short_cut_regions_e_min(
             width: 15.5,
             height: 6.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -4045,7 +4039,7 @@ fn fig_p_physical_region_e_plus(
             width: 15.5,
             height: 4.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -4086,7 +4080,7 @@ fn fig_p_physical_region_e_minus(
             width: 15.5,
             height: 4.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -4157,7 +4151,7 @@ fn fig_xp_singlet_41(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -4194,7 +4188,7 @@ fn fig_xm_singlet_41(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -4231,7 +4225,7 @@ fn fig_u_singlet_41(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -4265,7 +4259,7 @@ fn fig_xp_singlet_32(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -4302,7 +4296,7 @@ fn fig_xm_singlet_32(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -4339,7 +4333,7 @@ fn fig_u_singlet_32(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -4376,7 +4370,7 @@ fn fig_xp_singlet_23(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -4413,7 +4407,7 @@ fn fig_xm_singlet_23(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -4450,7 +4444,7 @@ fn fig_u_singlet_23(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -4487,7 +4481,7 @@ fn fig_xp_singlet_14(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -4524,7 +4518,7 @@ fn fig_xm_singlet_14(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -4561,7 +4555,7 @@ fn fig_u_singlet_14(
             width: 6.0,
             height: 6.0,
         },
-        pxu::Component::U,
+        Component::U,
         settings,
         pb,
     )?;
@@ -4793,7 +4787,7 @@ fn fig_p_plane_path_between_regions(
             width: 15.5,
             height: 5.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -4801,14 +4795,14 @@ fn fig_p_plane_path_between_regions(
     figure.add_grid_lines(&contours, &[])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, pxu::Component::P, consts)
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
-                pxu::CutType::E
-                    | pxu::CutType::Log(_)
-                    | pxu::CutType::UShortKidney(_)
-                    | pxu::CutType::UShortScallion(_)
+                CutType::E
+                    | CutType::Log(_)
+                    | CutType::UShortKidney(_)
+                    | CutType::UShortScallion(_)
             )
         })
     {
@@ -4890,7 +4884,7 @@ fn fig_p_periodic_path(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::P,
+        Component::P,
         settings,
         pb,
     )?;
@@ -4934,7 +4928,7 @@ fn fig_xp_periodic_path(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xp,
+        Component::Xp,
         settings,
         pb,
     )?;
@@ -4956,7 +4950,7 @@ fn fig_xp_periodic_path(
 
     let cuts = contours
         .get_visible_cuts_from_point(&pt, figure.component, consts)
-        .filter(|cut: &&pxu::Cut| -> bool {
+        .filter(|cut: &&Cut| -> bool {
             match cut.typ {
                 CutType::UShortKidney(comp) => comp == figure.component || cut.p_range == -1,
                 CutType::UShortScallion(comp) => comp == figure.component || cut.p_range == 0,
@@ -4992,7 +4986,7 @@ fn fig_xm_periodic_path(
             width: 5.0,
             height: 5.0,
         },
-        pxu::Component::Xm,
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -5014,7 +5008,7 @@ fn fig_xm_periodic_path(
 
     let cuts = contours
         .get_visible_cuts_from_point(&pt, figure.component, consts)
-        .filter(|cut: &&pxu::Cut| -> bool {
+        .filter(|cut: &&Cut| -> bool {
             match cut.typ {
                 CutType::UShortKidney(comp) => comp == figure.component || cut.p_range == -1,
                 CutType::UShortScallion(comp) => comp == figure.component || cut.p_range == 0,
