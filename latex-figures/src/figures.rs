@@ -8,7 +8,7 @@ use make_paths::PxuProvider;
 use num::complex::Complex64;
 use num::Zero;
 use pxu::{interpolation::PInterpolatorMut, kinematics::UBranch};
-use pxu::{CouplingConstants, GridLineComponent};
+use pxu::{CouplingConstants, CutType, GridLineComponent};
 use std::io::Result;
 use std::sync::Arc;
 
@@ -4872,6 +4872,165 @@ fn fig_p_plane_path_between_regions(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_periodic_path(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "p-periodic-path",
+        -0.35..0.19,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    let path_names = [
+        ("p period 1", "Red"),
+        ("p period 2", "Green"),
+        ("p period 3", "Blue"),
+        ("p period 4", "Orange"),
+    ];
+
+    for (path_name, color) in path_names {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &[color])?;
+        figure.add_path_arrows(&path, &[0.55], &[color, "very thick"])?;
+    }
+
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xp_periodic_path(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(0.5, consts);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Between);
+
+    let mut figure = FigureWriter::new(
+        "xp-periodic-path",
+        -2.0..0.8,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    let path_names = [
+        ("p period 1", "Red"),
+        ("p period 2", "Green"),
+        ("p period 3", "Blue"),
+        ("p period 4", "Orange"),
+    ];
+
+    for (path_name, color) in path_names {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &[color])?;
+        figure.add_path_arrows(&path, &[0.55], &[color, "very thick"])?;
+    }
+
+    let cuts = contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut: &&pxu::Cut| -> bool {
+            match cut.typ {
+                CutType::UShortKidney(comp) => comp == figure.component || cut.p_range == -1,
+                CutType::UShortScallion(comp) => comp == figure.component || cut.p_range == 0,
+                CutType::E => true,
+                _ => false,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    for cut in cuts {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xm_periodic_path(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(0.5, consts);
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Between);
+
+    let mut figure = FigureWriter::new(
+        "xm-periodic-path",
+        -2.0..0.8,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        pxu::Component::Xm,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    let path_names = [
+        ("p period 1", "Red"),
+        ("p period 2", "Green"),
+        ("p period 3", "Blue"),
+        ("p period 4", "Orange"),
+    ];
+
+    for (path_name, color) in path_names {
+        let path = pxu_provider.get_path(path_name)?;
+        figure.add_path(&path, &pt, &[color])?;
+        figure.add_path_arrows(&path, &[0.55], &[color, "very thick"])?;
+    }
+
+    let cuts = contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut: &&pxu::Cut| -> bool {
+            match cut.typ {
+                CutType::UShortKidney(comp) => comp == figure.component || cut.p_range == -1,
+                CutType::UShortScallion(comp) => comp == figure.component || cut.p_range == 0,
+                CutType::E => true,
+                _ => false,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    for cut in cuts {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 // Intereseting states:
 // m = 5, p = -1, E = C = 0
 // (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
@@ -4908,6 +5067,9 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_p_periodic_path,
+    fig_xp_periodic_path,
+    fig_xm_periodic_path,
     fig_p_plane_path_between_regions,
     fig_x_short_circle,
     fig_u_short_circle,
