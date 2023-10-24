@@ -91,6 +91,11 @@ impl FigureCompiler {
                         log::info!("[{}]: Lualatex done.", self.name);
                     } else {
                         log::error!("[{}]: Lualatex failed.", self.name);
+                        let err = std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            format!("Lualatex failed for {}", self.name),
+                        );
+                        return Err(err);
                     }
                 }
                 break;
