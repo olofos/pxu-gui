@@ -1,3 +1,4 @@
+mod path_provider;
 mod paths;
 mod provider;
 
