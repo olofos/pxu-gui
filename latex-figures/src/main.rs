@@ -40,6 +40,8 @@ fn main() -> std::io::Result<()> {
     let mut settings = Settings::parse();
     let verbose = settings.verbose > 0;
 
+    let start = std::time::Instant::now();
+
     if verbose {
         tracing_subscriber::fmt()
             .with_max_level(tracing::Level::INFO)
@@ -200,7 +202,17 @@ fn main() -> std::io::Result<()> {
 
     pb.finish_and_clear();
 
-    eprintln!("\nBuilt {} figures", ALL_FIGURES.len());
+    let end = std::time::Instant::now();
+
+    let duration = end.duration_since(start);
+    let seconds = duration.as_secs();
+    let minutes = seconds / 60;
+    let seconds = seconds - 60 * minutes;
+
+    eprintln!(
+        "\nBuilt {} figures in {minutes}:{seconds}",
+        ALL_FIGURES.len()
+    );
 
     eprintln!("{}", pxu_provider.get_statistics());
 
