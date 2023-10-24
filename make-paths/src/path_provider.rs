@@ -63,6 +63,28 @@ impl PathProvider {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize)]
+struct CacheEntry {
+    path_string: String,
+    saved_path_string: String,
+}
+
+const CACHE_FILENAME: &str = "path-cache";
+
+fn load_cache(dirname: &str) -> Result<HashMap<String, CacheEntry>> {
+    let path = std::path::PathBuf::from(dirname).join(CACHE_FILENAME);
+    let bytes = std::fs::read(path)?;
+    let s = std::str::from_utf8(&bytes).map_err(|err| error(&format!("{err}")))?;
+    ron::from_str(s).map_err(|err| error(&format!("{err}")))
+}
+
+fn save_cache(cache: HashMap<String, CacheEntry>, dirname: &str) -> Result<()> {
+    let s = ron::to_string(&cache).map_err(|err| error(&format!("{err}")))?;
+    let path = std::path::PathBuf::from(dirname).join(CACHE_FILENAME);
+    std::fs::write(path, s)
+}
+
+#[allow(clippy::too_many_arguments)]
 impl PathProvider {
     pub fn load(
         &mut self,
@@ -70,9 +92,20 @@ impl PathProvider {
         contour_provider: Arc<ContourProvider>,
         verbose: bool,
         pool: &threadpool::ThreadPool,
+        cache_dirname: &str,
         spinner_style: &ProgressStyle,
         spinner_style_no_progress: &ProgressStyle,
     ) {
+        let cache = match load_cache(cache_dirname) {
+            Ok(cache) => cache,
+            Err(err) => {
+                if verbose {
+                    eprintln!("Error loading cache: {err}");
+                }
+                Default::default()
+            }
+        };
+
         let mb = Arc::new(MultiProgress::new());
         let pb = if !verbose {
             mb.add(ProgressBar::new(1))
@@ -84,6 +117,7 @@ impl PathProvider {
         pb.set_length(paths.len() as u64);
 
         let (tx, rx) = std::sync::mpsc::channel();
+        let cache = Arc::new(cache);
 
         for path_func in paths {
             let tx = tx.clone();
@@ -91,6 +125,7 @@ impl PathProvider {
             let mb = mb.clone();
             let path_func = *path_func;
             let contour_provider = contour_provider.clone();
+            let cache = cache.clone();
 
             pool.execute(move || {
                 let pb = if !verbose {
@@ -110,20 +145,32 @@ impl PathProvider {
                 pb.set_message(saved_path.name.clone());
                 pb.tick();
 
-                let path = pxu::path::Path::from_base_path(
-                    saved_path.into(),
-                    &contour_provider.get(consts).unwrap(),
-                    consts,
-                );
-                tx.send((path, start)).unwrap();
+                let mut path = None;
+
+                if let Some(entry) = cache.get(&saved_path.name) {
+                    if let Ok(saved_path_string) = ron::to_string(&saved_path) {
+                        if saved_path_string == entry.saved_path_string {
+                            path = ron::from_str(&entry.path_string).ok()
+                        }
+                    }
+                }
+
+                if path.is_none() {
+                    path = Some(pxu::path::Path::from_base_path(
+                        saved_path.clone().into(),
+                        &contour_provider.get(consts).unwrap(),
+                        consts,
+                    ));
+                }
+                tx.send((path.unwrap(), saved_path, start)).unwrap();
                 pb.finish_and_clear();
             });
         }
 
-        let paths_and_starts = rx
+        let result = rx
             .into_iter()
             .take(paths.len())
-            .map(|r: (pxu::Path, pxu::State)| {
+            .map(|r: (pxu::Path, pxu::path::SavedPath, pxu::State)| {
                 pb.inc(1);
                 r
             })
@@ -132,8 +179,27 @@ impl PathProvider {
         pool.join();
         pb.finish_and_clear();
 
-        for (path, start) in paths_and_starts.iter() {
+        let mut cache: HashMap<String, CacheEntry> = Default::default();
+
+        for (path, saved_path, start) in result.iter() {
             self.add(&path.name, path.clone(), start.clone());
+            let Ok(path_string) = ron::to_string(&path) else {
+                continue;
+            };
+            let Ok(saved_path_string) = ron::to_string(&saved_path) else {
+                continue;
+            };
+            cache.insert(
+                saved_path.name.clone(),
+                CacheEntry {
+                    path_string,
+                    saved_path_string,
+                },
+            );
+        }
+
+        if let Err(err) = save_cache(cache, cache_dirname) {
+            eprintln!("{err}");
         }
     }
 }

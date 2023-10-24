@@ -5,6 +5,8 @@ use make_paths::PxuProvider;
 use pxu::CouplingConstants;
 use std::{path::PathBuf, sync::Arc};
 
+const PATH_CACHE_DIR: &str = ".cache";
+
 #[derive(Parser, Clone)]
 #[command(author, version, about, long_about = None)]
 pub struct Settings {
@@ -119,6 +121,7 @@ fn main() -> std::io::Result<()> {
         make_paths::INTERACTIVE_PATHS,
         verbose,
         &pool,
+        PATH_CACHE_DIR,
         &spinner_style,
         &spinner_style_no_progress,
     );

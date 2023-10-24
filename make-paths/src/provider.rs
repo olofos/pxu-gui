@@ -139,6 +139,7 @@ impl PxuProvider {
         paths: &[crate::PathFunction],
         verbose: bool,
         pool: &threadpool::ThreadPool,
+        cache_dir: &str,
         spinner_style: &ProgressStyle,
         spinner_style_no_progress: &ProgressStyle,
     ) {
@@ -147,6 +148,7 @@ impl PxuProvider {
             self.contours.clone(),
             verbose,
             pool,
+            cache_dir,
             spinner_style,
             spinner_style_no_progress,
         );

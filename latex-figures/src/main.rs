@@ -96,6 +96,7 @@ fn main() -> std::io::Result<()> {
         make_paths::PLOT_PATHS,
         verbose,
         &pool,
+        &settings.output_dir,
         &spinner_style,
         &spinner_style_no_progress,
     );
