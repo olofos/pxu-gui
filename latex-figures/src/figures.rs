@@ -4,6 +4,7 @@ use crate::fig_writer::{FigureWriter, Node};
 use crate::utils::{error, Settings, Size};
 use indicatif::ProgressBar;
 
+use itertools::izip;
 use make_paths::PxuProvider;
 use num::complex::Complex64;
 use num::Zero;
@@ -3396,7 +3397,7 @@ fn fig_p_two_particle_bs_0(
     )
 }
 
-fn fig_xp_typical_bound_state(
+fn fig_x_typical_bound_state(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
@@ -3406,12 +3407,12 @@ fn fig_xp_typical_bound_state(
     let contours = pxu_provider.get_contours(consts)?;
 
     let mut figure = FigureWriter::new(
-        "xp-typical-bound-states",
+        "x-typical-bound-states",
         -3.5..6.5,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 5.0,
+            height: 5.0,
         },
         Component::Xp,
         settings,
@@ -3449,7 +3450,8 @@ fn fig_xp_typical_bound_state(
     }
 
     let colors = ["Blue", "Red"];
-    for (state, color) in states.into_iter().zip(colors) {
+    let marks = ["*", "o"];
+    for (state, color, mark) in izip!(states, colors, marks) {
         let mut points = state
             .points
             .iter()
@@ -3473,7 +3475,15 @@ fn fig_xp_typical_bound_state(
             figure.add_node(&text, *pos, &[anchor])?;
         }
 
-        figure.add_plot_all(&["only marks", color, "mark size=0.05cm"], points)?;
+        figure.add_plot_all(
+            &[
+                "only marks",
+                color,
+                &format!("mark={mark}"),
+                "mark size=0.065cm",
+            ],
+            points,
+        )?;
     }
 
     figure.finish(cache, settings, pb)
@@ -5102,7 +5112,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_crossing_0,
     fig_xp_crossing_0,
     fig_xm_crossing_0,
-    fig_xp_typical_bound_state,
+    fig_x_typical_bound_state,
     fig_p_two_particle_bs_0,
     fig_xp_two_particle_bs_0,
     fig_xm_two_particle_bs_0,
