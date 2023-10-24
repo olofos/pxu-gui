@@ -57,6 +57,7 @@ impl Summary {
     \usepackage{float}
     \pagestyle{empty}
     \begin{document}
+    \setlength{\fboxsep}{0pt}
     ";
 
     const END: &str = r"\end{document}";
