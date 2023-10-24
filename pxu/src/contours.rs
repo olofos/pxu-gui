@@ -707,8 +707,8 @@ impl Contours {
                 };
 
                 let half_path = XInterpolator::generate_xp_full(0, m, consts);
-                let mut path = half_path.clone();
-                path.extend(half_path.iter().map(|x| x.conj()).rev());
+                let mut path = half_path.iter().map(|x| x.conj()).rev().collect::<Vec<_>>();
+                path.extend(half_path);
 
                 self.rctx.cut_data.path = Some(path);
                 self.rctx.cut_data.branch_point = Some(match xcut {
