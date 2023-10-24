@@ -1,5 +1,6 @@
 use crate::ContourProvider;
 use num::complex::Complex64;
+use pxu::kinematics::UBranch;
 use pxu::{kinematics::CouplingConstants, path::SavedPath};
 use std::f64::consts::{PI, TAU};
 use std::io::Result;
@@ -1688,6 +1689,166 @@ fn path_p_period_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
+fn create_simple_path(consts: CouplingConstants) -> Vec<Complex64> {
+    let h = consts.h;
+    let k = consts.k() as f64;
+    let s = consts.s();
+    let us = pxu::kinematics::u_of_x(s, consts);
+    let du = 1.0;
+    let i = Complex64::i();
+    let r1 = 2.0 / h;
+    let r2 = (k + 2.0) / h;
+
+    let mut path = vec![us + du];
+
+    let steps = 53;
+    path.extend(
+        (0..steps)
+            .map(|n| us + du - r1 + r1 * Complex64::exp(-i * PI / 2.0 * (n as f64 / steps as f64))),
+    );
+
+    let steps = 17;
+    path.extend((0..steps).map(|n| {
+        let t = n as f64 / steps as f64;
+        (1.0 - t) * (us + du - r1) + (-us - du + r2) * t - 2.0 * i / h
+    }));
+
+    let steps = 53;
+    path.extend((0..=steps).map(|n| {
+        let t = n as f64 / steps as f64;
+        let theta = -PI / 2.0 - t * PI / 2.0;
+        (-us - du + r2) - 2.0 * i / h + r2 * i + r2 * Complex64::exp(i * theta)
+    }));
+
+    path
+}
+
+fn u_simple_path_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(0.03183116464430967,0.000000000000000000022253468878373952),xp:(5.943002840303245,0.5962925607612622),xm:(5.943002840303245,-0.5962925607612622),u:(4.687364046788472,0.0),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let mut start: Option<pxu::State> = None;
+
+    let mut path = vec![];
+    for u in create_simple_path(consts) {
+        state.goto(pxu::Component::U, u, &contours, consts, 4);
+        if state.points[0].sheet_data.u_branch == (UBranch::Outside, UBranch::Outside) {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "u simple path 1",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn u_simple_path_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(0.03183116464430967,0.000000000000000000022253468878373952),xp:(5.943002840303245,0.5962925607612622),xm:(5.943002840303245,-0.5962925607612622),u:(4.687364046788472,0.0),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let mut start: Option<pxu::State> = None;
+
+    let mut path = vec![];
+    for u in create_simple_path(consts) {
+        state.goto(pxu::Component::U, u, &contours, consts, 4);
+        if state.points[0].sheet_data.u_branch == (UBranch::Between, UBranch::Outside) {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "u simple path 2",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn u_simple_path_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(0.03183116464430967,0.000000000000000000022253468878373952),xp:(5.943002840303245,0.5962925607612622),xm:(5.943002840303245,-0.5962925607612622),u:(4.687364046788472,0.0),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let mut start: Option<pxu::State> = None;
+
+    let mut path = vec![];
+    for u in create_simple_path(consts) {
+        state.goto(pxu::Component::U, u, &contours, consts, 4);
+        let sheet_data = &state.points[0].sheet_data;
+        if sheet_data.u_branch == (UBranch::Between, UBranch::Between)
+            && sheet_data.log_branch_p == 0
+        {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "u simple path 3",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn u_simple_path_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(0.03183116464430967,0.000000000000000000022253468878373952),xp:(5.943002840303245,0.5962925607612622),xm:(5.943002840303245,-0.5962925607612622),u:(4.687364046788472,0.0),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let mut start: Option<pxu::State> = None;
+
+    let mut path = vec![];
+    for u in create_simple_path(consts) {
+        state.goto(pxu::Component::U, u, &contours, consts, 4);
+        let sheet_data = &state.points[0].sheet_data;
+        if sheet_data.u_branch == (UBranch::Between, UBranch::Between)
+            && sheet_data.log_branch_p == -1
+        {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "u simple path 4",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
 pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
@@ -1727,6 +1888,10 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_p_period_2,
     path_p_period_3,
     path_p_period_4,
+    u_simple_path_1,
+    u_simple_path_2,
+    u_simple_path_3,
+    u_simple_path_4,
 ];
 
 pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
@@ -1759,4 +1924,8 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_p_from_region_0_to_region_plus_1,
     path_p_from_region_plus_1_to_region_plus_2,
     path_p_from_region_plus_2_to_region_plus_3,
+    u_simple_path_1,
+    u_simple_path_2,
+    u_simple_path_3,
+    u_simple_path_4,
 ];
