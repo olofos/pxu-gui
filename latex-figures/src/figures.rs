@@ -2167,7 +2167,7 @@ fn fig_xpl_cover(
     }
 
     figure.close_scope()?;
-    figure.extend_left(0.5);
+    figure.extend_left(0.25);
 
     for m in -4..=4 {
         figure.add_node(
@@ -2215,7 +2215,7 @@ fn fig_xml_cover(
     }
 
     figure.close_scope()?;
-    figure.extend_left(0.5);
+    figure.extend_left(0.25);
 
     for m in -4..=4 {
         figure.add_node(
@@ -3492,7 +3492,7 @@ fn fig_x_typical_bound_state(
                 format!("$\\scriptstyle x_{}^- = x_{}^+$", i, i + 1)
             };
             let anchor = if pos.re < 0.0 {
-                "anchor=east"
+                "anchor=west"
             } else {
                 "anchor=west"
             };
@@ -4744,6 +4744,64 @@ fn fig_bs_disp_rel_small(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_bs_disp_rel_lr(
+    _pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let axis_options = BS_AXIS_OPTIONS;
+
+    let width: f64 = 10.0;
+    let height: f64 = 4.5;
+
+    let x_min: f64 = -2.25;
+    let x_max: f64 = 1.25;
+    let y_min: f64 = 0.0;
+    let y_max: f64 = (x_max - x_min).abs() * 8.0 * height / width;
+
+    let x_range = x_min..x_max;
+    let y_range = y_min..y_max;
+
+    let mut figure = FigureWriter::custom_axis(
+        "bs_disp_rel_lr",
+        x_range,
+        y_range,
+        Size { width, height },
+        axis_options,
+        settings,
+        pb,
+    )?;
+
+    let colors = ["Blue", "Red", "Green", "DarkViolet", "DeepPink"];
+    let mut color_it = colors.iter().cycle();
+
+    let domain = format!("domain={x_min:.2}:{x_max:.2}");
+    for (m, label) in [
+        (4, r"X_{\mbox{\tiny L}}^{\pm}(p,k-1)"),
+        (-1, r"X_{\mbox{\tiny R}}^{\pm}(p,1)"),
+    ] {
+        let plot = format!(
+            "{{ sqrt(({m} + 5 * x)^2+4*4*(sin(x*180))^2) }} \
+             node [pos=0,left,black] {{$\\scriptstyle {label}$}} \
+             node [pos=1,right,black] {{$\\scriptstyle {label}$}}"
+        );
+
+        let options = [
+            // "domain=-1.75:0.75",
+            &domain,
+            "mark=none",
+            "samples=400",
+            "thick",
+            color_it.next().unwrap(),
+        ];
+
+        figure.add_plot_custom(&options, &plot)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_bs_disp_rel_lr0(
     _pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -5160,6 +5218,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_singlet_41,
     fig_bs_disp_rel_large,
     fig_bs_disp_rel_small,
+    fig_bs_disp_rel_lr,
     fig_bs_disp_rel_lr0,
     fig_scallion_and_kidney,
     fig_scallion_and_kidney_3_70,
