@@ -71,6 +71,38 @@ enum ComponentIndicator {
     Custom(String),
 }
 
+#[derive(Debug, Default)]
+struct SizeExtension {
+    left: f64,
+    right: f64,
+    top: f64,
+    bottom: f64,
+}
+
+impl SizeExtension {
+    fn is_nonzero(&self) -> bool {
+        [self.left, self.right, self.top, self.bottom]
+            .into_iter()
+            .any(|x| x != 0.0)
+    }
+
+    fn top_right(&self) -> String {
+        format!("({}cm,{}cm)", self.right, self.top)
+    }
+
+    fn bottom_left(&self) -> String {
+        format!("({}cm,{}cm)", -self.left, -self.bottom)
+    }
+
+    fn width(&self) -> f64 {
+        self.left + self.right
+    }
+
+    fn height(&self) -> f64 {
+        self.top + self.bottom
+    }
+}
+
 #[derive(Debug)]
 pub struct FigureWriter {
     pub name: String,
@@ -82,6 +114,7 @@ pub struct FigureWriter {
     pub component: pxu::Component,
     y_shift: Option<f64>,
     component_indicator: ComponentIndicator,
+    extension: SizeExtension,
 }
 
 impl FigureWriter {
@@ -170,8 +203,12 @@ progress_file=io.open(""#;
         let width = size.width;
         let height = size.height;
 
-        writeln!(writer, "\\begin{{axis}}[hide axis,scale only axis,ticks=none,xmin={x_min},xmax={x_max},ymin={y_min},ymax={y_max},clip,width={width}cm,height={height}cm]")?;
-
+        writeln!(writer, "\\begin{{axis}}[hide axis,scale only axis,ticks=none,xmin={x_min},xmax={x_max},ymin={y_min},ymax={y_max},clip,clip mode=individual,width={width}cm,height={height}cm]")?;
+        writeln!(writer, "\\begin{{scope}}")?;
+        writeln!(
+            writer,
+            "\\clip ({x_min},{y_min}) rectangle ({x_max},{y_max});"
+        )?;
         Ok(Self {
             name: name.to_owned(),
             writer,
@@ -182,6 +219,7 @@ progress_file=io.open(""#;
             y_shift: None,
             caption: String::new(),
             component_indicator: ComponentIndicator::Automatic,
+            extension: Default::default(),
         })
     }
 
@@ -208,6 +246,7 @@ progress_file=io.open(""#;
         let height = size.height;
 
         writeln!(writer, "\\begin{{axis}}[xmin={x_min},xmax={x_max},ymin={y_min},ymax={y_max},width={width}cm,height={height}cm,{}]", axis_options.join(","))?;
+        writeln!(writer, "\\begin{{scope}}")?;
 
         Ok(Self {
             name: name.to_owned(),
@@ -219,6 +258,7 @@ progress_file=io.open(""#;
             y_shift: None,
             caption: String::new(),
             component_indicator: ComponentIndicator::None,
+            extension: Default::default(),
         })
     }
 
@@ -688,6 +728,19 @@ progress_file=io.open(""#;
         settings: &Settings,
         pb: &ProgressBar,
     ) -> std::io::Result<FigureCompiler> {
+        writeln!(self.writer, "\\end{{scope}}")?;
+
+        if self.extension.is_nonzero() {
+            writeln!(
+                self.writer,
+                r"\coordinate (sw) at (current bounding box.south west);"
+            )?;
+            writeln!(
+                self.writer,
+                r"\coordinate (ne) at (current bounding box.north east);"
+            )?;
+        }
+
         writeln!(self.writer, "\\end{{axis}}\n")?;
 
         let indicator = match &self.component_indicator {
@@ -709,6 +762,18 @@ progress_file=io.open(""#;
                 self.writer,
                 "\\node at (current bounding box.north east) [anchor=north east,fill=white,outer sep=0.1cm,draw,thin] {{$\\scriptstyle {indicator}$}};"
             )?;
+        }
+
+        if self.extension.is_nonzero() {
+            writeln!(
+                self.writer,
+                r"\path[use as bounding box] (sw)++{} rectangle (ne)++{};",
+                self.extension.bottom_left(),
+                self.extension.top_right(),
+            )?;
+
+            self.size.width += self.extension.width();
+            self.size.height += self.extension.height();
         }
 
         self.writer.write_all(Self::FILE_END.as_bytes())?;
