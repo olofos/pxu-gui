@@ -2160,11 +2160,23 @@ fn fig_xpl_cover(
         |line| matches!(line.component, GridLineComponent::Xp(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xp(1.0) {
-            figure.add_grid_line(contour, &["thin", "blue"])?;
+            figure.add_grid_line(contour, &["thick", "blue"])?;
         } else {
-            figure.add_grid_line(contour, &["thin", "black"])?;
+            figure.add_grid_line(contour, &["thick", "black"])?;
         }
     }
+
+    figure.close_scope()?;
+    figure.extend_left(0.5);
+
+    for m in -4..=4 {
+        figure.add_node(
+            &format!(r"$\scriptstyle m={m}$"),
+            Complex64::new(-5.0, 0.9 * ((consts.k() + m) as f64) / consts.h),
+            &["anchor=east"],
+        )?;
+    }
+
     figure.finish(cache, settings, pb)
 }
 
@@ -2196,11 +2208,23 @@ fn fig_xml_cover(
         |line| matches!(line.component, GridLineComponent::Xm(m) if (-8.0..=6.0).contains(&m)),
     ) {
         if contour.component == GridLineComponent::Xm(1.0) {
-            figure.add_grid_line(contour, &["thin", "blue"])?;
+            figure.add_grid_line(contour, &["thick", "blue"])?;
         } else {
-            figure.add_grid_line(contour, &["thin", "black"])?;
+            figure.add_grid_line(contour, &["thick", "black"])?;
         }
     }
+
+    figure.close_scope()?;
+    figure.extend_left(0.5);
+
+    for m in -4..=4 {
+        figure.add_node(
+            &format!(r"$\scriptstyle m={m}$"),
+            Complex64::new(-5.0, -0.9 * ((consts.k() + m) as f64) / consts.h),
+            &["anchor=east"],
+        )?;
+    }
+
     figure.finish(cache, settings, pb)
 }
 
