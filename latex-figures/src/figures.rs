@@ -3491,11 +3491,7 @@ fn fig_x_typical_bound_state(
             } else {
                 format!("$\\scriptstyle x_{}^- = x_{}^+$", i, i + 1)
             };
-            let anchor = if pos.re < 0.0 {
-                "anchor=west"
-            } else {
-                "anchor=west"
-            };
+            let anchor = "anchor=west";
             figure.add_node(&text, *pos, &[anchor])?;
         }
 
