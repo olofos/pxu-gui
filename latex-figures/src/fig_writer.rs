@@ -725,6 +725,15 @@ progress_file=io.open(""#;
         Ok(())
     }
 
+    pub fn extend_left(&mut self, value: f64) {
+        self.extension.left += value;
+    }
+
+    pub fn close_scope(&mut self) -> Result<()> {
+        self.scope_closed = true;
+        writeln!(self.writer, "\\end{{scope}}")
+    }
+
     pub fn finish(
         mut self,
         cache: Arc<cache::Cache>,
