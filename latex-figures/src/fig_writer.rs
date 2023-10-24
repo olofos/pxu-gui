@@ -115,6 +115,7 @@ pub struct FigureWriter {
     y_shift: Option<f64>,
     component_indicator: ComponentIndicator,
     extension: SizeExtension,
+    scope_closed: bool,
 }
 
 impl FigureWriter {
@@ -220,6 +221,7 @@ progress_file=io.open(""#;
             caption: String::new(),
             component_indicator: ComponentIndicator::Automatic,
             extension: Default::default(),
+            scope_closed: false,
         })
     }
 
@@ -259,6 +261,7 @@ progress_file=io.open(""#;
             caption: String::new(),
             component_indicator: ComponentIndicator::None,
             extension: Default::default(),
+            scope_closed: false,
         })
     }
 
@@ -728,7 +731,9 @@ progress_file=io.open(""#;
         settings: &Settings,
         pb: &ProgressBar,
     ) -> std::io::Result<FigureCompiler> {
-        writeln!(self.writer, "\\end{{scope}}")?;
+        if !self.scope_closed {
+            writeln!(self.writer, "\\end{{scope}}")?;
+        }
 
         if self.extension.is_nonzero() {
             writeln!(
