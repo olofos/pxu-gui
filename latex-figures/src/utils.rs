@@ -78,7 +78,7 @@ impl Summary {
 
         for finished_figure in self.finished_figures {
             let name = &finished_figure.name;
-            let Size { width, height } = finished_figure.size;
+            let Size { width, height: _ } = finished_figure.size;
 
             let landscape = width > 20.0;
 
@@ -86,11 +86,9 @@ impl Summary {
                 write!(writer, "\\begin{{landscape}}")?;
             }
 
-            let includegraphics = format!(
-                "\\includegraphics[width={width}cm,height={height}cm]{{{output_dir}/{name}}}"
-            );
+            let includegraphics = format!("\\includegraphics{{{output_dir}/{name}}}");
             write!(writer, "\\begin{{figure}}[H]\\centering")?;
-            write!(writer, "{includegraphics}")?;
+            write!(writer, "\\fbox{{{includegraphics}}}")?;
             write!(writer, "\\cprotect\\caption{{")?;
             write!(writer, "\\verb|{includegraphics}|")?;
             if !finished_figure.caption.is_empty() {
