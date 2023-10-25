@@ -384,19 +384,12 @@ progress_file=io.open(""#;
 
                 write!(self.writer, r"\draw [{options}] ")?;
 
+                let coord2_to_c64 = |c: Coord2| Complex64 { re: c.0, im: c.1 };
                 for curve in curves {
-                    let start = format!("({},{})", curve.start_point().0, curve.start_point().1);
-                    let end = format!("({},{})", curve.end_point().0, curve.end_point().1);
-                    let c1 = format!(
-                        "({},{})",
-                        curve.control_points().0 .0,
-                        curve.control_points().0 .1
-                    );
-                    let c2 = format!(
-                        "({},{})",
-                        curve.control_points().1 .0,
-                        curve.control_points().1 .1
-                    );
+                    let start = self.format_coordinate(coord2_to_c64(curve.start_point()));
+                    let end = self.format_coordinate(coord2_to_c64(curve.end_point()));
+                    let c1 = self.format_coordinate(coord2_to_c64(curve.control_points().0));
+                    let c2 = self.format_coordinate(coord2_to_c64(curve.control_points().1));
 
                     if prev_end.is_none() {
                         write!(self.writer, "{start}")?;
