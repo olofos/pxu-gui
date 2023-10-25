@@ -5315,11 +5315,7 @@ fn fig_x_simple_path(
         .iter()
         .map(|xp_path| {
             let mut xm_path = (**xp_path).clone();
-            for segs in xm_path.segments.iter_mut() {
-                for seg in segs.iter_mut() {
-                    seg.xp = seg.xm.clone();
-                }
-            }
+            xm_path.swap_xp_xm();
             xm_path
         })
         .collect::<Vec<_>>();

@@ -571,6 +571,14 @@ impl Path {
         let seg = self.segments.get(active_point)?.last()?;
         seg.get(component).last().cloned()
     }
+
+    pub fn swap_xp_xm(&mut self) {
+        for segs in self.segments.iter_mut() {
+            for seg in segs.iter_mut() {
+                seg.swap_xp_xm();
+            }
+        }
+    }
 }
 
 impl Segment {
@@ -606,5 +614,9 @@ impl Segment {
             Component::Xm => &self.xm,
             Component::U => &self.u,
         }
+    }
+
+    pub fn swap_xp_xm(&mut self) {
+        std::mem::swap(&mut self.xp, &mut self.xm);
     }
 }
