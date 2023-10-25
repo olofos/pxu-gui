@@ -510,7 +510,7 @@ progress_file=io.open(""#;
         for cut in contours
             .get_visible_cuts_from_point(pt, self.component, consts)
             .filter(|cut| match cut.typ {
-                Log(comp) | ULongPositive(comp) => {
+                Log(comp) => {
                     (comp == pxu::Component::Xp
                         && cut.component == pxu::Component::Xp
                         && pt.sheet_data.u_branch.1 != UBranch::Between)
@@ -519,6 +519,7 @@ progress_file=io.open(""#;
                             && pt.sheet_data.u_branch.0 != UBranch::Between)
                 }
                 ULongNegative(_) => false,
+                ULongPositive(_) => false,
                 UShortScallion(_) | UShortKidney(_) => true,
                 E => true,
                 DebugPath => false,
