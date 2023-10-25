@@ -631,15 +631,23 @@ progress_file=io.open(""#;
         path: &pxu::path::Path,
         options: &[&str],
     ) -> Result<()> {
-        let first_seg = path.segments[0].first().unwrap();
-        let last_seg = path.segments[0].last().unwrap();
+        let start = path.first_coordinate(self.component, 0).unwrap();
+        let end = path.last_coordinate(self.component, 0).unwrap();
+        let points = vec![start, end];
 
-        let start = first_seg.get(self.component).first().unwrap();
-        let end = last_seg.get(self.component).last().unwrap();
+        self.add_plot_all(&[&["only marks"], options].concat(), points)
+    }
 
-        let points = vec![*start, *end];
+    pub fn add_path_start_mark(&mut self, path: &pxu::path::Path, options: &[&str]) -> Result<()> {
+        let start = path.first_coordinate(self.component, 0).unwrap();
+        let points = vec![start];
+        self.add_plot_all(&[&["only marks"], options].concat(), points)
+    }
 
-        self.add_plot(&[&["only marks"], options].concat(), &points)
+    pub fn add_path_end_mark(&mut self, path: &pxu::path::Path, options: &[&str]) -> Result<()> {
+        let end = path.last_coordinate(self.component, 0).unwrap();
+        let points = vec![end];
+        self.add_plot_all(&[&["only marks"], options].concat(), points)
     }
 
     pub fn add_path_arrows(

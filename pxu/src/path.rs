@@ -561,6 +561,16 @@ impl Path {
             segments,
         }
     }
+
+    pub fn first_coordinate(&self, component: Component, active_point: usize) -> Option<Complex64> {
+        let seg = self.segments.get(active_point)?.first()?;
+        seg.get(component).first().cloned()
+    }
+
+    pub fn last_coordinate(&self, component: Component, active_point: usize) -> Option<Complex64> {
+        let seg = self.segments.get(active_point)?.last()?;
+        seg.get(component).last().cloned()
+    }
 }
 
 impl Segment {
