@@ -5141,6 +5141,7 @@ fn fig_u_simple_path_1(
     let pt = &state.points[0];
 
     figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
     figure.add_path(path, pt, &[])?;
     figure.add_path_start_mark(path, &["Blue", "very thick"])?;
     figure.add_path_arrows(path, &[0.55], &["Blue", "very thick"])?;
@@ -5189,6 +5190,7 @@ fn fig_u_simple_path_2(
     let pt = &state.points[0];
 
     figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
     figure.add_path(path, pt, &["DarkOrchid", "very thick"])?;
     figure.add_path_arrows(path, &[0.75], &["DarkOrchid", "very thick"])?;
     figure.add_node(
@@ -5244,6 +5246,7 @@ fn fig_u_simple_path_34(
     let pt = &state.points[0];
 
     figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
 
     figure.add_path(&paths[0], pt, &["DarkCyan"])?;
     figure.add_path(&paths[1], pt, &["FireBrick"])?;
