@@ -24,6 +24,7 @@ pub struct FinishedFigure {
     pub name: String,
     pub caption: String,
     pub size: Size,
+    pub lualatex_error: bool,
 }
 
 impl FigureCompiler {
@@ -79,6 +80,7 @@ impl FigureCompiler {
         pb.set_length(self.plot_count + 1);
         let mut progress_path = PathBuf::from(&settings.output_dir).join(&self.name);
         progress_path.set_extension(PROGRESS_EXT);
+        let mut lualatex_error = false;
         loop {
             pb.tick();
             if let Ok(meta) = progress_path.metadata() {
@@ -90,12 +92,9 @@ impl FigureCompiler {
                     if result.success() {
                         log::info!("[{}]: Lualatex done.", self.name);
                     } else {
+                        // TODO: check if a pdf file was generated
+                        lualatex_error = true;
                         log::error!("[{}]: Lualatex failed.", self.name);
-                        let err = std::io::Error::new(
-                            std::io::ErrorKind::Other,
-                            format!("Lualatex failed for {}", self.name),
-                        );
-                        return Err(err);
                     }
                 }
                 break;
@@ -145,6 +144,7 @@ impl FigureCompiler {
             name: self.name,
             caption: self.caption,
             size: self.size,
+            lualatex_error,
         })
     }
 }

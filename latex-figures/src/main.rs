@@ -171,7 +171,12 @@ fn main() -> std::io::Result<()> {
     let mut new_cache = cache::Cache::new(&settings.output_dir);
     let mut summary = Summary::default();
 
+    let mut lualatex_errors = vec![];
+
     for finished_figure in finished_figures {
+        if finished_figure.lualatex_error {
+            lualatex_errors.push(finished_figure.name.clone());
+        }
         new_cache.update(&finished_figure.name)?;
         summary.add(finished_figure);
     }
@@ -216,6 +221,14 @@ fn main() -> std::io::Result<()> {
     );
 
     eprintln!("{}", pxu_provider.get_statistics());
+
+    if !lualatex_errors.is_empty() {
+        eprintln!();
+        eprintln!("Lualatex failed for the following figures:");
+        for name in lualatex_errors {
+            eprintln!("{name}");
+        }
+    }
 
     Ok(())
 }
