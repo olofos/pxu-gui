@@ -1723,7 +1723,7 @@ fn create_simple_path(consts: CouplingConstants) -> Vec<Complex64> {
     path
 }
 
-fn u_simple_path_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn path_u_simple_path_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -1753,7 +1753,7 @@ fn u_simple_path_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
-fn u_simple_path_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn path_u_simple_path_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -1783,7 +1783,7 @@ fn u_simple_path_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
-fn u_simple_path_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn path_u_simple_path_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -1816,7 +1816,7 @@ fn u_simple_path_3(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
-fn u_simple_path_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn path_u_simple_path_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -1849,7 +1849,7 @@ fn u_simple_path_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
-fn xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+fn path_xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
     let consts = CouplingConstants::new(2.0, 5);
     let contours = contour_provider.get(consts).unwrap();
 
@@ -1915,11 +1915,11 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_p_period_2,
     path_p_period_3,
     path_p_period_4,
-    u_simple_path_1,
-    u_simple_path_2,
-    u_simple_path_3,
-    u_simple_path_4,
-    xp_large_circle,
+    path_u_simple_path_1,
+    path_u_simple_path_2,
+    path_u_simple_path_3,
+    path_u_simple_path_4,
+    path_xp_large_circle,
 ];
 
 pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
@@ -1952,9 +1952,9 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_p_from_region_0_to_region_plus_1,
     path_p_from_region_plus_1_to_region_plus_2,
     path_p_from_region_plus_2_to_region_plus_3,
-    u_simple_path_1,
-    u_simple_path_2,
-    u_simple_path_3,
-    u_simple_path_4,
-    xp_large_circle,
+    path_u_simple_path_1,
+    path_u_simple_path_2,
+    path_u_simple_path_3,
+    path_u_simple_path_4,
+    path_xp_large_circle,
 ];
