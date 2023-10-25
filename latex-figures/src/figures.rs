@@ -2286,10 +2286,47 @@ fn fig_xp_cuts_1(
         -4.0..4.0,
         0.0,
         Size {
-            width: 12.0,
-            height: 12.0,
+            width: 6.0,
+            height: 6.0,
         },
         Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.add_axis()?;
+    for contour in contours
+        .get_grid(Component::Xp)
+        .iter()
+        .filter(|line| matches!(line.component, GridLineComponent::Xp(m) | GridLineComponent::Xm(m) if (-10.0..).contains(&m)))
+    {
+        figure.add_grid_line(contour, &[])?;
+    }
+
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xm_cuts_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "xm-cuts-1",
+        -4.0..4.0,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        Component::Xm,
         settings,
         pb,
     )?;
@@ -5398,6 +5435,100 @@ fn fig_x_simple_path(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_simple_path(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathnames = [
+        "u simple path 1",
+        "u simple path 2",
+        "u simple path 3",
+        "u simple path 4",
+    ];
+
+    let mut figure = FigureWriter::new(
+        "p-simple-path",
+        -0.15..0.15,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let paths = pathnames
+        .iter()
+        .map(|pathname| pxu_provider.get_path(pathname))
+        .collect::<Result<Vec<_>>>()?;
+
+    let state = pxu_provider.get_start(pathnames[0])?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+
+    figure.add_path_start_mark(&paths[0], &["Blue", "very thick"])?;
+    figure.add_path_end_mark(&paths[3], &["FireBrick", "very thick"])?;
+
+    figure.add_path(&paths[0], pt, &["Blue", "solid"])?;
+    figure.add_path(&paths[1], pt, &["DarkOrchid", "solid"])?;
+    figure.add_path(&paths[2], pt, &["DarkCyan", "solid"])?;
+    figure.add_path(&paths[3], pt, &["FireBrick", "solid"])?;
+
+    figure.add_path_arrows(&paths[0], &[0.75], &["Blue", "very thick"])?;
+    figure.add_path_arrows(&paths[1], &[0.75], &["DarkOrchid", "very thick"])?;
+    figure.add_path_arrows(&paths[2], &[0.75], &["DarkCyan", "very thick"])?;
+
+    // figure.add_node("$1$", Complex64::new(2.0, -2.5), &["anchor=north", "Blue"])?;
+    // figure.add_node(
+    //     "$2$",
+    //     Complex64::new(-1.0, -2.6),
+    //     &["anchor=east", "DarkOrchid"],
+    // )?;
+    // figure.add_node(
+    //     "$3$",
+    //     Complex64::new(-1.8, -1.3),
+    //     &["anchor=east", "DarkCyan"],
+    // )?;
+    // figure.add_node(
+    //     "$4$",
+    //     Complex64::new(-2.0, -0.6),
+    //     &["anchor=east", "FireBrick"],
+    // )?;
+
+    // figure.add_node(
+    //     "$x^+$",
+    //     xp_paths[0].first_coordinate(Component::Xp, 0).unwrap() + Complex64::new(0.1, 0.1),
+    //     &["anchor=west"],
+    // )?;
+    // figure.add_node(
+    //     r"$x^-$",
+    //     xp_paths[0].first_coordinate(Component::Xm, 0).unwrap() + Complex64::new(0.1, 0.1),
+    //     &["anchor=west"],
+    // )?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_) | CutType::E
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_x_large_circle(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -5453,6 +5584,58 @@ fn fig_x_large_circle(
         })
     {
         figure.add_cut(cut, &["black"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_large_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp large circle";
+
+    let mut figure = FigureWriter::new(
+        "p-large-circle",
+        -0.15..0.15,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+
+    figure.add_path(&path, pt, &["Blue", "solid", "very thick"])?;
+
+    figure.add_path_start_mark(&path, &["Blue", "very thick"])?;
+
+    figure.add_path_arrows(&path, &[0.3, 0.76], &["Blue", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_) | CutType::E
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
     }
 
     figure.finish(cache, settings, pb)
@@ -5679,7 +5862,9 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_large_circle_1,
     fig_u_large_circle_2,
     fig_u_large_circle_3,
+    fig_p_large_circle,
     fig_x_large_circle,
+    fig_p_simple_path,
     fig_x_simple_path,
     fig_u_simple_path_1,
     fig_u_simple_path_2,
@@ -5710,6 +5895,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xml_cover,
     fig_p_plane_short_cuts,
     fig_xp_cuts_1,
+    fig_xm_cuts_1,
     fig_u_band_between_outside,
     fig_u_band_between_inside,
     fig_u_period_between_between,
