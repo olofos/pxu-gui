@@ -36,7 +36,18 @@ fn check_for_gs() -> bool {
     }
 }
 
+fn panic_on_thread_panic() {
+    let orig_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        // invoke the default handler and exit the process
+        orig_hook(panic_info);
+        std::process::exit(1);
+    }));
+}
+
 fn main() -> std::io::Result<()> {
+    panic_on_thread_panic();
+
     let mut settings = Settings::parse();
     let verbose = settings.verbose > 0;
 
