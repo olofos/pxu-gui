@@ -1849,6 +1849,34 @@ fn u_simple_path_4(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
     )
 }
 
+fn xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, 0.075, &contours, consts, 4);
+
+    let xp = state.points[0].xp;
+
+    let steps = 83;
+    let path = (0..=steps)
+        .into_iter()
+        .map(|n| {
+            let angle = -2.0 * PI * n as f64 / steps as f64;
+            xp * Complex64::exp(Complex64::new(0.0, angle))
+        })
+        .collect::<Vec<_>>();
+
+    pxu::path::SavedPath::new(
+        "xp large circle",
+        path,
+        state,
+        pxu::Component::Xp,
+        0,
+        consts,
+    )
+}
+
 pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
@@ -1892,40 +1920,42 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     u_simple_path_2,
     u_simple_path_3,
     u_simple_path_4,
+    xp_large_circle,
 ];
 
 pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
-    // path_xp_circle_between_between,
-    // path_xp_circle_between_between_single,
-    // path_xp_circle_between_inside_left,
-    // path_xp_circle_between_inside_right,
-    // path_xp_circle_between_outside_left,
-    // path_xp_circle_between_outside_right,
-    // path_p_circle_origin_e,
-    // path_p_circle_origin_not_e,
-    // path_u_band_between_inside,
-    // path_u_band_between_outside,
-    // path_u_periodic_between_between,
-    // path_u_crossing_from_0_b,
-    // path_u_crossing_from_0_a,
-    // path_u_crossing_from_min_1,
-    // path_p_crossing_a,
-    // path_p_crossing_b,
-    // path_p_crossing_c,
-    // path_p_crossing_d,
-    // path_u_vertical_between,
-    // path_x_half_circle_between_1,
-    // path_x_half_circle_between_2,
-    // path_x_half_circle_between_3,
-    // path_x_half_circle_between_4,
-    // path_p_from_region_0_to_region_min_1,
-    // path_p_from_region_min_1_to_region_min_2,
-    // path_p_from_region_min_2_to_region_min_3,
-    // path_p_from_region_0_to_region_plus_1,
-    // path_p_from_region_plus_1_to_region_plus_2,
-    // path_p_from_region_plus_2_to_region_plus_3,
+    path_xp_circle_between_between,
+    path_xp_circle_between_between_single,
+    path_xp_circle_between_inside_left,
+    path_xp_circle_between_inside_right,
+    path_xp_circle_between_outside_left,
+    path_xp_circle_between_outside_right,
+    path_p_circle_origin_e,
+    path_p_circle_origin_not_e,
+    path_u_band_between_inside,
+    path_u_band_between_outside,
+    path_u_periodic_between_between,
+    path_u_crossing_from_0_b,
+    path_u_crossing_from_0_a,
+    path_u_crossing_from_min_1,
+    path_p_crossing_a,
+    path_p_crossing_b,
+    path_p_crossing_c,
+    path_p_crossing_d,
+    path_u_vertical_between,
+    path_x_half_circle_between_1,
+    path_x_half_circle_between_2,
+    path_x_half_circle_between_3,
+    path_x_half_circle_between_4,
+    path_p_from_region_0_to_region_min_1,
+    path_p_from_region_min_1_to_region_min_2,
+    path_p_from_region_min_2_to_region_min_3,
+    path_p_from_region_0_to_region_plus_1,
+    path_p_from_region_plus_1_to_region_plus_2,
+    path_p_from_region_plus_2_to_region_plus_3,
     u_simple_path_1,
     u_simple_path_2,
     u_simple_path_3,
     u_simple_path_4,
+    xp_large_circle,
 ];

@@ -5398,6 +5398,248 @@ fn fig_x_simple_path(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_x_large_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp large circle";
+
+    let mut figure = FigureWriter::new(
+        "x-large-circle",
+        -5.0..5.0,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+    figure.component_indicator(r"x^{\pm}");
+
+    let xp_path = pxu_provider.get_path(pathname).unwrap();
+    let mut xm_path = (*xp_path).clone();
+    xm_path.swap_xp_xm();
+
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+
+    figure.add_path(&xp_path, pt, &["Blue", "solid", "very thick"])?;
+    figure.add_path(&xm_path, pt, &["FireBrick", "solid", "very thick"])?;
+
+    figure.add_path_start_mark(&xp_path, &["Blue", "very thick"])?;
+    figure.add_path_start_mark(&xm_path, &["FireBrick", "very thick"])?;
+
+    figure.add_path_arrows(&xp_path, &[0.3, 0.76], &["Blue", "very thick"])?;
+    figure.add_path_arrows(&xm_path, &[0.3, 0.76], &["FireBrick", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(Component::Xp)
+                    | CutType::UShortKidney(Component::Xp)
+                    | CutType::Log(Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_large_circle_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp large circle";
+    let mut figure = FigureWriter::new(
+        "u-large-circle-1",
+        -5.2..5.2,
+        2.5,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+
+    for seg in path.segments[0].iter().filter(|seg| {
+        (seg.sheet_data.u_branch == (UBranch::Outside, UBranch::Outside))
+            && (seg.sheet_data.log_branch_p == 0)
+            && (seg.sheet_data.log_branch_m == 0)
+    }) {
+        figure.add_curve(&["Blue", "very thick"], &seg.u)?;
+    }
+
+    figure.add_path_start_mark(&path, &["Blue", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_large_circle_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp large circle";
+    let mut figure = FigureWriter::new(
+        "u-large-circle-2",
+        -5.2..5.2,
+        2.5,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let mut state = (*state).clone();
+    let pt = &mut state.points[0];
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Between);
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+
+    let mut paths: [Vec<Complex64>; 3] = [vec![], vec![], vec![]];
+
+    for seg in path.segments[0].iter() {
+        let index = match seg.sheet_data.u_branch {
+            (UBranch::Between, UBranch::Between) => 1,
+            (UBranch::Between, _) => 0,
+            (_, UBranch::Between) => 2,
+            _ => continue,
+        };
+
+        paths[index].extend(&seg.u);
+    }
+
+    figure.add_curve(&["Blue", "densely dashed", "very thick"], &paths[0])?;
+    figure.add_curve(&["Blue", "solid", "very thick"], &paths[1])?;
+    figure.add_curve(&["Blue", "densely dashed", "very thick"], &paths[2])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_large_circle_3(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let shift = Complex64::new(0.0, -2.0 * consts.k() as f64 / consts.h);
+    let pathname = "xp large circle";
+    let mut figure = FigureWriter::new(
+        "u-large-circle-3",
+        -5.2..5.2,
+        2.5 + shift.im,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let mut state = (*state).clone();
+    let pt = &mut state.points[0];
+    pt.sheet_data.log_branch_p = -1;
+    pt.sheet_data.log_branch_m = 1;
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis_origin(shift)?;
+
+    for seg in path.segments[0].iter().filter(|seg| {
+        (seg.sheet_data.u_branch == (UBranch::Outside, UBranch::Outside))
+            && (seg.sheet_data.log_branch_p == -1)
+            && (seg.sheet_data.log_branch_m == 1)
+    }) {
+        let contour = seg.u.iter().map(|z| z + shift).collect::<Vec<_>>();
+
+        figure.add_curve(&["Blue", "very thick"], &contour)?;
+    }
+
+    // figure.add_path_end_mark(&path, &["Blue", "very thick"])?;
+    let end = path.last_coordinate(figure.component, 0).unwrap();
+    figure.add_plot_all(&["only marks", "Blue", "very thick"], vec![end + shift])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 // Intereseting states:
 // m = 5, p = -1, E = C = 0
 // (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
@@ -5434,6 +5676,10 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_u_large_circle_1,
+    fig_u_large_circle_2,
+    fig_u_large_circle_3,
+    fig_x_large_circle,
     fig_x_simple_path,
     fig_u_simple_path_1,
     fig_u_simple_path_2,

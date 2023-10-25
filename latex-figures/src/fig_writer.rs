@@ -370,18 +370,6 @@ progress_file=io.open(""#;
 
                 let mut prev_end = None;
 
-                // for (c1, c2) in curves.iter().tuple_windows() {
-                //     let p1 = c1.end_point();
-                //     let p2 = c2.start_point();
-
-                //     if p1.distance_to(&p2) > max_error {
-                //         let start = format!("({},{})", p1.0, p1.1);
-                //         let end = format!("({},{})", p2.0, p2.1);
-
-                //         writeln!(self.writer, r"\draw [{options}] {start} -- {end};")?;
-                //     }
-                // }
-
                 write!(self.writer, r"\draw [{options}] ")?;
 
                 let coord2_to_c64 = |c: Coord2| Complex64 { re: c.0, im: c.1 };
