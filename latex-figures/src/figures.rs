@@ -5185,7 +5185,7 @@ fn fig_u_simple_path_1(
     figure.add_node("1", Complex64::new(1.0, -1.1), &["anchor=north", "Blue"])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5237,7 +5237,7 @@ fn fig_u_simple_path_2(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5304,7 +5304,7 @@ fn fig_u_simple_path_34(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5419,7 +5419,7 @@ fn fig_x_simple_path(
     )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5515,7 +5515,7 @@ fn fig_p_simple_path(
     // )?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5573,7 +5573,7 @@ fn fig_x_large_circle(
     figure.add_path_arrows(&xm_path, &[0.3, 0.76], &["FireBrick", "very thick"])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5627,7 +5627,7 @@ fn fig_p_large_circle(
     figure.add_path_arrows(&path, &[0.3, 0.76], &["Blue", "very thick"])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5682,7 +5682,7 @@ fn fig_u_large_circle_1(
     figure.add_path_start_mark(&path, &["Blue", "very thick"])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5746,7 +5746,7 @@ fn fig_u_large_circle_2(
     figure.add_curve(&["Blue", "densely dashed", "very thick"], &paths[2])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -5809,7 +5809,7 @@ fn fig_u_large_circle_3(
     figure.add_plot_all(&["only marks", "Blue", "very thick"], vec![end + shift])?;
 
     for cut in contours
-        .get_visible_cuts_from_point(&pt, figure.component, consts)
+        .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,

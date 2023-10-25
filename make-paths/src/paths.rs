@@ -1860,7 +1860,6 @@ fn xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPa
 
     let steps = 83;
     let path = (0..=steps)
-        .into_iter()
         .map(|n| {
             let angle = -2.0 * PI * n as f64 / steps as f64;
             xp * Complex64::exp(Complex64::new(0.0, angle))
