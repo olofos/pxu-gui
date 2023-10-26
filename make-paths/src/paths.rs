@@ -1876,6 +1876,94 @@ fn path_xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> Sa
     )
 }
 
+fn path_bs3_region_min1_1(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+    let state_string = "(points:[(p:(-0.04260723417329058,-0.008849643336329061),xp:(-5.030937834642458,2.1663201765896023),xm:(-5.131368108505251,0.7173396991721674),u:(-8.987960815429684,9.000099999999998),sheet_data:(log_branch_p:-1,log_branch_m:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.04420722496321523,-0.0000004559509422977896),xp:(-5.131368108505251,0.7173396991721674),xm:(-5.13137320671517,-0.717196003526685),u:(-8.987960815429684,7.000099999999998),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.0426075453771021,0.008848810802642947),xp:(-5.131373206715171,-0.7171960035266854),xm:(-5.030952664137852,-2.166173607614686),u:(-8.987960815429686,5.000100000000001),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+    let i = Complex64::i();
+
+    let u0 = 4.0;
+    state.goto(
+        pxu::Component::U,
+        -u0 + i * (k + 2.0) / h,
+        &contours,
+        consts,
+        2,
+    );
+
+    let mut start = None;
+
+    let mut path = vec![];
+    let steps = 511;
+    for n in 0..=steps {
+        let u = -u0 + i * (k + 2.0) / h + 2.0 * u0 * n as f64 / steps as f64;
+        state.goto(pxu::Component::U, u, &contours, consts, 2);
+        if state.points[0].sheet_data.e_branch > 0 {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "bs3 region -1 1",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
+fn path_bs3_region_min1_2(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(1.0, 7);
+    let contours = contour_provider.get(consts).unwrap();
+    let state_string = "(points:[(p:(-0.04260723417329058,-0.008849643336329061),xp:(-5.030937834642458,2.1663201765896023),xm:(-5.131368108505251,0.7173396991721674),u:(-8.987960815429684,9.000099999999998),sheet_data:(log_branch_p:-1,log_branch_m:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.04420722496321523,-0.0000004559509422977896),xp:(-5.131368108505251,0.7173396991721674),xm:(-5.13137320671517,-0.717196003526685),u:(-8.987960815429684,7.000099999999998),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.0426075453771021,0.008848810802642947),xp:(-5.131373206715171,-0.7171960035266854),xm:(-5.030952664137852,-2.166173607614686),u:(-8.987960815429686,5.000100000000001),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+    let i = Complex64::i();
+
+    let u0 = 4.0;
+    state.goto(
+        pxu::Component::U,
+        -u0 + i * (k + 2.0) / h,
+        &contours,
+        consts,
+        2,
+    );
+
+    let mut start = None;
+
+    let mut path = vec![];
+    let steps = 511;
+    for n in 0..=steps {
+        let u = -u0 + i * (k + 2.0) / h + 2.0 * u0 * n as f64 / steps as f64;
+        state.goto(pxu::Component::U, u, &contours, consts, 2);
+        if state.points[0].sheet_data.e_branch < 0 {
+            if start.is_none() {
+                start = Some(state.clone());
+            }
+            path.push(u);
+        }
+    }
+
+    pxu::path::SavedPath::new(
+        "bs3 region -1 2",
+        path,
+        start.unwrap(),
+        pxu::Component::U,
+        0,
+        consts,
+    )
+}
+
 pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_xp_circle_between_between,
     path_xp_circle_between_between_single,
@@ -1920,41 +2008,45 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_u_simple_path_3,
     path_u_simple_path_4,
     path_xp_large_circle,
+    path_bs3_region_min1_1,
+    path_bs3_region_min1_2,
 ];
 
 pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
-    path_xp_circle_between_between,
-    path_xp_circle_between_between_single,
-    path_xp_circle_between_inside_left,
-    path_xp_circle_between_inside_right,
-    path_xp_circle_between_outside_left,
-    path_xp_circle_between_outside_right,
-    path_p_circle_origin_e,
-    path_p_circle_origin_not_e,
-    path_u_band_between_inside,
-    path_u_band_between_outside,
-    path_u_periodic_between_between,
-    path_u_crossing_from_0_b,
-    path_u_crossing_from_0_a,
-    path_u_crossing_from_min_1,
-    path_p_crossing_a,
-    path_p_crossing_b,
-    path_p_crossing_c,
-    path_p_crossing_d,
-    path_u_vertical_between,
-    path_x_half_circle_between_1,
-    path_x_half_circle_between_2,
-    path_x_half_circle_between_3,
-    path_x_half_circle_between_4,
-    path_p_from_region_0_to_region_min_1,
-    path_p_from_region_min_1_to_region_min_2,
-    path_p_from_region_min_2_to_region_min_3,
-    path_p_from_region_0_to_region_plus_1,
-    path_p_from_region_plus_1_to_region_plus_2,
-    path_p_from_region_plus_2_to_region_plus_3,
-    path_u_simple_path_1,
-    path_u_simple_path_2,
-    path_u_simple_path_3,
-    path_u_simple_path_4,
-    path_xp_large_circle,
+    // path_xp_circle_between_between,
+    // path_xp_circle_between_between_single,
+    // path_xp_circle_between_inside_left,
+    // path_xp_circle_between_inside_right,
+    // path_xp_circle_between_outside_left,
+    // path_xp_circle_between_outside_right,
+    // path_p_circle_origin_e,
+    // path_p_circle_origin_not_e,
+    // path_u_band_between_inside,
+    // path_u_band_between_outside,
+    // path_u_periodic_between_between,
+    // path_u_crossing_from_0_b,
+    // path_u_crossing_from_0_a,
+    // path_u_crossing_from_min_1,
+    // path_p_crossing_a,
+    // path_p_crossing_b,
+    // path_p_crossing_c,
+    // path_p_crossing_d,
+    // path_u_vertical_between,
+    // path_x_half_circle_between_1,
+    // path_x_half_circle_between_2,
+    // path_x_half_circle_between_3,
+    // path_x_half_circle_between_4,
+    // path_p_from_region_0_to_region_min_1,
+    // path_p_from_region_min_1_to_region_min_2,
+    // path_p_from_region_min_2_to_region_min_3,
+    // path_p_from_region_0_to_region_plus_1,
+    // path_p_from_region_plus_1_to_region_plus_2,
+    // path_p_from_region_plus_2_to_region_plus_3,
+    // path_u_simple_path_1,
+    // path_u_simple_path_2,
+    // path_u_simple_path_3,
+    // path_u_simple_path_4,
+    // path_xp_large_circle,
+    path_bs3_region_min1_1,
+    path_bs3_region_min1_2,
 ];

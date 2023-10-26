@@ -5823,6 +5823,181 @@ fn fig_u_large_circle_3(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_u_bs3_region_min_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let pathnames = ["bs3 region -1 1", "bs3 region -1 2"];
+    let mut figure = FigureWriter::new(
+        "u-bs-3-region-min-1",
+        -7.25..7.25,
+        7.0,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let paths = pathnames
+        .into_iter()
+        .map(|pathname| pxu_provider.get_path(pathname))
+        .collect::<Result<Vec<_>>>()?;
+    let state = pxu_provider.get_start(pathnames[0])?;
+    let contours = &pxu_provider.get_contours(consts)?;
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+    figure.add_path_all(&paths[0], pt, &["Blue"])?;
+    figure.add_path_all(&paths[1], pt, &["FireBrick"])?;
+
+    figure.add_path_arrows_all(&paths[0], &[0.55], &["Blue", "very thick"])?;
+    figure.add_path_arrows_all(&paths[1], &[0.55], &["FireBrick", "very thick"])?;
+
+    figure.add_path_start_mark_all(&paths[0], &["Blue", "mark size=0.05cm"])?;
+    figure.add_path_end_mark_all(&paths[1], &["FireBrick", "mark size=0.05cm"])?;
+
+    figure.add_path_start_mark_n(
+        &paths[1],
+        &[
+            "fill=Blue",
+            "mark color=FireBrick",
+            "mark size=0.065cm",
+            "mark=halfcircle*",
+            "mark options={rotate=90}",
+            "scatter",
+            "scatter/use mapped color={draw opacity=0}",
+        ],
+        1,
+    )?;
+
+    figure.add_node(
+        r"$\scriptstyle u_c$",
+        paths[1].first_coordinate(figure.component, 1).unwrap()
+            + Complex64::new(-0.25, 0.15) / consts.h,
+        &["anchor=north west"],
+    )?;
+
+    for n in 0..3 {
+        figure.add_node(
+            &format!(r"$\scriptstyle u_{}$", n + 1),
+            paths[0].first_coordinate(figure.component, n).unwrap(),
+            &["anchor=east"],
+        )?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_) | CutType::E
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.periodic = true;
+        figure.add_cut(&cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_bs3_region_min_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(1.0, 7);
+    let pathnames = ["bs3 region -1 1", "bs3 region -1 2"];
+    let mut figure = FigureWriter::new(
+        "p-bs-3-region-min-1",
+        -1.0..0.0,
+        0.0,
+        Size {
+            width: 8.0,
+            height: 4.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let paths = pathnames
+        .into_iter()
+        .map(|pathname| pxu_provider.get_path(pathname))
+        .collect::<Result<Vec<_>>>()?;
+    let state = pxu_provider.get_start(pathnames[0])?;
+    let contours = &pxu_provider.get_contours(consts)?;
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+    figure.add_path_all(&paths[0], pt, &["Blue"])?;
+    figure.add_path_all(&paths[1], pt, &["FireBrick"])?;
+
+    figure.add_path_arrows_n(&paths[0], &[0.65], &["Blue", "very thick"], 1)?;
+    figure.add_path_arrows_n(&paths[1], &[0.65], &["FireBrick", "very thick"], 1)?;
+
+    figure.add_path_start_mark_all(&paths[0], &["Blue", "mark size=0.05cm"])?;
+    figure.add_path_end_mark_all(&paths[1], &["FireBrick", "mark size=0.05cm"])?;
+
+    figure.add_path_start_mark_n(
+        &paths[1],
+        &[
+            "fill=Blue",
+            "mark color=FireBrick",
+            "mark size=0.065cm",
+            "mark=halfcircle*",
+            "mark options={rotate=-90}",
+            "scatter",
+            "scatter/use mapped color={draw opacity=0}",
+        ],
+        1,
+    )?;
+
+    figure.add_node(
+        r"$\scriptstyle p_c$",
+        paths[1].first_coordinate(figure.component, 1).unwrap(),
+        &["anchor=north"],
+    )?;
+
+    for n in 0..3 {
+        figure.add_node(
+            &format!(r"$\scriptstyle p_{}$", n + 1),
+            paths[0].first_coordinate(figure.component, n).unwrap(),
+            if n == 1 {
+                &["anchor=west"]
+            } else {
+                &["anchor=east"]
+            },
+        )?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_) | CutType::E
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.periodic = true;
+        figure.add_cut(&cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 // Intereseting states:
 // m = 5, p = -1, E = C = 0
 // (points:[(p:(-0.10165672487090872,-0.05348001731440205),xp:(0.9366063608108588,-0.0000000000000015543122344752192),xm:(0.5373538000115556,0.39902207324643024),u:(2.05640778996199,4.500000000000002),x:(0.73668849857164,0.3178014188683358),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1))),(p:(-0.048112372695696085,-0.049461724147602956),xp:(0.5373538000115555,0.39902207324643024),xm:(0.2888944083459811,0.39641831953822726),u:(2.05640778996199,3.5000000000000013),x:(0.39367175820818845,0.41130042259798616),sheet_data:(log_branch_p:-1,log_branch_m:1,log_branch_x:1,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.7004618048667908,0.0),xp:(0.2888944083459809,0.3964183195382271),xm:(0.2888944083459809,-0.3964183195382271),u:(2.0564077899619906,2.5),x:(3.109957546500381,3.3102829988967026),sheet_data:(log_branch_p:-1,log_branch_m:0,log_branch_x:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.048112372695696085,0.049461724147602956),xp:(0.2888944083459811,-0.39641831953822726),xm:(0.5373538000115555,-0.39902207324643024),u:(2.0564077899619897,1.4999999999999982),x:(0.39367175820818856,-0.4113004225979862),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.10165672487090872,0.05348001731440205),xp:(0.5373538000115556,-0.39902207324643024),xm:(0.9366063608108588,0.0000000000000015543122344752192),u:(2.05640778996199,0.4999999999999982),x:(0.7366884985716402,-0.317801418868336),sheet_data:(log_branch_p:0,log_branch_m:0,log_branch_x:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(1,-1)))],lock:true)
@@ -5859,6 +6034,8 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_p_bs3_region_min_1,
+    fig_u_bs3_region_min_1,
     fig_u_large_circle_1,
     fig_u_large_circle_2,
     fig_u_large_circle_3,
