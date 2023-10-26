@@ -1861,13 +1861,40 @@ fn path_xp_large_circle(contour_provider: std::sync::Arc<ContourProvider>) -> Sa
     let steps = 83;
     let path = (0..=steps)
         .map(|n| {
-            let angle = -2.0 * PI * n as f64 / steps as f64;
+            let angle = 2.0 * PI * n as f64 / steps as f64;
             xp * Complex64::exp(Complex64::new(0.0, angle))
         })
         .collect::<Vec<_>>();
 
     pxu::path::SavedPath::new(
         "xp large circle",
+        path,
+        state,
+        pxu::Component::Xp,
+        0,
+        consts,
+    )
+}
+
+fn path_xp_smaller_circle(contour_provider: std::sync::Arc<ContourProvider>) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let mut state = pxu::State::new(1, consts);
+    state.goto(pxu::Component::P, 0.32706, &contours, consts, 14);
+
+    let xp = state.points[0].xp;
+
+    let steps = 83;
+    let path = (0..=steps)
+        .map(|n| {
+            let angle = 2.0 * PI * n as f64 / steps as f64;
+            xp * Complex64::exp(Complex64::new(0.0, angle))
+        })
+        .collect::<Vec<_>>();
+
+    pxu::path::SavedPath::new(
+        "xp smaller circle",
         path,
         state,
         pxu::Component::Xp,
@@ -2008,6 +2035,7 @@ pub const PLOT_PATHS: &[crate::PathFunction] = &[
     path_u_simple_path_3,
     path_u_simple_path_4,
     path_xp_large_circle,
+    path_xp_smaller_circle,
     path_bs3_region_min1_1,
     path_bs3_region_min1_2,
 ];
@@ -2046,7 +2074,8 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     // path_u_simple_path_2,
     // path_u_simple_path_3,
     // path_u_simple_path_4,
-    // path_xp_large_circle,
-    path_bs3_region_min1_1,
-    path_bs3_region_min1_2,
+    path_xp_large_circle,
+    // path_bs3_region_min1_1,
+    // path_bs3_region_min1_2,
+    path_xp_smaller_circle,
 ];

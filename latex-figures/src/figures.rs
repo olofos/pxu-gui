@@ -5652,7 +5652,7 @@ fn fig_u_large_circle_1(
     let mut figure = FigureWriter::new(
         "u-large-circle-1",
         -5.2..5.2,
-        2.5,
+        -2.5,
         Size {
             width: 4.0,
             height: 4.0,
@@ -5680,6 +5680,7 @@ fn fig_u_large_circle_1(
     }
 
     figure.add_path_start_mark(&path, &["Blue", "very thick"])?;
+    figure.add_path_arrows(&path, &[0.15], &["Blue", "solid", "very thick"])?;
 
     for cut in contours
         .get_visible_cuts_from_point(pt, figure.component, consts)
@@ -5707,7 +5708,7 @@ fn fig_u_large_circle_2(
     let mut figure = FigureWriter::new(
         "u-large-circle-2",
         -5.2..5.2,
-        2.5,
+        -2.5,
         Size {
             width: 4.0,
             height: 4.0,
@@ -5745,6 +5746,8 @@ fn fig_u_large_circle_2(
     figure.add_curve(&["Blue", "solid", "very thick"], &paths[1])?;
     figure.add_curve(&["Blue", "densely dashed", "very thick"], &paths[2])?;
 
+    figure.add_path_arrows(&path, &[0.45], &["Blue", "solid", "very thick"])?;
+
     for cut in contours
         .get_visible_cuts_from_point(pt, figure.component, consts)
         .filter(|cut| {
@@ -5767,12 +5770,12 @@ fn fig_u_large_circle_3(
     pb: &ProgressBar,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
-    let shift = Complex64::new(0.0, -2.0 * consts.k() as f64 / consts.h);
+    let shift = Complex64::new(0.0, 2.0 * consts.k() as f64 / consts.h);
     let pathname = "xp large circle";
     let mut figure = FigureWriter::new(
         "u-large-circle-3",
         -5.2..5.2,
-        2.5 + shift.im,
+        -2.5 + shift.im,
         Size {
             width: 4.0,
             height: 4.0,
@@ -5788,25 +5791,27 @@ fn fig_u_large_circle_3(
 
     let mut state = (*state).clone();
     let pt = &mut state.points[0];
-    pt.sheet_data.log_branch_p = -1;
-    pt.sheet_data.log_branch_m = 1;
+    pt.sheet_data.log_branch_p = 1;
+    pt.sheet_data.log_branch_m = -1;
 
     figure.add_grid_lines(contours, &[])?;
     figure.add_axis_origin(shift)?;
 
+    let mut path = (*path).clone();
+    path.segments[0]
+        .iter_mut()
+        .for_each(|seg| seg.u.iter_mut().for_each(|u| *u += shift));
+
     for seg in path.segments[0].iter().filter(|seg| {
         (seg.sheet_data.u_branch == (UBranch::Outside, UBranch::Outside))
-            && (seg.sheet_data.log_branch_p == -1)
-            && (seg.sheet_data.log_branch_m == 1)
+            && (seg.sheet_data.log_branch_p == 1)
+            && (seg.sheet_data.log_branch_m == -1)
     }) {
-        let contour = seg.u.iter().map(|z| z + shift).collect::<Vec<_>>();
-
-        figure.add_curve(&["Blue", "very thick"], &contour)?;
+        figure.add_curve(&["Blue", "very thick"], &seg.u)?;
     }
 
-    // figure.add_path_end_mark(&path, &["Blue", "very thick"])?;
-    let end = path.last_coordinate(figure.component, 0).unwrap();
-    figure.add_plot_all(&["only marks", "Blue", "very thick"], vec![end + shift])?;
+    figure.add_path_end_mark(&path, &["only marks", "Blue", "very thick"])?;
+    figure.add_path_arrows(&path, &[0.8], &["Blue", "solid", "very thick"])?;
 
     for cut in contours
         .get_visible_cuts_from_point(pt, figure.component, consts)
@@ -5814,6 +5819,295 @@ fn fig_u_large_circle_3(
             matches!(
                 cut.typ,
                 CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_x_smaller_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp smaller circle";
+
+    let mut figure = FigureWriter::new(
+        "x-smaller-circle",
+        -3.8..4.2,
+        -3.0,
+        Size {
+            width: 4.0,
+            height: 6.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+    figure.component_indicator(r"x^{\pm}");
+
+    let xp_path = pxu_provider.get_path(pathname).unwrap();
+    let mut xm_path = (*xp_path).clone();
+    xm_path.swap_xp_xm();
+
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+
+    figure.add_path(&xp_path, pt, &["Blue", "solid", "very thick"])?;
+    figure.add_path(&xm_path, pt, &["FireBrick", "solid", "very thick"])?;
+
+    figure.add_path_start_mark(&xp_path, &["Blue", "very thick"])?;
+    figure.add_path_start_end_mark(&xm_path, &["FireBrick", "very thick"])?;
+
+    figure.add_path_arrows(&xp_path, &[0.3, 0.76], &["Blue", "very thick"])?;
+    figure.add_path_arrows(&xm_path, &[0.3, 0.76], &["FireBrick", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(Component::Xp)
+                    | CutType::UShortKidney(Component::Xp)
+                    | CutType::Log(Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["black"], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_smaller_circle_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp smaller circle";
+    let mut figure = FigureWriter::new(
+        "u-smaller-circle-1",
+        -5.2..5.2,
+        -2.5,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+
+    for seg in path.segments[0].iter().filter(|seg| {
+        (seg.sheet_data.u_branch == (UBranch::Outside, UBranch::Outside))
+            && (seg.sheet_data.log_branch_p == 0)
+            && (seg.sheet_data.log_branch_m == 0)
+    }) {
+        figure.add_curve(&["Blue", "very thick"], &seg.u)?;
+    }
+
+    figure.add_path_start_mark(&path, &["Blue", "very thick"])?;
+    figure.add_path_arrows(&path, &[0.1], &["Blue", "solid", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_smaller_circle_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp smaller circle";
+    let mut figure = FigureWriter::new(
+        "u-smaller-circle-2",
+        -5.2..5.2,
+        -2.5,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let mut state = (*state).clone();
+    let pt = &mut state.points[0];
+    pt.sheet_data.u_branch = (UBranch::Between, UBranch::Outside);
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis()?;
+
+    for seg in path.segments[0]
+        .iter()
+        .filter(|seg| (seg.sheet_data.u_branch == (UBranch::Between, UBranch::Outside)))
+    {
+        figure.add_curve(&["Blue", "very thick"], &seg.u)?;
+    }
+
+    figure.add_path_arrows(&path, &[0.4], &["Blue", "solid", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_smaller_circle_3(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let shift = Complex64::new(0.0, 2.0 * consts.k() as f64 / consts.h);
+    let pathname = "xp smaller circle";
+    let mut figure = FigureWriter::new(
+        "u-smaller-circle-3",
+        -5.2..5.2,
+        -2.5 + shift.im,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let mut state = (*state).clone();
+    let pt = &mut state.points[0];
+    pt.sheet_data.log_branch_p = 1;
+    pt.sheet_data.log_branch_m = 0;
+
+    figure.add_grid_lines(contours, &[])?;
+    figure.add_axis_origin(shift)?;
+
+    let mut path = (*path).clone();
+    path.segments[0]
+        .iter_mut()
+        .for_each(|seg| seg.u.iter_mut().for_each(|u| *u += shift));
+
+    for seg in path.segments[0].iter().filter(|seg| {
+        (seg.sheet_data.u_branch == (UBranch::Outside, UBranch::Outside))
+            && (seg.sheet_data.log_branch_p == 1)
+            && (seg.sheet_data.log_branch_m == 0)
+    }) {
+        figure.add_curve(&["Blue", "very thick"], &seg.u)?;
+    }
+
+    figure.add_path_end_mark(&path, &["only marks", "Blue", "very thick"])?;
+    figure.add_path_arrows(&path, &[0.8], &["Blue", "solid", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_smaller_circle(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let pathname = "xp smaller circle";
+
+    let mut figure = FigureWriter::new(
+        "p-smaller-circle",
+        -0.05..1.85,
+        0.0,
+        Size {
+            width: 8.0,
+            height: 6.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let path = pxu_provider.get_path(pathname).unwrap();
+
+    let state = pxu_provider.get_start(pathname)?;
+    let contours = &pxu_provider.get_contours(consts)?;
+
+    let pt = &state.points[0];
+
+    figure.add_grid_lines(contours, &[])?;
+
+    figure.add_path(&path, pt, &["Blue", "solid", "very thick"])?;
+
+    figure.add_path_start_end_mark(&path, &["Blue", "very thick"])?;
+
+    figure.add_path_arrows(&path, &[0.4, 0.8], &["Blue", "very thick"])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_) | CutType::E
             )
         })
     {
@@ -6041,6 +6335,11 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_large_circle_3,
     fig_p_large_circle,
     fig_x_large_circle,
+    fig_p_smaller_circle,
+    fig_x_smaller_circle,
+    fig_u_smaller_circle_1,
+    fig_u_smaller_circle_2,
+    fig_u_smaller_circle_3,
     fig_p_simple_path,
     fig_x_simple_path,
     fig_u_simple_path_1,
