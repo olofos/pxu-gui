@@ -573,13 +573,35 @@ progress_file=io.open(""#;
         pt: &pxu::Point,
         options: &[&str],
     ) -> Result<()> {
+        self.add_path_n(path, pt, options, 0)
+    }
+
+    pub fn add_path_all(
+        &mut self,
+        path: &pxu::path::Path,
+        pt: &pxu::Point,
+        options: &[&str],
+    ) -> Result<()> {
+        for active_point in 0..path.segments.len() {
+            self.add_path_n(path, pt, options, active_point)?;
+        }
+        Ok(())
+    }
+
+    pub fn add_path_n(
+        &mut self,
+        path: &pxu::path::Path,
+        pt: &pxu::Point,
+        options: &[&str],
+        active_point: usize,
+    ) -> Result<()> {
         let mut straight_segments = vec![];
         let mut dotted_segments = vec![];
 
         let mut same_branch = false;
         let mut points = vec![];
 
-        for segment in &path.segments[0] {
+        for segment in &path.segments[active_point] {
             let segment_same_branch = segment.sheet_data.is_same(&pt.sheet_data, self.component);
 
             if segment_same_branch != same_branch && !points.is_empty() {
@@ -620,21 +642,58 @@ progress_file=io.open(""#;
         path: &pxu::path::Path,
         options: &[&str],
     ) -> Result<()> {
-        let start = path.first_coordinate(self.component, 0).unwrap();
-        let end = path.last_coordinate(self.component, 0).unwrap();
-        let points = vec![start, end];
-
-        self.add_plot_all(&[&["only marks"], options].concat(), points)
+        self.add_path_start_mark(path, options)?;
+        self.add_path_end_mark(path, options)
     }
 
     pub fn add_path_start_mark(&mut self, path: &pxu::path::Path, options: &[&str]) -> Result<()> {
-        let start = path.first_coordinate(self.component, 0).unwrap();
+        self.add_path_start_mark_n(path, options, 0)
+    }
+
+    pub fn add_path_start_mark_all(
+        &mut self,
+        path: &pxu::path::Path,
+        options: &[&str],
+    ) -> Result<()> {
+        for active_point in 0..path.segments.len() {
+            self.add_path_start_mark_n(path, options, active_point)?;
+        }
+        Ok(())
+    }
+
+    pub fn add_path_start_mark_n(
+        &mut self,
+        path: &pxu::path::Path,
+        options: &[&str],
+        active_point: usize,
+    ) -> Result<()> {
+        let start = path.first_coordinate(self.component, active_point).unwrap();
         let points = vec![start];
         self.add_plot_all(&[&["only marks"], options].concat(), points)
     }
 
     pub fn add_path_end_mark(&mut self, path: &pxu::path::Path, options: &[&str]) -> Result<()> {
-        let end = path.last_coordinate(self.component, 0).unwrap();
+        self.add_path_end_mark_n(path, options, 0)
+    }
+
+    pub fn add_path_end_mark_all(
+        &mut self,
+        path: &pxu::path::Path,
+        options: &[&str],
+    ) -> Result<()> {
+        for active_point in 0..path.segments.len() {
+            self.add_path_end_mark_n(path, options, active_point)?;
+        }
+        Ok(())
+    }
+
+    pub fn add_path_end_mark_n(
+        &mut self,
+        path: &pxu::path::Path,
+        options: &[&str],
+        active_point: usize,
+    ) -> Result<()> {
+        let end = path.last_coordinate(self.component, active_point).unwrap();
         let points = vec![end];
         self.add_plot_all(&[&["only marks"], options].concat(), points)
     }
@@ -645,10 +704,32 @@ progress_file=io.open(""#;
         mark_pos: &[f64],
         options: &[&str],
     ) -> Result<()> {
+        self.add_path_arrows_n(path, mark_pos, options, 0)
+    }
+
+    pub fn add_path_arrows_all(
+        &mut self,
+        path: &pxu::path::Path,
+        mark_pos: &[f64],
+        options: &[&str],
+    ) -> Result<()> {
+        for active_point in 0..path.segments.len() {
+            self.add_path_arrows_n(path, mark_pos, options, active_point)?;
+        }
+        Ok(())
+    }
+
+    pub fn add_path_arrows_n(
+        &mut self,
+        path: &pxu::path::Path,
+        mark_pos: &[f64],
+        options: &[&str],
+        active_point: usize,
+    ) -> Result<()> {
         let mut lines: Vec<(Complex64, Complex64, f64)> = vec![];
         let mut len: f64 = 0.0;
 
-        for segment in &path.segments[0] {
+        for segment in &path.segments[active_point] {
             for (p1, p2) in segment.get(self.component).iter().tuple_windows() {
                 len += (p2 - p1).norm();
                 lines.push((*p1, *p2, len)); // We store the length including the current segment
