@@ -361,7 +361,7 @@ progress_file=io.open(""#;
             if contour.len() > 2 {
                 let points = contour
                     .into_iter()
-                    .map(|z| Coord2(z.re, z.im + self.y_shift.unwrap_or_default()))
+                    .map(|z| Coord2(z.re, z.im))
                     .collect::<Vec<_>>();
 
                 let max_error = 0.005 * self.scale();
