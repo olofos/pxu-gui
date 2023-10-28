@@ -1,6 +1,6 @@
 use crate::cache;
 use crate::fig_compiler::FigureCompiler;
-use crate::fig_writer::{FigureWriter, Node};
+use crate::fig_writer::FigureWriter;
 use crate::utils::{error, Settings, Size};
 use indicatif::ProgressBar;
 
@@ -24,22 +24,34 @@ fn load_states(state_strings: &[&str]) -> Result<Vec<pxu::State>> {
         .collect::<Result<Vec<_>>>()
 }
 
-fn fig_p_xpl_preimage(
+const PREIMAGE_STRING: &str = include_str!("../data/preimage-data.ron");
+
+fn draw_xl_preimage(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
     settings: &Settings,
     pb: &ProgressBar,
+    x_component: Component,
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(2.0, 5);
     let pt = pxu::Point::new(0.5, consts);
 
+    #[allow(clippy::type_complexity)]
+    let preimage_data: Vec<(Complex64, Complex64, (i32, f64), (i32, f64))> =
+        ron::from_str(PREIMAGE_STRING).unwrap();
+
+    let name = if x_component == Component::Xp {
+        "p-xpL-preimage"
+    } else {
+        "p-xmL-preimage"
+    };
     let mut figure = FigureWriter::new(
-        "p-xpL-preimage",
-        -2.6..2.6,
+        name,
+        -1.9..1.9,
         0.0,
         Size {
-            width: 15.5,
-            height: 6.0,
+            width: 25.0,
+            height: 9.5,
         },
         Component::P,
         settings,
@@ -63,113 +75,87 @@ fn fig_p_xpl_preimage(
             matches!(
                 cut.typ,
                 CutType::E
-                    | CutType::UShortScallion(Component::Xp)
-                    | CutType::Log(Component::Xp)
-                    | CutType::ULongPositive(Component::Xp)
+                    | CutType::UShortScallion(_)
+                    | CutType::UShortKidney(_)
+                    | CutType::Log(_)
+                    | CutType::ULongPositive(_)
             )
         })
     {
         let options: &[&str] = match cut.typ {
-            CutType::Log(_) => &["Red!50!white", "decoration={name=none}", "very thick"],
-            CutType::ULongPositive(_) => &["Red!50!white", "densely dashed", "very thick"],
+            CutType::Log(Component::Xp) => &["Red!50!white", "very thick"],
+            CutType::Log(Component::Xm) => &["Green!50!white", "very thick"],
+            CutType::ULongPositive(Component::Xp) => &[
+                "Red!50!white",
+                "decorate,decoration={snake, segment length=2.4mm, amplitude=0.15mm}",
+                "very thick",
+            ],
+            CutType::ULongPositive(Component::Xm) => &[
+                "Green!50!white",
+                "decorate,decoration={snake, segment length=2.4mm, amplitude=0.15mm}",
+                "very thick",
+            ],
             _ => &[],
         };
         figure.add_cut(cut, options, consts)?;
     }
 
-    let k = consts.k() as f64;
-
-    for p_range in -3..=2 {
-        let p_start = p_range as f64;
-
-        let bp1 = pxu::compute_branch_point(
-            p_range,
-            pxu::BranchPointType::XpPositiveAxisImXmNegative,
-            consts,
-        )
-        .unwrap();
-
-        let bp2 = pxu::compute_branch_point(
-            p_range,
-            pxu::BranchPointType::XpNegativeAxisFromAboveWithImXmNegative,
-            consts,
-        )
-        .unwrap();
-
-        let p0 = p_start + (bp1.p + bp2.p) / 2.0;
-        let mut p_int = PInterpolatorMut::xp(p0, consts);
-
-        for m in 1..=15 {
-            p_int.goto_m(m as f64);
-            p_int.write_m_node(&mut figure, "south", 1, consts)?;
+    for (z, dz, (xp_sign, xp_m), (xm_sign, xm_m)) in preimage_data {
+        let (sign, m, black_sign) = match x_component {
+            Component::Xp => (xp_sign, xp_m, 1),
+            Component::Xm => (xm_sign, xm_m, -1),
+            _ => panic!("Expected xp or xm"),
+        };
+        let m = m.round() as i32;
+        if m % consts.k() == 0 && dz.im.abs() - dz.re.abs() > 0.0 {
+            continue;
         }
+        let dp = figure.transform_vec(dz);
+        let rotation = dp.im.atan2(dp.re) * 180.0 / std::f64::consts::PI
+            + if dz.re.abs() - dz.im.abs() > 0.0 {
+                if dz.re > 0.0 {
+                    0.0
+                } else {
+                    180.0
+                }
+            } else if dz.im > 0.0 {
+                180.0
+            } else {
+                0.0
+            };
 
-        let mut p_int = PInterpolatorMut::xp(p0, consts);
-
-        for m in (-15..=0).rev() {
-            p_int.goto_m(m as f64);
-            p_int.write_m_node(&mut figure, "south", 1, consts)?;
-        }
-
-        // let p0 = p_start + 0.5;
-        let p1 = p_start + bp1.p - 0.003;
-
-        let m = p_range * consts.k() + 2;
-
-        let mut p_int = PInterpolatorMut::xp(p0, consts);
-        p_int.goto_m(m as f64 + 1.0 * (p_start + 0.5).signum());
-        p_int.goto_p(p1);
-
-        p_int.goto_m(m as f64);
-        if p_range >= 0 {
-            p_int.write_m_node(&mut figure, "north", 1, consts)?;
-        } else {
-            p_int.write_m_node(&mut figure, "north", -1, consts)?;
-        }
-
-        let p2 = p_start + bp1.p + 0.01;
-        if p_range > 0 {
-            p_int.goto_m(m as f64 - 1.0).goto_p(p2);
-
-            for dm in (1..=4).rev() {
-                p_int.goto_m((m - dm) as f64);
-                p_int.write_m_node(&mut figure, "south", -1, consts)?;
-            }
-        }
-
-        // if p_range > 0 {
-        //     let p0 = p_start + 0.4;
-
-        //     let mut p_int = PInterpolatorMut::xp(p0, consts);
-        //     p_int.goto_m(m as f64 - 1.0);
-        //     p_int.goto_p(p1);
-        //     p_int.goto_m(m as f64 + 1.0);
-
-        //     let p2 = p1;
-        //     p_int.goto_p(p2);
-
-        //     for m in ((m + 1)..(m + 4)).rev() {
-        //         p_int.goto_m(m as f64);
-        //         p_int.write_m_node(&mut figure, "south", consts)?;
-        //     }
-        // }
-
-        let p2 = p_start + 0.2;
-        if p_range != 0 {
-            let mut p_int = PInterpolatorMut::xp(p0, consts);
-            p_int
-                .goto_m(-p_start * k + 1.0)
-                .goto_p(p_start + 0.1)
-                .goto_conj()
-                .goto_p(p2);
-            for dm in 0..=consts.k() {
-                p_int.goto_m(-p_start * k - dm as f64);
-                p_int.write_m_node(&mut figure, "south", -1, consts)?;
-            }
-        }
+        let color = if sign == black_sign { "Black" } else { "Blue" };
+        figure.add_node(
+            &format!("$\\scriptscriptstyle{m}$"),
+            z,
+            &[
+                color,
+                "anchor=south",
+                "inner sep=0.5mm",
+                &format!("rotate={rotation:.1}"),
+            ],
+        )?;
     }
 
     figure.finish(cache, settings, pb)
+}
+
+fn fig_p_xpl_preimage(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_xl_preimage(pxu_provider, cache, settings, pb, Component::Xp)
+}
+
+fn fig_p_xml_preimage(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    draw_xl_preimage(pxu_provider, cache, settings, pb, Component::Xm)
 }
 
 fn fig_p_plane_e_cuts(
@@ -6366,6 +6352,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xp_crossing_all,
     fig_xm_crossing_all,
     fig_p_xpl_preimage,
+    fig_p_xml_preimage,
     fig_p_plane_e_cuts,
     fig_xpl_cover,
     fig_xml_cover,

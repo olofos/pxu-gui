@@ -868,7 +868,7 @@ progress_file=io.open(""#;
         FigureCompiler::new(self, cache, settings)
     }
 
-    fn transform_vec(&self, v: Complex64) -> Complex64 {
+    pub fn transform_vec(&self, v: Complex64) -> Complex64 {
         Complex64::new(
             v.re * self.size.width / self.bounds.width(),
             v.im * self.size.height / self.bounds.height(),
