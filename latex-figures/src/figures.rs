@@ -50,8 +50,8 @@ fn draw_xl_preimage(
         -1.9..1.9,
         0.0,
         Size {
-            width: 25.0,
-            height: 9.5,
+            width: 20.0,
+            height: 7.5,
         },
         Component::P,
         settings,
