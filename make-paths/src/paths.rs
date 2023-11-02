@@ -2075,7 +2075,5 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_u_simple_path_3,
     path_u_simple_path_4,
     path_xp_large_circle,
-    path_bs3_region_min1_1,
-    path_bs3_region_min1_2,
     path_xp_smaller_circle,
 ];
