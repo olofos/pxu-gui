@@ -87,12 +87,12 @@ fn draw_xl_preimage(
             CutType::Log(Component::Xm) => &["Green!50!white", "very thick"],
             CutType::ULongPositive(Component::Xp) => &[
                 "Red!50!white",
-                "decorate,decoration={snake, segment length=2.4mm, amplitude=0.15mm}",
+                "decorate,decoration={coil,aspect=0, segment length=2.4mm, amplitude=0.15mm}",
                 "very thick",
             ],
             CutType::ULongPositive(Component::Xm) => &[
                 "Green!50!white",
-                "decorate,decoration={snake, segment length=2.4mm, amplitude=0.15mm}",
+                "decorate,decoration={coil,aspect=0, segment length=2.4mm, amplitude=0.15mm}",
                 "very thick",
             ],
             _ => &[],
