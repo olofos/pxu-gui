@@ -51,7 +51,7 @@ fn draw_xl_preimage(
         0.0,
         Size {
             width: 20.0,
-            height: 7.5,
+            height: 6.5,
         },
         Component::P,
         settings,
@@ -101,9 +101,9 @@ fn draw_xl_preimage(
     }
 
     for (z, dz, (xp_sign, xp_m), (xm_sign, xm_m)) in preimage_data {
-        let (sign, m, black_sign) = match x_component {
-            Component::Xp => (xp_sign, xp_m, 1),
-            Component::Xm => (xm_sign, xm_m, -1),
+        let (sign, m) = match x_component {
+            Component::Xp => (xp_sign, xp_m),
+            Component::Xm => (xm_sign, xm_m),
             _ => panic!("Expected xp or xm"),
         };
         let m = m.round() as i32;
@@ -124,7 +124,7 @@ fn draw_xl_preimage(
                 0.0
             };
 
-        let color = if sign == black_sign { "Black" } else { "Blue" };
+        let color = if sign > 0 { "Black" } else { "Blue" };
         figure.add_node(
             &format!("$\\scriptscriptstyle{m}$"),
             z,
@@ -4959,18 +4959,23 @@ fn fig_p_plane_path_between_regions(
         (2.2, 0.12, "2"),
         (1.1, 0.13, "1"),
         (0.2, 0.12, "-1"),
-        (-0.8, 0.1, "-2"),
-        (-2.0, 0.13, "-3"),
+        (-0.8, -0.1, "-2"),
+        (-2.0, -0.13, "-3"),
     ] {
+        let (anchor, anchor_prime) = if y > 0.0 {
+            ("anchor=south", "anchor=north")
+        } else {
+            ("anchor=north", "anchor=south")
+        };
         figure.add_node(
             &format!(r"$\scriptstyle {label}$"),
             Complex64::new(x, y),
-            &["Blue", "anchor=south"],
+            &["Blue", anchor],
         )?;
         figure.add_node(
             &format!(r"$\scriptstyle {label}'$"),
             Complex64::new(x, -y),
-            &["Blue", "anchor=north"],
+            &["Blue", anchor_prime],
         )?;
     }
 

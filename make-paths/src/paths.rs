@@ -1380,7 +1380,7 @@ fn path_p_from_region_0_to_region_min_1(
     let start = Complex64::from(0.5);
     let end = Complex64::from(-0.5);
 
-    let angle = PI / 12.0;
+    let angle = PI / 14.0;
 
     let dz1 = Complex64::from_polar(0.25, PI - angle);
     let dz2 = Complex64::from_polar(0.25, angle);
