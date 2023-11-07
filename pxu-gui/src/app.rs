@@ -637,6 +637,8 @@ impl PxuGuiApp {
                             if let Some(saved_state) = pxu::SavedState::decode(s) {
                                 self.pxu.consts = saved_state.consts;
                                 self.pxu.state = saved_state.state;
+                            } else if let Ok(state) = ron::from_str::<pxu::State>(s) {
+                                self.pxu.state = state;
                             }
                         }
 
