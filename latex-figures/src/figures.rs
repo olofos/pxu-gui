@@ -3715,6 +3715,90 @@ fn fig_x_bound_state_region_min_2(
     )
 }
 
+fn fig_x_singlet_region_0(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "x-singlet-region-0",
+        -4.5..6.5,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let state_strings = [
+        "(points:[(p:(0.035920572686227975,-0.0371245201982526),xp:(3.278541909565751,2.69764230683293),xm:(3.0086748709958817,1.501168090727413),u:(2.3098001480095305,1.5000993687596509),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.0736477003995048,-0.031881014951510876),xp:(3.0086748709958773,1.5011680907274152),xm:(2.752022495646597,0.00017167978252885518),u:(2.3098001480095274,0.5000993687596516),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(0.07365802450198924,0.031873014242525234),xp:(2.7520224956465924,0.00017167978252619065),xm:(3.008613535972122,-1.500912421713252),u:(2.3098001480095243,-0.49990063124035),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(0.035924674842931,0.03712580047228859),xp:(3.0086135359721218,-1.5009124217132535),xm:(3.2784955205790927,-2.6974165274435005),u:(2.309800148009524,-1.4999006312403511),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1))),(p:(-1.2191509724306528,0.000006720434949787522),xp:(3.278495520579101,-2.697416527443499),xm:(3.2785419095657513,2.697642306832927),u:(2.309800148009531,2.500099368759649),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:-1,u_branch:(Outside,Outside),im_x_sign:(1,-1)))],unlocked:true)",
+        "(points:[(p:(-0.04915040522405487,-0.045791051935815626),xp:(-1.3220716930339478,1.6552562481272564),xm:(-1.3219227444059347,0.8813162555256742),u:(-2.214036050469592,4.000101180615412),sheet_data:(log_branch_p:-1,log_branch_m:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.09357322668831639,-0.03991326998630673),xp:(-1.321922744405919,0.8813162555256757),xm:(-1.2363694671632584,0.00010225956113174561),u:(-2.214036050469572,3.000101180615414),sheet_data:(log_branch_p:-1,log_branch_m:-3,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.09358689247514664,0.03990349663451138),xp:(-1.2363694671632492,0.00010225956111992174),xm:(-1.3219116746778858,-0.8811569763752188),u:(-2.214036050469563,2.000101180615402),sheet_data:(log_branch_p:-1,log_branch_m:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,-1))),(p:(-0.049155153779756815,0.045792040962502355),xp:(-1.3219116746778863,-0.8811569763752252),xm:(-1.322081015696217,-1.6550991615231962),u:(-2.214036050469563,1.0001011806153943),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,1))),(p:(-0.7145343218327235,0.000008784325108582892),xp:(-1.3220810156962146,-1.6550991615231967),xm:(-1.3220716930339236,1.6552562481272393),u:(-2.2140360504695593,0.00010118061539343692),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:-1,u_branch:(Between,Between),im_x_sign:(-1,-1)))],unlocked:false)",
+    ];
+
+    let states: Vec<pxu::State> = state_strings
+        .iter()
+        .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
+        .collect::<Result<Vec<_>>>()?;
+
+    figure.component_indicator(r"x^{\pm}");
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&states[0].points[0], figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(Component::Xp) | CutType::UShortKidney(Component::Xp)
+            )
+        })
+    {
+        figure.add_cut(cut, &["Black"], consts)?;
+    }
+
+    let colors = ["Blue", "Red"];
+    let marks = ["*", "o"];
+    let anchors = ["west", "east"];
+    for (state, color, mark, anchor) in izip!(states, colors, marks, anchors) {
+        let points = state
+            .points
+            .iter()
+            .map(|pt| pt.get(Component::Xp))
+            .collect::<Vec<_>>();
+        // points.push(state.points.last().unwrap().get(Component::Xm));
+
+        for (i, pos) in points.iter().enumerate() {
+            let text = if i == 0 {
+                "$\\scriptstyle \\bar{x}^- = x_1^+$".to_owned()
+            } else if i == points.len() - 1 {
+                format!("$\\scriptstyle x_{}^- = \\bar{{x}}^+$", i)
+            } else {
+                format!("$\\scriptstyle x_{}^- = x_{}^+$", i, i + 1)
+            };
+            let anchor = &format!("anchor={anchor}");
+            figure.add_node(&text, *pos, &[anchor])?;
+        }
+
+        figure.add_plot_all(
+            &[
+                "only marks",
+                color,
+                &format!("mark={mark}"),
+                "mark size=0.065cm",
+            ],
+            points,
+        )?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xp_two_particle_bs_0(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -6577,6 +6661,7 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_x_bound_state_region_1,
     fig_x_bound_state_region_min_1,
     fig_x_bound_state_region_min_2,
+    fig_x_singlet_region_0,
     fig_p_two_particle_bs_0,
     fig_xp_two_particle_bs_0,
     fig_xm_two_particle_bs_0,
