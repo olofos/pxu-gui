@@ -118,10 +118,8 @@ impl FigureCompiler {
                         log::error!("[{}]: Lualatex failed.", self.name);
                         if let Ok(errors) = self.get_latex_errors(&settings.output_dir) {
                             let accepted_errors = ["! Dimension too large.".to_owned()];
-                            if let Some(error) = errors
-                                .iter()
-                                .filter(|err| !accepted_errors.contains(err))
-                                .next()
+                            if let Some(error) =
+                                errors.iter().find(|err| !accepted_errors.contains(err))
                             {
                                 panic!("Luatex failed for {} with {error}", self.name);
                             }
