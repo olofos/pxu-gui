@@ -1,4 +1,4 @@
-use std::io::Result;
+use std::io::{BufRead, Result};
 use std::path::PathBuf;
 use std::process::{Child, Command, Stdio};
 use std::sync::Arc;
@@ -76,6 +76,26 @@ impl FigureCompiler {
         }
     }
 
+    pub fn get_latex_errors(&self, output_dir: &str) -> Result<Vec<String>> {
+        let mut path = PathBuf::from(output_dir).join(self.name.clone());
+        path.set_extension("log");
+
+        let mut errors = vec![];
+
+        let file = std::fs::File::open(path)?;
+        for line in std::io::BufReader::new(file).lines() {
+            let line = line?;
+            if line.starts_with("! ") {
+                errors.push(line);
+            }
+        }
+
+        errors.sort();
+        errors.dedup();
+
+        Ok(errors)
+    }
+
     pub fn wait(mut self, pb: &ProgressBar, settings: &Settings) -> Result<FinishedFigure> {
         pb.set_length(self.plot_count + 1);
         let mut progress_path = PathBuf::from(&settings.output_dir).join(&self.name);
@@ -94,7 +114,20 @@ impl FigureCompiler {
                     } else {
                         // TODO: check if a pdf file was generated
                         lualatex_error = true;
+
                         log::error!("[{}]: Lualatex failed.", self.name);
+                        if let Ok(errors) = self.get_latex_errors(&settings.output_dir) {
+                            let accepted_errors = ["! Dimension too large.".to_owned()];
+                            if let Some(error) = errors
+                                .iter()
+                                .filter(|err| !accepted_errors.contains(err))
+                                .next()
+                            {
+                                panic!("Luatex failed for {} with {error}", self.name);
+                            }
+                        } else {
+                            panic!("Could not read log file for {}", self.name);
+                        }
                     }
                 }
                 break;

@@ -235,7 +235,7 @@ fn main() -> std::io::Result<()> {
 
     if !lualatex_errors.is_empty() {
         eprintln!();
-        eprintln!("Lualatex failed for the following figures:");
+        eprintln!("Lualatex failed with an acceptable error for the following figures:");
         for name in lualatex_errors {
             eprintln!("{name}");
         }
