@@ -431,7 +431,7 @@ progress_file=io.open(""#;
         }
         if matches!(self.component, pxu::Component::Xp | pxu::Component::Xm) {
             self.add_plot(
-                options,
+                &[&["very thin", "lightgray"], options].concat(),
                 &vec![Complex64::from(-10.0), Complex64::from(10.0)],
             )?;
         }
