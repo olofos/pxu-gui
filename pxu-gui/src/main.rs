@@ -21,7 +21,11 @@ fn main() -> Result<(), eframe::Error> {
 
     let arguments = Arguments::parse();
 
-    let native_options = eframe::NativeOptions::default();
+    let icon_bytes = include_bytes!("../assets/icon-256.png");
+    let native_options = eframe::NativeOptions {
+        icon_data: eframe::IconData::try_from_png_bytes(icon_bytes).ok(),
+        ..eframe::NativeOptions::default()
+    };
     eframe::run_native(
         "pxu gui",
         native_options,
