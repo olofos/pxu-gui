@@ -405,6 +405,226 @@ fn get_cut_path(
     path
 }
 
+fn fig_x_integration_contour_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "x-integration-contour-1",
+        -3.1..2.6,
+        0.0,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    let s = Complex64::from(consts.s());
+
+    let mut bottom_scallion_path = get_cut_path(
+        &contours,
+        &pt,
+        Component::Xp,
+        consts,
+        CutType::UShortScallion(Component::Xp),
+    );
+    bottom_scallion_path.push(s);
+    bottom_scallion_path.reverse();
+
+    let top_scallion_path = bottom_scallion_path
+        .iter()
+        .map(|z| z.conj())
+        .collect::<Vec<_>>();
+
+    let mut bottom_kidney_path = vec![-1.0 / s];
+    bottom_kidney_path.extend(get_cut_path(
+        &contours,
+        &pt,
+        Component::Xp,
+        consts,
+        CutType::UShortKidney(Component::Xp),
+    ));
+    bottom_kidney_path.reverse();
+
+    let kidney_bottom = *bottom_kidney_path
+        .iter()
+        .min_by(|&z1, &z2| z1.im.partial_cmp(&z2.im).unwrap())
+        .unwrap();
+    let kidney_top = kidney_bottom.conj();
+
+    let top_kidney_path = bottom_kidney_path
+        .iter()
+        .map(|z| z.conj())
+        .collect::<Vec<_>>();
+
+    let dy = Complex64::new(0.0, 0.03);
+    let log_path_1t = vec![-3.1 + dy, -1.0 / s + dy];
+    let log_path_1b = vec![-3.1 - dy, -1.0 / s + -dy];
+    let log_path_2t = vec![-1.0 / s + dy, dy];
+    let log_path_2b = vec![-1.0 / s + -dy, -dy];
+
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &top_scallion_path,
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &bottom_scallion_path,
+    )?;
+    figure.add_plot(&["Black", "thick"], &top_kidney_path)?;
+    figure.add_plot(&["Black", "thick"], &bottom_kidney_path)?;
+    figure.add_plot(
+        &["White", "thick"],
+        &vec![Complex64::from(-3.1), Complex64::zero()],
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.6 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &log_path_1t,
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.6 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &log_path_1b,
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &log_path_2t,
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &log_path_2b,
+    )?;
+    figure.add_plot(
+        &["Black", "thick", "only marks", "mark size=0.04cm"],
+        &vec![-1.0 / s, Complex64::zero(), s],
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 1.0 with {\arrow{latex}}}",
+            "postaction=decorate",
+            "draw=none",
+        ],
+        &vec![kidney_bottom + 0.1, kidney_bottom - 0.15],
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 1.0 with {\arrow{latex}}}",
+            "postaction=decorate",
+            "draw=none",
+        ],
+        &vec![kidney_top + 0.1, kidney_top - 0.15],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_x_integration_contour_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "x-integration-contour-2",
+        -3.1..2.6,
+        0.0,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    let s = Complex64::from(consts.s());
+
+    let dy = Complex64::new(0.0, 0.03);
+    let path_t = vec![s + dy, -1.0 / s + dy];
+    let path_b = vec![s - dy, -1.0 / s - dy];
+
+    figure.add_plot(&["White", "thick"], &vec![-1.0 / s, s])?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.6 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &path_t,
+    )?;
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.6 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &path_b,
+    )?;
+    figure.add_plot(
+        &["Black", "thick", "only marks", "mark size=0.04cm"],
+        &vec![-1.0 / s, s],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_x_regions_outside(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -6596,6 +6816,8 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_x_integration_contour_1,
+    fig_x_integration_contour_2,
     fig_p_bs3_region_min_1,
     fig_u_bs3_region_min_1,
     fig_u_large_circle_1,
