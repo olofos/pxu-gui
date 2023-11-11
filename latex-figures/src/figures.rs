@@ -5377,6 +5377,220 @@ fn fig_bs_disp_rel_lr0(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_u_region_min_3(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(-2.5, consts);
+    pt.sheet_data.log_branch_p = -3;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-min-3",
+        -7.25..7.25,
+        -0.0 * k / h - 6.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, -6.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_region_min_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(-1.5, consts);
+    pt.sheet_data.log_branch_p = -2;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-min-2",
+        -7.25..7.25,
+        -0.0 * k / h - 4.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, -4.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_region_min_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(-0.5, consts);
+    pt.sheet_data.log_branch_p = -1;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-min-1",
+        -7.25..7.25,
+        -0.0 * k / h - 2.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, -2.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_region_0(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-0",
+        -7.25..7.25,
+        -0.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_region_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(1.5, consts);
+    pt.sheet_data.log_branch_p = 1;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-1",
+        -7.25..7.25,
+        -0.0 * k / h + 2.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, 2.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_region_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(2.5, consts);
+    pt.sheet_data.log_branch_p = 2;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-2",
+        -7.25..7.25,
+        -0.0 * k / h + 4.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 4.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, 4.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.04cm"])?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_p_plane_path_between_regions(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -6816,6 +7030,12 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_u_region_min_3,
+    fig_u_region_min_2,
+    fig_u_region_min_1,
+    fig_u_region_0,
+    fig_u_region_1,
+    fig_u_region_2,
     fig_x_integration_contour_1,
     fig_x_integration_contour_2,
     fig_p_bs3_region_min_1,
