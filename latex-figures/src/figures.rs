@@ -3837,6 +3837,151 @@ fn fig_p_typical_bound_state(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_bound_state_region_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "p-bound-state-region-1",
+        -0.2..1.8,
+        0.0,
+        Size {
+            width: 12.0,
+            height: 5.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let state_strings = [
+        "(points:[(p:(1.18723732607551,-0.017900744639078304),xp:(5.343571274474835,4.112533502713208),xm:(5.227614240073456,-2.996639019704647),u:(3.942370414738855,-1.9998999607629369),sheet_data:(log_branch_p:1,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(-1,1))),(p:(0.02155164482525027,0.017897155757077343),xp:(5.227614240073457,-2.996639019704648),xm:(5.343548529832183,-4.1123137550256015),u:(3.9423704147388543,-2.999899960762939),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:1,u_branch:(Outside,Outside),im_x_sign:(1,1)))],unlocked:false)",
+    ];
+
+    let states: Vec<pxu::State> = state_strings
+        .iter()
+        .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
+        .collect::<Result<Vec<_>>>()?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    figure.add_plot(
+        &["very thin", "lightgray"],
+        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+    )?;
+
+    figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
+
+    let colors = ["Blue", "Red"];
+    let marks = ["*", "o"];
+    for (state, color, mark) in izip!(states, colors, marks) {
+        let points = state
+            .points
+            .iter()
+            .map(|pt| pt.get(Component::P))
+            .collect::<Vec<_>>();
+
+        figure.add_plot_all(
+            &[
+                "only marks",
+                color,
+                &format!("mark={mark}"),
+                "mark size=0.05cm",
+            ],
+            points,
+        )?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_bound_state_regions_min_1_min_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "p-bound-state-regions-min-1-min-2",
+        -1.8..0.2,
+        0.0,
+        Size {
+            width: 12.0,
+            height: 5.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    let state_strings = [
+        "(points:[(p:(-1.332081405906118,-0.04538049641071554),xp:(-0.17511033258995276,0.2771633748573245),xm:(-0.11636131599061295,-0.21732052778191732),u:(-0.9168424606184588,5.500100069319226),sheet_data:(log_branch_p:-2,log_branch_m:0,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(1,1))),(p:(0.011437172821809637,0.04536990584917373),xp:(-0.11636131599061278,-0.2173205277819174),xm:(-0.17509442946452716,-0.2771476182033895),u:(-0.9168424606184558,4.500100069319232),sheet_data:(log_branch_p:0,log_branch_m:0,e_branch:-1,u_branch:(Inside,Inside),im_x_sign:(1,1)))],unlocked:false)",
+        "(points:[(p:(-0.10396889396070738,-0.058571065344782174),xp:(-1.1673288038094392,0.8936432232901272),xm:(-1.0174826765753087,0.0001224475526552249),u:(-2.014092443020625,3.0000999381214077),sheet_data:(log_branch_p:-1,log_branch_m:1,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1))),(p:(-0.10399507514856618,0.05855992759638331),xp:(-1.0174826765753078,0.00012244755265466978),xm:(-1.1673151913145814,-0.8934917573729062),u:(-2.014092443020624,2.0000999381214073),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,1)))],unlocked:false)"
+    ];
+
+    let states: Vec<pxu::State> = state_strings
+        .iter()
+        .map(|s| ron::from_str(s).map_err(|_| error("Could not load state")))
+        .collect::<Result<Vec<_>>>()?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    figure.add_plot(
+        &["very thin", "lightgray"],
+        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+    )?;
+
+    figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
+
+    let colors = ["Blue", "Red"];
+    let marks = ["*", "o"];
+    for (state, color, mark) in izip!(states, colors, marks) {
+        let points_e_plus = state
+            .points
+            .iter()
+            .filter(|pt| pt.sheet_data.e_branch > 0)
+            .map(|pt| pt.get(Component::P))
+            .collect::<Vec<_>>();
+
+        figure.add_plot_all(
+            &[
+                "only marks",
+                color,
+                &format!("mark={mark}"),
+                "mark size=0.05cm",
+            ],
+            points_e_plus,
+        )?;
+
+        let points_e_min = state
+            .points
+            .iter()
+            .filter(|pt| pt.sheet_data.e_branch < 0)
+            .map(|pt| pt.get(Component::P))
+            .collect::<Vec<_>>();
+
+        figure.add_plot_all(
+            &[
+                "only marks",
+                "Gray",
+                &format!("mark={mark}"),
+                "mark size=0.05cm",
+            ],
+            points_e_min,
+        )?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_x_bound_state_region_1(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -7104,6 +7249,8 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xm_crossing_0,
     fig_x_typical_bound_state,
     fig_p_typical_bound_state,
+    fig_p_bound_state_region_1,
+    fig_p_bound_state_regions_min_1_min_2,
     fig_x_bound_state_region_1,
     fig_x_bound_state_region_min_1,
     fig_x_bound_state_region_min_2,
