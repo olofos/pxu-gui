@@ -26,6 +26,10 @@ fn load_states(state_strings: &[&str]) -> Result<Vec<pxu::State>> {
 
 const PREIMAGE_STRING: &str = include_str!("../data/preimage-data.ron");
 
+// TODO:
+// - physical u plane for various p
+// - b.s. with p > 2pi in  the p plane?
+
 fn draw_xl_preimage(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -640,8 +644,8 @@ fn fig_x_regions_outside(
         -3.1..3.1,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::Xp,
         settings,
@@ -728,8 +732,8 @@ fn fig_x_regions_between(
         -3.1..3.1,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::Xp,
         settings,
@@ -819,8 +823,8 @@ fn fig_x_regions_inside(
         -1.1..1.1,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::Xp,
         settings,
@@ -896,8 +900,8 @@ fn fig_x_regions_long(
         -3.1..3.1,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::Xp,
         settings,
@@ -1007,8 +1011,8 @@ fn fig_u_regions_outside(
         -7.25..7.25,
         -0.5,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1089,8 +1093,8 @@ fn fig_u_regions_between(
         -7.25..7.25,
         -0.5,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1180,8 +1184,8 @@ fn fig_u_regions_inside(
         -7.25..7.25,
         -0.5,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1262,8 +1266,8 @@ fn fig_u_regions_between_small(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1391,8 +1395,8 @@ fn fig_u_regions_inside_small_upper(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1473,8 +1477,8 @@ fn fig_u_regions_inside_small_lower(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1555,8 +1559,8 @@ fn fig_u_regions_inside_small(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1675,8 +1679,8 @@ fn fig_u_regions_long_upper(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
@@ -1757,8 +1761,8 @@ fn fig_u_regions_long_lower(
         -7.25..7.25,
         0.0,
         Size {
-            width: 5.0,
-            height: 5.0,
+            width: 4.0,
+            height: 4.0,
         },
         Component::U,
         settings,
