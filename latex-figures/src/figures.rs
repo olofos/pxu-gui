@@ -2481,6 +2481,76 @@ fn fig_p_plane_short_cuts(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_p_plane_short_cuts_rr_075(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(0.75, 0);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "p-plane-short-cuts-RR-075",
+        -1.6..1.6,
+        0.0,
+        Size {
+            width: 10.0,
+            height: 4.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
+        .filter(|cut| matches!(cut.typ, CutType::E | CutType::UShortScallion(_)))
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_plane_short_cuts_rr_200(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 0);
+    let contours = pxu_provider.get_contours(consts)?;
+    let pt = pxu::Point::new(0.5, consts);
+
+    let mut figure = FigureWriter::new(
+        "p-plane-short-cuts-RR-200",
+        -1.6..1.6,
+        0.0,
+        Size {
+            width: 10.0,
+            height: 4.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::P, consts)
+        .filter(|cut| matches!(cut.typ, CutType::E | CutType::UShortScallion(_)))
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_xp_cuts_1(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -7230,6 +7300,8 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_xpl_cover,
     fig_xml_cover,
     fig_p_plane_short_cuts,
+    fig_p_plane_short_cuts_rr_075,
+    fig_p_plane_short_cuts_rr_200,
     fig_xp_cuts_1,
     fig_xm_cuts_1,
     fig_u_band_between_outside,
