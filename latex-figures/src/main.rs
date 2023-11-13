@@ -41,6 +41,8 @@ fn panic_on_thread_panic() {
     std::panic::set_hook(Box::new(move |panic_info| {
         // invoke the default handler and exit the process
         orig_hook(panic_info);
+        #[cfg(not(debug_assertions))]
+        eprintln!("{panic_info}");
         std::process::exit(1);
     }));
 }
