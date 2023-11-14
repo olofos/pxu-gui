@@ -383,6 +383,179 @@ fn fig_scallion_and_kidney_3_70(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_scallion_and_kidney_r(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?.clone();
+
+    let mut figure = FigureWriter::new(
+        "scallion-and-kidney-R",
+        -3.1..3.1,
+        0.0,
+        Size {
+            width: 6.0,
+            height: 6.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+    let state_string = r"(points:[(p:(-0.2498413622379303,0.000009991228580474854),xp:(-0.6478279611895327,0.6471633470693878),xm:(-0.6478494168942528,-0.6472232084111232),u:(-1.3503465619270798,-2.5000545006090906),sheet_data:(log_branch_p:0,log_branch_m:-1,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)";
+    let state = load_state(state_string)?;
+    let pt = &state.points[0];
+
+    figure.set_r();
+    figure.component_indicator(r"x_{\mbox{\tiny R}}");
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(Component::Xp)
+                    | CutType::UShortScallion(Component::Xp)
+                    | CutType::Log(Component::Xp)
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        if matches!(cut.typ, CutType::Log(_)) {
+            cut.path = cut.path.into_iter().map(|z| -z).collect();
+        }
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    let points = vec![pt.get(Component::Xp), pt.get(Component::Xm)];
+
+    figure.add_plot_all(&["only marks", "Blue", "mark size=0.05cm"], points)?;
+    figure.add_node(
+        r"$\scriptstyle x_{\mbox{\tiny R}}^+$",
+        pt.get(Component::Xp),
+        &["anchor=west"],
+    )?;
+    figure.add_node(
+        r"$\scriptstyle x_{\mbox{\tiny R}}^-$",
+        pt.get(Component::Xm),
+        &["anchor=west"],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_plane_between_between_r(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?.clone();
+
+    let mut figure = FigureWriter::new(
+        "u-plane-between-between-R",
+        -5.125..5.125,
+        -consts.k() as f64 / consts.h,
+        Size {
+            width: 4.0,
+            height: 6.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+    let state_string = r"(points:[(p:(-0.2498413622379303,0.000009991228580474854),xp:(-0.6478279611895327,0.6471633470693878),xm:(-0.6478494168942528,-0.6472232084111232),u:(-1.3503465619270798,-2.5000545006090906),sheet_data:(log_branch_p:0,log_branch_m:-1,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)";
+    let state = load_state(state_string)?;
+    let pt = &state.points[0];
+    figure.set_r();
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, -consts.k() as f64 / consts.h))?;
+    figure.component_indicator(r"u_{\mbox{\tiny R}}");
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, figure.component, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(_) | CutType::UShortScallion(_) | CutType::E
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.add_state(&state, &["Blue", "mark size=0.05cm"])?;
+    figure.add_node(
+        r"$\scriptstyle u_{\mbox{\tiny R}}$",
+        pt.get(Component::U) + Complex64::new(-0.1, 0.38 / consts.h),
+        &["anchor=east"],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_plane_short_cuts_r(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "p-plane-short-cuts-R",
+        -2.6..2.6,
+        0.0,
+        Size {
+            width: 11.0,
+            height: 4.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+    let state_string = r"(points:[(p:(-0.2498413622379303,0.000009991228580474854),xp:(-0.6478279611895327,0.6471633470693878),xm:(-0.6478494168942528,-0.6472232084111232),u:(-1.3503465619270798,-2.5000545006090906),sheet_data:(log_branch_p:0,log_branch_m:-1,e_branch:1,u_branch:(Between,Between),im_x_sign:(1,-1)))],unlocked:false)";
+    let state = load_state(state_string)?;
+    let pt = &state.points[0];
+
+    figure.set_r();
+    figure.component_indicator(r"p_{\mbox{\tiny R}}");
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    for cut in contours
+        .get_visible_cuts_from_point(pt, Component::P, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::E
+                    | CutType::Log(_)
+                    | CutType::UShortKidney(_)
+                    | CutType::UShortScallion(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.add_state(&state, &["Blue", "mark size=0.05cm"])?;
+    figure.add_node(
+        r"$\scriptstyle p_{\mbox{\tiny R}}$",
+        pt.get(Component::P),
+        &["anchor=north"],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn get_cut_path(
     contours: &pxu::Contours,
     pt: &pxu::Point,
@@ -7355,6 +7528,9 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_scallion_and_kidney,
     fig_scallion_and_kidney_3_70,
     fig_scallion_and_kidney_7_10,
+    fig_scallion_and_kidney_r,
+    fig_u_plane_between_between_r,
+    fig_p_plane_short_cuts_r,
     fig_x_regions_outside,
     fig_x_regions_between,
     fig_x_regions_inside,

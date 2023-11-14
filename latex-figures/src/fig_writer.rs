@@ -116,6 +116,7 @@ pub struct FigureWriter {
     component_indicator: ComponentIndicator,
     extension: SizeExtension,
     scope_closed: bool,
+    is_r: bool,
 }
 
 impl FigureWriter {
@@ -222,6 +223,7 @@ progress_file=io.open(""#;
             component_indicator: ComponentIndicator::Automatic,
             extension: Default::default(),
             scope_closed: false,
+            is_r: false,
         })
     }
 
@@ -262,6 +264,7 @@ progress_file=io.open(""#;
             component_indicator: ComponentIndicator::None,
             extension: Default::default(),
             scope_closed: false,
+            is_r: false,
         })
     }
 
@@ -276,7 +279,7 @@ progress_file=io.open(""#;
     fn format_coordinate(&self, p: Complex64) -> String {
         format!(
             "({:.5},{:.5})",
-            p.re,
+            if self.is_r { -p.re } else { p.re },
             p.im + self.y_shift.unwrap_or_default()
         )
     }
@@ -877,6 +880,10 @@ progress_file=io.open(""#;
 
     pub fn set_caption(&mut self, caption: &str) {
         self.caption = caption.to_owned();
+    }
+
+    pub fn set_r(&mut self) {
+        self.is_r = true;
     }
 
     pub fn scale(&self) -> f64 {
