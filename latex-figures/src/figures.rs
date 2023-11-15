@@ -2611,6 +2611,410 @@ fn fig_xml_cover(
     figure.finish(cache, settings, pb)
 }
 
+fn draw_legend(
+    figure: &mut FigureWriter,
+    labels: &[&str],
+    styles: &[&str],
+    south_west: bool,
+) -> Result<()> {
+    assert_eq!(labels.len(), styles.len());
+
+    let scale = figure.bounds.height() / figure.size.height;
+    let legend_step = 0.375 * scale;
+    let legend_width = 1.3 * scale;
+    let legend_margin = 0.25 * scale;
+
+    let legend_se = if south_west {
+        figure.bounds.south_west() + 0.1 * scale * Complex64::new(1.0, 1.0) + legend_width
+    } else {
+        figure.bounds.south_east() + 0.1 * scale * Complex64::new(-1.0, 1.0)
+    };
+
+    let legend_ne = legend_se + legend_step * (labels.len() as f64 + 0.5) * Complex64::i();
+    let legend_nw = legend_ne - legend_width;
+
+    figure.unset_r();
+
+    figure.draw(
+        &format!(
+            "({},{}) rectangle ({},{})",
+            legend_nw.re, legend_nw.im, legend_se.re, legend_se.im
+        ),
+        &["fill=white"],
+    )?;
+
+    for (i, (&style, label)) in izip!(styles.iter(), labels).enumerate() {
+        let pos = legend_nw + legend_margin - (0.75 + i as f64) * legend_step * Complex64::i();
+
+        let options: &[&str] = &[style];
+
+        figure.add_plot_all(
+            &[
+                &["thick", "only marks", "mark=*", "mark size=0.065cm"],
+                options,
+            ]
+            .concat(),
+            vec![pos],
+        )?;
+
+        figure.add_node(
+            &format!(r"$\scriptstyle {label}$"),
+            pos + 0.1 * scale,
+            &["anchor=west"],
+        )?;
+    }
+
+    Ok(())
+}
+
+fn fig_xl_crossed_point_0(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xL-crossed-point-0",
+        -5.0..5.0,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator(r"x_{\mbox{\tiny L}}");
+
+    let pt = pxu::Point::new(0.4, consts);
+    let pt_r = pxu::Point::new(pt.p, CouplingConstants::new(consts.h, -consts.k()));
+
+    for contour in contours.get_grid(Component::Xp) {
+        let options: &[&str] = match contour.component {
+            GridLineComponent::Xp(m) if m == 1.0 => &["thick", "Red"],
+            GridLineComponent::Xm(m) if m == -1.0 => &["thick", "Red"],
+            GridLineComponent::Xp(m) if m == -1.0 => &["thick", "Green"],
+            GridLineComponent::Xm(m) if m == 1.0 => &["thick", "Green"],
+            _ => &[],
+        };
+
+        figure.add_grid_line(contour, options)?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    let points = [
+        pt.get(Component::Xp),
+        1.0 / pt_r.get(Component::Xp),
+        pt.get(Component::Xm),
+        1.0 / pt_r.get(Component::Xm),
+    ];
+
+    let styles = [
+        "Red",
+        "Red,mark options={fill=white}",
+        "Green",
+        "Green,mark options={fill=white}",
+    ];
+
+    let labels = ["x_{L}^+", "1/x_{R}^+", "x_{L}^-", "1/x_{R}^-"];
+
+    for (&pos, &style) in izip!(points.iter(), styles.iter()) {
+        let options: &[&str] = &[style];
+        figure.add_plot_all(
+            &[
+                &["thick", "only marks", "mark=*", "mark size=0.065cm"],
+                options,
+            ]
+            .concat(),
+            vec![pos],
+        )?;
+    }
+
+    draw_legend(&mut figure, &labels, &styles, false)?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xl_crossed_point_min_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xL-crossed-point-min-1",
+        -1.4..1.4,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator(r"x_{\mbox{\tiny L}}");
+
+    let pt = pxu::Point::new(-0.4, consts);
+    let pt_r = pxu::Point::new(pt.p, CouplingConstants::new(consts.h, -consts.k()));
+
+    for contour in contours.get_grid(Component::Xp) {
+        let options: &[&str] = match contour.component {
+            GridLineComponent::Xp(m) if m == -4.0 => &["thick", "Red"],
+            GridLineComponent::Xm(m) if m == -6.0 => &["thick", "Red"],
+            GridLineComponent::Xp(m) if m == -6.0 => &["thick", "Green"],
+            GridLineComponent::Xm(m) if m == -4.0 => &["thick", "Green"],
+            _ => &[],
+        };
+
+        figure.add_grid_line(contour, options)?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    let points = [
+        pt.get(Component::Xp),
+        1.0 / pt_r.get(Component::Xp),
+        pt.get(Component::Xm),
+        1.0 / pt_r.get(Component::Xm),
+    ];
+
+    let styles = [
+        "Red",
+        "Red,mark options={fill=white}",
+        "Green",
+        "Green,mark options={fill=white}",
+    ];
+
+    let labels = ["x_{L}^+", "1/x_{R}^+", "x_{L}^-", "1/x_{R}^-"];
+
+    for (&pos, &style) in izip!(points.iter(), styles.iter()) {
+        let options: &[&str] = &[style];
+        figure.add_plot_all(
+            &[
+                &["thick", "only marks", "mark=*", "mark size=0.065cm"],
+                options,
+            ]
+            .concat(),
+            vec![pos],
+        )?;
+    }
+
+    draw_legend(&mut figure, &labels, &styles, false)?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xr_crossed_point_min_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xR-crossed-point-min-1",
+        -5.0..5.0,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.set_r();
+
+    figure.component_indicator(r"x_{\mbox{\tiny R}}");
+
+    let pt = pxu::Point::new(0.4, consts);
+    let pt_r = pxu::Point::new(pt.p, CouplingConstants::new(consts.h, -consts.k()));
+
+    for contour in contours.get_grid(Component::Xp) {
+        let options: &[&str] = match contour.component {
+            GridLineComponent::Xp(m) if m == 1.0 => &["thick", "Red"],
+            GridLineComponent::Xm(m) if m == -1.0 => &["thick", "Red"],
+            GridLineComponent::Xp(m) if m == -1.0 => &["thick", "Green"],
+            GridLineComponent::Xm(m) if m == 1.0 => &["thick", "Green"],
+            _ => &[],
+        };
+
+        figure.add_grid_line(contour, options)?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    let points = [
+        pt.get(Component::Xp),
+        1.0 / pt_r.get(Component::Xp),
+        pt.get(Component::Xm),
+        1.0 / pt_r.get(Component::Xm),
+    ];
+
+    let styles = [
+        "Red,mark options={fill=white}",
+        "Red",
+        "Green,mark options={fill=white}",
+        "Green",
+    ];
+
+    let labels = ["x_{R}^+", "1/x_{L}^+", "x_{R}^-", "1/x_{L}^-"];
+
+    for (&pos, &style) in izip!(points.iter(), styles.iter()) {
+        let options: &[&str] = &[style];
+        figure.add_plot_all(
+            &[
+                &["thick", "only marks", "mark=*", "mark size=0.065cm"],
+                options,
+            ]
+            .concat(),
+            vec![pos],
+        )?;
+    }
+
+    draw_legend(&mut figure, &labels, &styles, true)?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xr_crossed_point_0(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xR-crossed-point-0",
+        -1.4..1.4,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.set_r();
+
+    figure.component_indicator(r"x_{\mbox{\tiny R}}");
+
+    let pt = pxu::Point::new(-0.4, consts);
+    let pt_r = pxu::Point::new(pt.p, CouplingConstants::new(consts.h, -consts.k()));
+
+    for contour in contours.get_grid(Component::Xp) {
+        let options: &[&str] = match contour.component {
+            GridLineComponent::Xp(m) if m == -4.0 => &["thick", "Red"],
+            GridLineComponent::Xm(m) if m == -6.0 => &["thick", "Red"],
+            GridLineComponent::Xp(m) if m == -6.0 => &["thick", "Green"],
+            GridLineComponent::Xm(m) if m == -4.0 => &["thick", "Green"],
+            _ => &[],
+        };
+
+        figure.add_grid_line(contour, options)?;
+    }
+
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, Component::Xp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortKidney(Component::Xp) | CutType::UShortScallion(Component::Xp)
+            )
+        })
+    {
+        let mut cut = cut.clone();
+        cut.branch_point = None;
+        figure.add_cut(&cut, &["black", "very thick"], consts)?;
+    }
+
+    let points = [
+        pt.get(Component::Xp),
+        1.0 / pt_r.get(Component::Xp),
+        pt.get(Component::Xm),
+        1.0 / pt_r.get(Component::Xm),
+    ];
+
+    let styles = [
+        "Red,mark options={fill=white}",
+        "Red",
+        "Green,mark options={fill=white}",
+        "Green",
+    ];
+
+    let labels = ["x_{R}^+", "1/x_{L}^+", "x_{R}^-", "1/x_{L}^-"];
+
+    for (&pos, &style) in izip!(points.iter(), styles.iter()) {
+        let options: &[&str] = &[style];
+        figure.add_plot_all(
+            &[
+                &["thick", "only marks", "mark=*", "mark size=0.065cm"],
+                options,
+            ]
+            .concat(),
+            vec![pos],
+        )?;
+    }
+
+    draw_legend(&mut figure, &labels, &styles, true)?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_p_plane_short_cuts(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -7472,6 +7876,10 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_plane_e_cuts,
     fig_xpl_cover,
     fig_xml_cover,
+    fig_xl_crossed_point_0,
+    fig_xr_crossed_point_0,
+    fig_xl_crossed_point_min_1,
+    fig_xr_crossed_point_min_1,
     fig_p_plane_short_cuts,
     fig_p_plane_short_cuts_rr_075,
     fig_p_plane_short_cuts_rr_200,

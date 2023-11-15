@@ -32,12 +32,20 @@ impl Bounds {
         Self { x_range, y_range }
     }
 
-    fn width(&self) -> f64 {
+    pub fn width(&self) -> f64 {
         self.x_range.end - self.x_range.start
     }
 
-    fn height(&self) -> f64 {
+    pub fn height(&self) -> f64 {
         self.y_range.end - self.y_range.start
+    }
+
+    pub fn south_east(&self) -> Complex64 {
+        Complex64::new(self.x_range.end, self.y_range.start)
+    }
+
+    pub fn south_west(&self) -> Complex64 {
+        Complex64::new(self.x_range.start, self.y_range.start)
     }
 
     fn inside(&self, z: &Complex64) -> bool {
@@ -884,6 +892,10 @@ progress_file=io.open(""#;
 
     pub fn set_r(&mut self) {
         self.is_r = true;
+    }
+
+    pub fn unset_r(&mut self) {
+        self.is_r = false;
     }
 
     pub fn scale(&self) -> f64 {
