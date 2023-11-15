@@ -2734,7 +2734,12 @@ fn fig_xl_crossed_point_0(
         "Green,mark options={fill=white}",
     ];
 
-    let labels = ["x_{L}^+", "1/x_{R}^+", "x_{L}^-", "1/x_{R}^-"];
+    let labels = [
+        r"x_{\mbox{\tiny L}}^+",
+        r"1/x_{\mbox{\tiny R}}^+",
+        r"x_{\mbox{\tiny L}}^-",
+        r"1/x_{\mbox{\tiny R}}^-",
+    ];
 
     for (&pos, &style) in izip!(points.iter(), styles.iter()) {
         let options: &[&str] = &[style];
@@ -2820,7 +2825,12 @@ fn fig_xl_crossed_point_min_1(
         "Green,mark options={fill=white}",
     ];
 
-    let labels = ["x_{L}^+", "1/x_{R}^+", "x_{L}^-", "1/x_{R}^-"];
+    let labels = [
+        r"x_{\mbox{\tiny L}}^+",
+        r"1/x_{\mbox{\tiny R}}^+",
+        r"x_{\mbox{\tiny L}}^-",
+        r"1/x_{\mbox{\tiny R}}^-",
+    ];
 
     for (&pos, &style) in izip!(points.iter(), styles.iter()) {
         let options: &[&str] = &[style];
@@ -2908,7 +2918,12 @@ fn fig_xr_crossed_point_min_1(
         "Green",
     ];
 
-    let labels = ["x_{R}^+", "1/x_{L}^+", "x_{R}^-", "1/x_{L}^-"];
+    let labels = [
+        r"x_{\mbox{\tiny R}}^+",
+        r"1/x_{\mbox{\tiny L}}^+",
+        r"x_{\mbox{\tiny R}}^-",
+        r"1/x_{\mbox{\tiny L}}^-",
+    ];
 
     for (&pos, &style) in izip!(points.iter(), styles.iter()) {
         let options: &[&str] = &[style];
@@ -2996,7 +3011,12 @@ fn fig_xr_crossed_point_0(
         "Green",
     ];
 
-    let labels = ["x_{R}^+", "1/x_{L}^+", "x_{R}^-", "1/x_{L}^-"];
+    let labels = [
+        r"x_{\mbox{\tiny R}}^+",
+        r"1/x_{\mbox{\tiny L}}^+",
+        r"x_{\mbox{\tiny R}}^-",
+        r"1/x_{\mbox{\tiny L}}^-",
+    ];
 
     for (&pos, &style) in izip!(points.iter(), styles.iter()) {
         let options: &[&str] = &[style];
