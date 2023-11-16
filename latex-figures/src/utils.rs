@@ -92,6 +92,11 @@ impl Summary {
             write!(writer, "\\fbox{{{includegraphics}}}")?;
             write!(writer, "\\cprotect\\caption{{")?;
             write!(writer, "\\verb|{includegraphics}|")?;
+            write!(
+                writer,
+                "\\\\{}cm $\\times$ {}cm",
+                finished_figure.size.width, finished_figure.size.height
+            )?;
             if !finished_figure.caption.is_empty() {
                 write!(writer, "\\\\{}", finished_figure.caption)?;
             }
