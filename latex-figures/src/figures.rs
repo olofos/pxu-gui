@@ -3948,11 +3948,11 @@ fn fig_p_crossing_all(
 
     let figure = FigureWriter::new(
         "p-crossing-all",
-        -1.1..1.1,
+        -1.6..1.6,
         0.0,
         Size {
-            width: 8.0,
-            height: 6.0,
+            width: 12.0,
+            height: 5.0,
         },
         Component::P,
         settings,
@@ -3989,22 +3989,22 @@ fn fig_p_crossing_all(
         ],
         &[
             (
-                r"\footnotesize 1",
+                r"\footnotesize $1$",
                 Complex64::new(0.091, 0.029),
                 &["anchor=south west", "blue"],
             ),
             (
-                r"\footnotesize 2",
+                r"\footnotesize $1'$",
                 Complex64::new(0.091, -0.029),
                 &["anchor=north west", "blue"],
             ),
             (
-                r"\footnotesize 3",
+                r"\footnotesize $2$",
                 Complex64::new(0.498, 0.142),
                 &["anchor=north west", "cyan"],
             ),
             (
-                r"\footnotesize 4",
+                r"\footnotesize $2'$",
                 Complex64::new(-0.443, -0.172),
                 &["anchor=north west", "magenta"],
             ),
@@ -4058,22 +4058,22 @@ fn fig_xp_crossing_all(
         ],
         &[
             (
-                r"\footnotesize 1",
+                r"\footnotesize $1$",
                 Complex64::new(2.08, -0.44),
                 &["anchor=north west", "blue"],
             ),
             (
-                r"\footnotesize 2",
+                r"\footnotesize $1'$",
                 Complex64::new(2.58, 1.59),
                 &["anchor=west", "blue"],
             ),
             (
-                r"\footnotesize 3",
+                r"\footnotesize $2$",
                 Complex64::new(-0.80, -0.45),
                 &["anchor=north east", "cyan"],
             ),
             (
-                r"\footnotesize 4",
+                r"\footnotesize $2'$",
                 Complex64::new(3.58, 2.34),
                 &["anchor=west", "magenta"],
             ),
@@ -4127,22 +4127,22 @@ fn fig_xm_crossing_all(
         ],
         &[
             (
-                r"\footnotesize 1",
+                r"\footnotesize $1$",
                 Complex64::new(1.056, -1.734),
                 &["anchor=north east", "blue"],
             ),
             (
-                r"\footnotesize 2",
+                r"\footnotesize $1'$",
                 Complex64::new(1.917, 0.718),
                 &["anchor=south west", "blue"],
             ),
             (
-                r"\footnotesize 3",
+                r"\footnotesize $2$",
                 Complex64::new(3.227, -2.985),
                 &["anchor=west", "cyan"],
             ),
             (
-                r"\footnotesize 4",
+                r"\footnotesize $2'$",
                 Complex64::new(3.331, 1.040),
                 &["anchor=west", "magenta"],
             ),
@@ -4153,6 +4153,153 @@ fn fig_xm_crossing_all(
         settings,
         pb,
     )
+}
+
+fn fig_xp_crossing_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xp-crossing-1",
+        -2.0..3.0,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    let pathname = "p crossing a";
+
+    let path = pxu_provider.get_path(pathname)?;
+    let pt = &pxu_provider.get_start(pathname)?.points[0];
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    figure.add_path(&path, pt, &["thick", "Blue"])?;
+    figure.add_path_start_end_mark(&path, &["Blue", "mark size=0.05cm"])?;
+    figure.add_path_arrows(&path, &[0.55], &["thick", "Blue"])?;
+
+    let comp = figure.component;
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, comp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            ) || matches!(cut.typ,CutType::Log(c) if c == comp)
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_xm_crossing_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "xm-crossing-1",
+        -2.0..3.0,
+        -0.7,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::Xm,
+        settings,
+        pb,
+    )?;
+
+    let pathname = "p crossing a";
+
+    let path = pxu_provider.get_path(pathname)?;
+    let pt = &pxu_provider.get_start(pathname)?.points[0];
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    figure.add_path(&path, pt, &["thick", "Blue"])?;
+    figure.add_path_start_end_mark(&path, &["Blue", "mark size=0.05cm"])?;
+    figure.add_path_arrows(&path, &[0.55], &["thick", "Blue"])?;
+
+    let comp = figure.component;
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, comp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            ) || matches!(cut.typ,CutType::Log(c) if c == comp)
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_u_crossing_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "u-crossing-1",
+        0.0..3.0,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    let pathname = "p crossing a";
+
+    let path = pxu_provider.get_path(pathname)?;
+    let pt = &pxu_provider.get_start(pathname)?.points[0];
+
+    figure.add_grid_lines(&contours, &[])?;
+
+    figure.add_path(&path, pt, &["thick", "Blue"])?;
+    figure.add_path_start_end_mark(&path, &["Blue", "mark size=0.05cm"])?;
+    figure.add_path_arrows(&path, &[0.5], &["thick", "Blue"])?;
+
+    let comp = figure.component;
+    for cut in contours
+        .get_visible_cuts_from_point(&pt, comp, consts)
+        .filter(|cut| {
+            matches!(
+                cut.typ,
+                CutType::UShortScallion(_) | CutType::UShortKidney(_)
+            )
+        })
+    {
+        figure.add_cut(cut, &[], consts)?;
+    }
+
+    figure.finish(cache, settings, pb)
 }
 
 fn fig_u_crossing_0(
@@ -7891,6 +8038,9 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_p_crossing_all,
     fig_xp_crossing_all,
     fig_xm_crossing_all,
+    fig_xp_crossing_1,
+    fig_xm_crossing_1,
+    fig_u_crossing_1,
     fig_p_xpl_preimage,
     fig_p_xml_preimage,
     fig_p_plane_e_cuts,
