@@ -636,7 +636,7 @@ progress_file=io.open(""#;
 
         for points in dotted_segments {
             self.add_curve(
-                &[&["very thick", "Blue", "dotted"], options].concat(),
+                &[&["very thick", "Blue", "densely dotted"], options].concat(),
                 &points,
             )?;
         }
