@@ -6554,6 +6554,72 @@ fn fig_u_region_2(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_u_region_min_1_h_01_k_5(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(0.1, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(-0.5, consts);
+    pt.sheet_data.log_branch_p = -1;
+    pt.sheet_data.log_branch_m = 0;
+
+    let k = consts.k() as f64;
+    let h = consts.h;
+
+    let mut figure = FigureWriter::new(
+        "u-region-min-1-h-01-k-5",
+        -72.5..72.5,
+        -0.0 * k / h - 2.0 * k / h,
+        Size {
+            width: 2.0,
+            height: 5.0,
+        },
+        Component::U,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis_origin(Complex64::new(0.0, -2.0 * k / h))?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_p_plane_h_01_k_5(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(0.1, 5);
+    let contours = pxu_provider.get_contours(consts)?;
+    let mut pt = pxu::Point::new(-0.5, consts);
+    pt.sheet_data.log_branch_p = -1;
+    pt.sheet_data.log_branch_m = 0;
+
+    let mut figure = FigureWriter::new(
+        "p-plane-h-01-k-5",
+        -0.4..0.3,
+        0.0,
+        Size {
+            width: 5.0,
+            height: 5.0,
+        },
+        Component::P,
+        settings,
+        pb,
+    )?;
+
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_cuts(&contours, &pt, consts, &[])?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_p_plane_path_between_regions(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -7993,6 +8059,8 @@ type FigureFunction = fn(
 ) -> Result<FigureCompiler>;
 
 pub const ALL_FIGURES: &[FigureFunction] = &[
+    fig_u_region_min_1_h_01_k_5,
+    fig_p_plane_h_01_k_5,
     fig_u_region_min_3,
     fig_u_region_min_2,
     fig_u_region_min_1,

@@ -99,6 +99,7 @@ fn main() -> std::io::Result<()> {
         CouplingConstants::new(1.0, 7),
         CouplingConstants::new(2.0, 0),
         CouplingConstants::new(0.75, 0),
+        CouplingConstants::new(0.1, 5),
     ];
 
     let mut pxu_provider = PxuProvider::new();
