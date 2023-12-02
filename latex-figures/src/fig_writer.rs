@@ -128,13 +128,13 @@ pub struct FigureWriter {
 }
 
 impl FigureWriter {
-    const FILE_START_1: &str = r#"
+    const FILE_START_1: &'static str = r#"
 \nonstopmode
 \documentclass[10pt,a4paper]{article}
 \usepackage{luatextra}
 \begin{luacode}
 progress_file=io.open(""#;
-    const FILE_START_2: &str = r#"","w")
+    const FILE_START_2: &'static str = r#"","w")
 \end{luacode}
 \usepackage[svgnames]{xcolor}
 \usepackage{pgfplots}
@@ -150,7 +150,7 @@ progress_file=io.open(""#;
 \begin{tikzpicture}
 "#;
 
-    const FILE_END: &str = r#"
+    const FILE_END: &'static str = r#"
 \end{tikzpicture}
 \directlua{progress_file:write("!")}
 \directlua{io.close(progress_file)}

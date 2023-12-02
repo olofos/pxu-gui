@@ -185,7 +185,7 @@ fn main() -> std::io::Result<()> {
     eprintln!("[4/5] Saving figures");
 
     let path = PathBuf::from(settings.output_dir.clone());
-    std::fs::create_dir_all(&path)?;
+    std::fs::create_dir_all(path)?;
 
     for (filename, fig) in filename_and_figures.iter() {
         let ron = ron::to_string(&fig).unwrap();
