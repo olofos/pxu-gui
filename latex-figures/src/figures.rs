@@ -4190,7 +4190,7 @@ fn fig_xp_crossing_1(
 
     let comp = figure.component;
     for cut in contours
-        .get_visible_cuts_from_point(&pt, comp, consts)
+        .get_visible_cuts_from_point(pt, comp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -4239,7 +4239,7 @@ fn fig_xm_crossing_1(
 
     let comp = figure.component;
     for cut in contours
-        .get_visible_cuts_from_point(&pt, comp, consts)
+        .get_visible_cuts_from_point(pt, comp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
@@ -4288,7 +4288,7 @@ fn fig_u_crossing_1(
 
     let comp = figure.component;
     for cut in contours
-        .get_visible_cuts_from_point(&pt, comp, consts)
+        .get_visible_cuts_from_point(pt, comp, consts)
         .filter(|cut| {
             matches!(
                 cut.typ,
