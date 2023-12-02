@@ -802,6 +802,127 @@ fn fig_x_integration_contour_2(
     figure.finish(cache, settings, pb)
 }
 
+fn fig_x_integration_contour_rr_2(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 0);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "x-integration-contour-RR-2",
+        -2.2..2.2,
+        0.0,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    let dy = Complex64::new(0.0, 0.03);
+    let path_t = vec![1.0 + dy, -1.0 + dy];
+    let path_b = vec![1.0 - dy, -1.0 - dy];
+
+    figure.add_plot(
+        &["White", "thick"],
+        &vec![Complex64::from(-1.0), Complex64::from(1.0)],
+    )?;
+
+    figure.add_plot(
+        &["Black", "thick", "only marks", "mark size=0.04cm"],
+        &vec![Complex64::from(1.0), Complex64::from(-1.0)],
+    )?;
+
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &path_t,
+    )?;
+
+    figure.add_plot(
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+        &path_b,
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
+fn fig_x_integration_contour_rr_1(
+    pxu_provider: Arc<PxuProvider>,
+    cache: Arc<cache::Cache>,
+    settings: &Settings,
+    pb: &ProgressBar,
+) -> Result<FigureCompiler> {
+    let consts = CouplingConstants::new(2.0, 0);
+    let contours = pxu_provider.get_contours(consts)?;
+
+    let mut figure = FigureWriter::new(
+        "x-integration-contour-RR-1",
+        -2.2..2.2,
+        0.0,
+        Size {
+            width: 4.0,
+            height: 4.0,
+        },
+        Component::Xp,
+        settings,
+        pb,
+    )?;
+
+    figure.component_indicator("x");
+    figure.add_grid_lines(&contours, &[])?;
+    figure.add_axis()?;
+
+    figure.add_plot(
+        &["Black", "thick", "only marks", "mark size=0.04cm"],
+        &vec![Complex64::from(1.0), Complex64::from(-1.0)],
+    )?;
+
+    figure.draw(
+        "(1,0) arc (0:180:1.0)",
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+    )?;
+
+    figure.draw(
+        "(1,0) arc (0:-180:1.0)",
+        &[
+            "Black",
+            "thick",
+            r"decoration={markings,mark=at position 0.3 with {\arrow{latex}}}",
+            r"decoration={markings,mark=at position 0.8 with {\arrow{latex}}}",
+            "postaction=decorate",
+        ],
+    )?;
+
+    figure.finish(cache, settings, pb)
+}
+
 fn fig_x_regions_outside(
     pxu_provider: Arc<PxuProvider>,
     cache: Arc<cache::Cache>,
@@ -8069,6 +8190,8 @@ pub const ALL_FIGURES: &[FigureFunction] = &[
     fig_u_region_2,
     fig_x_integration_contour_1,
     fig_x_integration_contour_2,
+    fig_x_integration_contour_rr_1,
+    fig_x_integration_contour_rr_2,
     fig_p_bs3_region_min_1,
     fig_u_bs3_region_min_1,
     fig_u_large_circle_1,
