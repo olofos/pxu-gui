@@ -11,7 +11,7 @@ use num::complex::Complex64;
 const P_RANGE_MIN: i32 = -3;
 const P_RANGE_MAX: i32 = 3;
 
-const INFINITY: f64 = 100.0;
+const INFINITY: f64 = 150.0;
 
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub enum Component {
