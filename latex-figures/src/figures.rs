@@ -6683,12 +6683,13 @@ fn fig_u_region_min_1_h_01_k_5(
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(0.1, 5);
     let contours = pxu_provider.get_contours(consts)?;
-    let mut pt = pxu::Point::new(-0.5, consts);
-    pt.sheet_data.log_branch_p = -1;
-    pt.sheet_data.log_branch_m = 0;
 
     let k = consts.k() as f64;
     let h = consts.h;
+
+    let mut pt = pxu::Point::new(-1.0 / k, consts);
+    pt.sheet_data.log_branch_p = -1;
+    pt.sheet_data.log_branch_m = 0;
 
     let mut figure = FigureWriter::new(
         "u-region-min-1-h-01-k-5",
@@ -6707,10 +6708,8 @@ fn fig_u_region_min_1_h_01_k_5(
     figure.add_axis()?;
     figure.add_cuts(&contours, &pt, consts, &[])?;
 
-    figure.add_plot(
-        &["dashed", "black"],
-        &vec![Complex64::new(-75.0, k / h), Complex64::new(75.0, k / h)],
-    )?;
+    pt.u += 2.0 * k / h * Complex64::i();
+    figure.add_point(&pt, &["Blue", "mark size=0.05cm"])?;
 
     figure.finish(cache, settings, pb)
 }
@@ -6723,7 +6722,7 @@ fn fig_p_plane_h_01_k_5(
 ) -> Result<FigureCompiler> {
     let consts = CouplingConstants::new(0.1, 5);
     let contours = pxu_provider.get_contours(consts)?;
-    let mut pt = pxu::Point::new(-0.5, consts);
+    let mut pt = pxu::Point::new(-1.0 / consts.k() as f64, consts);
     pt.sheet_data.log_branch_p = -1;
     pt.sheet_data.log_branch_m = 0;
 
@@ -6742,6 +6741,7 @@ fn fig_p_plane_h_01_k_5(
 
     figure.add_grid_lines(&contours, &[])?;
     figure.add_cuts(&contours, &pt, consts, &[])?;
+    figure.add_point(&pt, &["Blue", "mark size=0.05cm"])?;
 
     figure.finish(cache, settings, pb)
 }
@@ -6768,7 +6768,7 @@ fn fig_u_region_min_1_h_0_k_5(
 
     figure.component_indicator("u");
 
-    figure.add_axis_origin(Complex64::new(0.0, -5.0))?;
+    figure.add_axis_origin(Complex64::new(0.0, 5.0))?;
 
     for y in (-14..=14).map(|n| n as f64) {
         figure.add_curve(
@@ -6790,9 +6790,9 @@ fn fig_u_region_min_1_h_0_k_5(
         figure.add_cut(&cut, &[], consts)?;
     }
 
-    figure.add_plot(
-        &["dashed", "black"],
-        &vec![Complex64::from(-2.0), Complex64::from(2.0)],
+    figure.add_plot_all(
+        &["Blue", "only marks", "mark size=0.05cm"],
+        vec![Complex64::zero()],
     )?;
 
     figure.finish(cache, settings, pb)
@@ -6810,7 +6810,7 @@ fn fig_p_region_min_1_h_0_k_5(
         -2.0..2.0,
         -2.8..2.8,
         Size {
-            width: 5.0,
+            width: 2.5,
             height: 5.0,
         },
         &["hide axis,scale only axis,ticks=none,clip,clip mode=individual"],
@@ -6843,13 +6843,8 @@ fn fig_p_region_min_1_h_0_k_5(
         figure.add_cut(&cut, &[], consts)?;
     }
 
-    figure.add_plot(
-        &["dashed", "black"],
-        &vec![Complex64::from(-2.0), Complex64::from(2.0)],
-    )?;
-
     figure.add_plot_all(
-        &["black", "only marks", "mark size=0.05cm"],
+        &["Blue", "only marks", "mark size=0.05cm"],
         vec![Complex64::zero()],
     )?;
 
