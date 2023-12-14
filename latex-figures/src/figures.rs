@@ -397,8 +397,8 @@ fn fig_scallion_and_kidney_r(
         -3.1..3.1,
         0.0,
         Size {
-            width: 6.0,
-            height: 6.0,
+            width: 8.0,
+            height: 8.0,
         },
         Component::Xp,
         settings,
@@ -463,8 +463,8 @@ fn fig_u_plane_between_between_r(
         -5.125..5.125,
         -consts.k() as f64 / consts.h,
         Size {
-            width: 4.0,
-            height: 6.0,
+            width: 5.5,
+            height: 8.0,
         },
         Component::U,
         settings,
@@ -515,8 +515,8 @@ fn fig_p_plane_short_cuts_r(
         -2.6..2.6,
         0.0,
         Size {
-            width: 11.0,
-            height: 4.0,
+            width: 15.5,
+            height: 6.0,
         },
         Component::P,
         settings,
