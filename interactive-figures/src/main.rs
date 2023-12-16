@@ -5,6 +5,14 @@ use make_paths::PxuProvider;
 use pxu::CouplingConstants;
 use std::{path::PathBuf, sync::Arc};
 
+pub fn error(message: &str) -> std::io::Error {
+    std::io::Error::new(std::io::ErrorKind::Other, message)
+}
+
+fn load_state(s: &str) -> std::io::Result<pxu::State> {
+    ron::from_str(s).map_err(|_| error("Could not load state"))
+}
+
 const PATH_CACHE_DIR: &str = ".cache";
 
 #[derive(Parser, Clone)]
@@ -27,6 +35,7 @@ struct FigureSource<'a> {
     path_names: Vec<&'a str>,
     state: Option<pxu::State>,
     consts: (f64, i32),
+    paper_ref: Vec<&'a str>,
 }
 
 fn main() -> std::io::Result<()> {
@@ -163,7 +172,13 @@ fn main() -> std::io::Result<()> {
                 .map(|name| (*pxu_provider.get_path(name).unwrap()).clone())
                 .collect::<Vec<_>>();
 
-            let figure = ::interactive_figures::Figure { paths, state };
+            let consts = pxu::CouplingConstants::new(fig.consts.0, fig.consts.1);
+
+            let figure = ::interactive_figures::Figure {
+                paths,
+                state,
+                consts,
+            };
 
             let filename = fig.filename.to_owned();
 
@@ -172,6 +187,7 @@ fn main() -> std::io::Result<()> {
                 name: fig.name.to_owned(),
                 description: fig.description.to_owned(),
                 consts: pxu::CouplingConstants::new(fig.consts.0, fig.consts.1),
+                paper_ref: fig.paper_ref.iter().map(|s| String::from(*s)).collect(),
             };
 
             pb.inc(1);

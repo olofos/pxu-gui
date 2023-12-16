@@ -178,6 +178,10 @@ impl PxuGuiApp {
         log::info!("Loaded figure {name}");
 
         self.ui_state.plot_state.path_indices = (0..figure.paths.len()).collect();
+        if self.pxu.consts != figure.consts {
+            self.pxu.consts = figure.consts;
+            self.pxu.contours.clear();
+        }
         self.pxu.state = figure.state;
         self.pxu.paths = figure.paths;
         self.ui_state.plot_state.active_point = 0;
@@ -746,7 +750,8 @@ impl PxuGuiApp {
             .collapsible(true)
             .show(ctx, |ui| {
                 for (index, fig) in self.figures.iter().enumerate() {
-                    let response = ui.selectable_label(Some(index) == self.figure_index, &fig.name);
+                    let title = format!("Figure {}: {}", fig.paper_ref.join("/"), fig.name);
+                    let response = ui.selectable_label(Some(index) == self.figure_index, &title);
                     if (response.clicked() || response.double_clicked())
                         && Some(index) != self.figure_index
                     {
@@ -1046,9 +1051,14 @@ impl PxuGuiApp {
 
             if let Some(index) = self.figure_index {
                 ui.separator();
-                ui.label(
-                    egui::RichText::new(format!("Figure: {}", self.figures[index].name)).strong(),
-                );
+                let fig = &self.figures[index];
+
+                if fig.paper_ref.is_empty() {
+                    ui.label(egui::RichText::new(format!("Figure: {}", fig.name)).strong());
+                } else {
+                    let refs = fig.paper_ref.join("/");
+                    ui.label(egui::RichText::new(format!("Figure {refs}: {}", fig.name)).strong());
+                }
                 ui.add_space(5.0);
                 ui.label(&self.figures[index].description);
                 ui.add_space(5.0);
