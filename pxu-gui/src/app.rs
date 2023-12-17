@@ -1059,8 +1059,10 @@ impl PxuGuiApp {
                     let refs = fig.paper_ref.join("/");
                     ui.label(egui::RichText::new(format!("Figure {refs}: {}", fig.name)).strong());
                 }
-                ui.add_space(5.0);
-                ui.label(&self.figures[index].description);
+                if !fig.description.is_empty() {
+                    ui.add_space(5.0);
+                    ui.label(&fig.description);
+                }
                 ui.add_space(5.0);
 
                 if ui.button("Close").clicked() {
