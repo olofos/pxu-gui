@@ -1385,7 +1385,7 @@ fn path_p_from_region_0_to_region_min_1(
     let dz1 = Complex64::from_polar(0.25, PI - angle);
     let dz2 = Complex64::from_polar(0.25, angle);
 
-    let path = bezier_path(start, start + dz1, end + dz2, end, 0.01, 0.0001);
+    let path = bezier_path(start, start + dz1, end + dz2, end, 0.001, 0.0001);
 
     pxu::path::SavedPath::new(
         "p from region 0 to region -1",
