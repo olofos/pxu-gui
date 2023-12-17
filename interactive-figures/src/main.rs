@@ -43,7 +43,7 @@ fn main() -> std::io::Result<()> {
     FigureSource {
         filename: "simple-path",
         name: "A simple path",
-        description: "",
+        description: "A simple path that brings x⁺ and x⁻ from the outside of the scallion to the region between the scallion and the kidney.",
         path_names: vec!["u simple path 1", "u simple path 2","u simple path 3","u simple path 4",],
         state: None,
         consts: (2.0, 5),
@@ -52,7 +52,7 @@ fn main() -> std::io::Result<()> {
     FigureSource {
         filename: "large-circle",
         name: "A large circle",
-        description: "",
+        description: "x⁺ makes a large circle around the origin.",
         path_names: vec!["xp large circle",],
         state: None,
         consts: (2.0, 5),
@@ -64,8 +64,8 @@ fn main() -> std::io::Result<()> {
         description: "",
         path_names: vec![
             "p from region 0 to region -1", 
-            "p from region -1 to region -2",
-            "p from region -2 to region -3",
+            "p from region -1 to region -2 conj",
+            "p from region -2 to region -3 conj",
             "p from region 0 to region +1",
             "p from region +1 to region +2",
             "p from region +2 to region +3",
