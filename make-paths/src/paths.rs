@@ -1427,6 +1427,43 @@ fn path_p_from_region_min_1_to_region_min_2(
     )
 }
 
+fn path_p_from_region_min_1_to_region_min_2_conj(
+    contour_provider: std::sync::Arc<ContourProvider>,
+) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(-0.5,0.0),xp:(-0.000000000000000042434040257275324,0.6930004681646913),xm:(-0.000000000000000042434040257275324,-0.6930004681646913),u:(0.29183016758322633,2.499999999999999),sheet_data:(log_branch_p:-1,log_branch_m:0,e_branch:1,u_branch:(Between,Between),im_x_sign:(-1,1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+    state.goto(pxu::Component::P, -0.5, &contours, consts, 4);
+
+    let start = Complex64::from(-0.5);
+    let end = Complex64::from(-1.5);
+
+    let angle = PI / 4.0;
+
+    let dz1 = Complex64::from_polar(0.25, PI - angle);
+    let dz2 = Complex64::from_polar(0.25, angle);
+
+    let path = bezier_path(
+        start,
+        start + dz1.conj(),
+        end + dz2.conj(),
+        end,
+        0.01,
+        0.0001,
+    );
+
+    pxu::path::SavedPath::new(
+        "p from region -1 to region -2 conj",
+        path,
+        state,
+        pxu::Component::P,
+        0,
+        consts,
+    )
+}
+
 fn path_p_from_region_min_2_to_region_min_3(
     contour_provider: std::sync::Arc<ContourProvider>,
 ) -> SavedPath {
@@ -1449,6 +1486,43 @@ fn path_p_from_region_min_2_to_region_min_3(
 
     pxu::path::SavedPath::new(
         "p from region -2 to region -3",
+        path,
+        state,
+        pxu::Component::P,
+        0,
+        consts,
+    )
+}
+
+fn path_p_from_region_min_2_to_region_min_3_conj(
+    contour_provider: std::sync::Arc<ContourProvider>,
+) -> SavedPath {
+    let consts = CouplingConstants::new(2.0, 5);
+    let contours = contour_provider.get(consts).unwrap();
+
+    let state_string = "(points:[(p:(-1.5,0.0),xp:(-0.000000000000000051994006857876043,0.2830421903092184),xm:(-0.000000000000000051994006857876043,-0.2830421903092184),u:(1.0043944658480892,-0.0000000000000008881784197001252),sheet_data:(log_branch_p:-2,log_branch_m:-0,e_branch:1,u_branch:(Inside,Inside),im_x_sign:(-1,-1)))],unlocked:false)";
+    let mut state = load_state(state_string).unwrap();
+    state.goto(pxu::Component::P, -1.5, &contours, consts, 4);
+
+    let start = Complex64::from(-1.5);
+    let end = Complex64::from(-2.5);
+
+    let angle = PI / 4.0;
+
+    let dz1 = Complex64::from_polar(0.25, PI - angle);
+    let dz2 = Complex64::from_polar(0.25, angle);
+
+    let path = bezier_path(
+        start,
+        start + dz1.conj(),
+        end + dz2.conj(),
+        end,
+        0.01,
+        0.0001,
+    );
+
+    pxu::path::SavedPath::new(
+        "p from region -2 to region -3 conj",
         path,
         state,
         pxu::Component::P,
@@ -2070,6 +2144,8 @@ pub const INTERACTIVE_PATHS: &[crate::PathFunction] = &[
     path_p_from_region_0_to_region_plus_1,
     path_p_from_region_plus_1_to_region_plus_2,
     path_p_from_region_plus_2_to_region_plus_3,
+    path_p_from_region_min_1_to_region_min_2_conj,
+    path_p_from_region_min_2_to_region_min_3_conj,
     path_u_simple_path_1,
     path_u_simple_path_2,
     path_u_simple_path_3,
