@@ -1,6 +1,6 @@
 # PXU gui
 
-PXU gui is a companion to the paper arXiv:XXXX.XXXXX. It gives a visualisation of the relation between the variables p, x⁺, x⁻ and u which are useful for describing the kinematics of world-sheet excitations of the light-cone gauge string in AdS₃ × S³ × T⁴ supported by a mix of RR and NSNS flux.
+PXU gui is a companion to the paper arXiv:2312.09288. It gives a visualisation of the relation between the variables p, x⁺, x⁻ and u which are useful for describing the kinematics of world-sheet excitations of the light-cone gauge string in AdS₃ × S³ × T⁴ supported by a mix of RR and NSNS flux.
 
 The easiest way to run PXU gui is to simply go to the [web site](https://olofos.github.io/pxu-gui/).
 

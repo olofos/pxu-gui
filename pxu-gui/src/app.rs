@@ -684,7 +684,7 @@ impl PxuGuiApp {
                 ui.add_space(8.0);
 
                 ui.horizontal(|ui| {
-                    const ARXIV_ID: &str = "XXXX.XXXXX";
+                    const ARXIV_ID: &str = "2312.09288";
 
                     ui.spacing_mut().item_spacing.x = 0.0;
                     ui.label("This application is a supplement to the paper ");
