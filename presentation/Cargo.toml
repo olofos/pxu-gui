@@ -6,8 +6,8 @@ edition = "2021"
 rust-version = "1.65"
 
 [dependencies]
-egui = "0.23.0"
-eframe = { version = "0.23.0", default-features = false, features = [
+egui = "0.26.2"
+eframe = { version = "0.26.2", default-features = false, features = [
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
 ] }
@@ -31,7 +31,7 @@ base64.workspace = true
 flate2 = "1.0.25"
 ron = "0.8.0"
 image = { version = "0.24.6", default-features = false, features = ["png"] }
-egui_extras = { version = "0.23.0", features = ["image"] }
+egui_extras = { version = "0.26.2", features = ["image"] }
 toml = "0.8.2"
 serde_with = "3.0.0"
 clap = { workspace = true, features = ["derive"] }

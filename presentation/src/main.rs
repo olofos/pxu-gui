@@ -62,7 +62,7 @@ fn main() -> Result<()> {
     )?;
 
     let native_options = eframe::NativeOptions {
-        fullscreen: true,
+        viewport: egui::ViewportBuilder::default().with_fullscreen(true),
         vsync: true,
         ..Default::default()
     };

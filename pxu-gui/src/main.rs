@@ -23,7 +23,8 @@ fn main() -> Result<(), eframe::Error> {
 
     let icon_bytes = include_bytes!("../assets/icon-256.png");
     let native_options = eframe::NativeOptions {
-        icon_data: eframe::IconData::try_from_png_bytes(icon_bytes).ok(),
+        viewport: egui::ViewportBuilder::default()
+            .with_icon(eframe::icon_data::from_png_bytes(icon_bytes).ok().unwrap()),
         ..eframe::NativeOptions::default()
     };
     eframe::run_native(

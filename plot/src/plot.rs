@@ -87,7 +87,7 @@ impl Plot {
             let zoom = ui.input(|i| i.zoom_delta());
             self.zoom(zoom);
 
-            let scroll = ui.input(|i| i.scroll_delta);
+            let scroll = ui.input(|i| i.smooth_scroll_delta);
             self.origin -= Vec2::new(
                 scroll.x * (self.height / rect.height()) * (self.width_factor),
                 scroll.y * (self.height / rect.height()),

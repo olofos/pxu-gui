@@ -206,7 +206,7 @@ impl eframe::App for PresentationApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         #[cfg(not(target_arch = "wasm32"))]
         if ctx.input(|i| i.key_pressed(egui::Key::Q)) {
-            _frame.close();
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
         }
 
         if !self.loaded {

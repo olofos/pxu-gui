@@ -380,7 +380,7 @@ impl eframe::App for PxuGuiApp {
             }
         });
 
-        if self.pxu.state.unlocked && ctx.input(|i| i.key_pressed(egui::Key::PlusEquals)) {
+        if self.pxu.state.unlocked && ctx.input(|i| i.key_pressed(egui::Key::Plus)) {
             self.pxu
                 .state
                 .points
