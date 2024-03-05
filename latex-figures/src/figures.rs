@@ -196,39 +196,36 @@ fn fig_p_plane_e_cuts(
         figure.add_cut(cut, &[], consts)?;
     }
 
-    figure.add_plot(
-        &["black"],
-        &vec![Complex64::from(-5.0), Complex64::from(5.0)],
-    )?;
+    figure.add_plot(&["black"], &[Complex64::from(-5.0), Complex64::from(5.0)])?;
 
     figure.add_plot(
         &["black"],
-        &vec![Complex64::new(0.0, -5.0), Complex64::new(0.0, 5.0)],
+        &[Complex64::new(0.0, -5.0), Complex64::new(0.0, 5.0)],
     )?;
 
     for i in 0..=(2 * 5) {
         let x = -5.0 + i as f64;
         figure.add_plot(
             &["black"],
-            &vec![Complex64::new(x, -0.03), Complex64::new(x, 0.03)],
+            &[Complex64::new(x, -0.03), Complex64::new(x, 0.03)],
         )?;
         figure.add_plot(
             &["black"],
-            &vec![
+            &[
                 Complex64::new(x + 0.25, -0.015),
                 Complex64::new(x + 0.25, 0.015),
             ],
         )?;
         figure.add_plot(
             &["black"],
-            &vec![
+            &[
                 Complex64::new(x + 0.5, -0.015),
                 Complex64::new(x + 0.5, 0.015),
             ],
         )?;
         figure.add_plot(
             &["black"],
-            &vec![
+            &[
                 Complex64::new(x + 0.75, -0.015),
                 Complex64::new(x + 0.75, 0.015),
             ],
@@ -677,7 +674,7 @@ fn fig_x_integration_contour_1(
     figure.add_plot(&["Black", "thick"], &bottom_kidney_path)?;
     figure.add_plot(
         &["White", "thick"],
-        &vec![Complex64::from(-3.1), Complex64::zero()],
+        &[Complex64::from(-3.1), Complex64::zero()],
     )?;
     figure.add_plot(
         &[
@@ -717,7 +714,7 @@ fn fig_x_integration_contour_1(
     )?;
     figure.add_plot(
         &["Black", "thick", "only marks", "mark size=0.04cm"],
-        &vec![-1.0 / s, Complex64::zero(), s],
+        &[-1.0 / s, Complex64::zero(), s],
     )?;
     figure.add_plot(
         &[
@@ -727,7 +724,7 @@ fn fig_x_integration_contour_1(
             "postaction=decorate",
             "draw=none",
         ],
-        &vec![kidney_bottom + 0.1, kidney_bottom - 0.15],
+        &[kidney_bottom + 0.1, kidney_bottom - 0.15],
     )?;
     figure.add_plot(
         &[
@@ -737,7 +734,7 @@ fn fig_x_integration_contour_1(
             "postaction=decorate",
             "draw=none",
         ],
-        &vec![kidney_top + 0.1, kidney_top - 0.15],
+        &[kidney_top + 0.1, kidney_top - 0.15],
     )?;
 
     figure.finish(cache, settings, pb)
@@ -775,7 +772,7 @@ fn fig_x_integration_contour_2(
     let path_t = vec![s + dy, -1.0 / s + dy];
     let path_b = vec![s - dy, -1.0 / s - dy];
 
-    figure.add_plot(&["White", "thick"], &vec![-1.0 / s, s])?;
+    figure.add_plot(&["White", "thick"], &[-1.0 / s, s])?;
     figure.add_plot(
         &[
             "Black",
@@ -796,7 +793,7 @@ fn fig_x_integration_contour_2(
     )?;
     figure.add_plot(
         &["Black", "thick", "only marks", "mark size=0.04cm"],
-        &vec![-1.0 / s, s],
+        &[-1.0 / s, s],
     )?;
 
     figure.finish(cache, settings, pb)
@@ -834,12 +831,12 @@ fn fig_x_integration_contour_rr_2(
 
     figure.add_plot(
         &["White", "thick"],
-        &vec![Complex64::from(-1.0), Complex64::from(1.0)],
+        &[Complex64::from(-1.0), Complex64::from(1.0)],
     )?;
 
     figure.add_plot(
         &["Black", "thick", "only marks", "mark size=0.04cm"],
-        &vec![Complex64::from(1.0), Complex64::from(-1.0)],
+        &[Complex64::from(1.0), Complex64::from(-1.0)],
     )?;
 
     figure.add_plot(
@@ -895,7 +892,7 @@ fn fig_x_integration_contour_rr_1(
 
     figure.add_plot(
         &["Black", "thick", "only marks", "mark size=0.04cm"],
-        &vec![Complex64::from(1.0), Complex64::from(-1.0)],
+        &[Complex64::from(1.0), Complex64::from(-1.0)],
     )?;
 
     figure.draw(
@@ -1324,7 +1321,7 @@ fn fig_u_regions_outside(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -0.5),
             Complex64::new(20.0, -0.5),
             Complex64::new(20.0, -20.0),
@@ -1334,7 +1331,7 @@ fn fig_u_regions_outside(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -0.5),
             Complex64::new(-20.0, -0.5),
             Complex64::new(-20.0, -20.0),
@@ -1344,7 +1341,7 @@ fn fig_u_regions_outside(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -0.5),
             Complex64::new(20.0, -0.5),
             Complex64::new(20.0, 20.0),
@@ -1354,7 +1351,7 @@ fn fig_u_regions_outside(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -0.5),
             Complex64::new(-20.0, -0.5),
             Complex64::new(-20.0, 20.0),
@@ -1409,7 +1406,7 @@ fn fig_u_regions_between(
 
         figure.add_plot(
             &["fill=yellow", "fill opacity=0.25", "draw=none"],
-            &vec![
+            &[
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(20.0, -0.5) + shift,
                 Complex64::new(20.0, -3.0) + shift,
@@ -1419,7 +1416,7 @@ fn fig_u_regions_between(
 
         figure.add_plot(
             &["fill=blue", "fill opacity=0.25", "draw=none"],
-            &vec![
+            &[
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(-20.0, -0.5) + shift,
                 Complex64::new(-20.0, -3.0) + shift,
@@ -1429,7 +1426,7 @@ fn fig_u_regions_between(
 
         figure.add_plot(
             &["fill=green", "fill opacity=0.25", "draw=none"],
-            &vec![
+            &[
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(20.0, -0.5) + shift,
                 Complex64::new(20.0, 2.0) + shift,
@@ -1439,7 +1436,7 @@ fn fig_u_regions_between(
 
         figure.add_plot(
             &["fill=red", "fill opacity=0.25", "draw=none"],
-            &vec![
+            &[
                 Complex64::new(0.0, -0.5) + shift,
                 Complex64::new(-20.0, -0.5) + shift,
                 Complex64::new(-20.0, 2.0) + shift,
@@ -1497,7 +1494,7 @@ fn fig_u_regions_inside(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -3.0),
             Complex64::new(20.0, -3.0),
             Complex64::new(20.0, -20.0),
@@ -1507,7 +1504,7 @@ fn fig_u_regions_inside(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -3.0),
             Complex64::new(-20.0, -3.0),
             Complex64::new(-20.0, -20.0),
@@ -1517,7 +1514,7 @@ fn fig_u_regions_inside(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -3.0),
             Complex64::new(20.0, -3.0),
             Complex64::new(20.0, 20.0),
@@ -1527,7 +1524,7 @@ fn fig_u_regions_inside(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -3.0),
             Complex64::new(-20.0, -3.0),
             Complex64::new(-20.0, 20.0),
@@ -1579,7 +1576,7 @@ fn fig_u_regions_between_small(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 0.0),
             Complex64::new(20.0, 0.0),
             Complex64::new(20.0, -2.5),
@@ -1589,7 +1586,7 @@ fn fig_u_regions_between_small(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 0.0),
             Complex64::new(-20.0, 0.0),
             Complex64::new(-20.0, -2.5),
@@ -1599,7 +1596,7 @@ fn fig_u_regions_between_small(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 0.0),
             Complex64::new(20.0, 0.0),
             Complex64::new(20.0, 2.5),
@@ -1609,7 +1606,7 @@ fn fig_u_regions_between_small(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 0.0),
             Complex64::new(-20.0, 0.0),
             Complex64::new(-20.0, 2.5),
@@ -1708,7 +1705,7 @@ fn fig_u_regions_inside_small_upper(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(20.0, 20.0),
             Complex64::new(20.0, 2.5),
@@ -1718,7 +1715,7 @@ fn fig_u_regions_inside_small_upper(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(-20.0, 20.0),
             Complex64::new(-20.0, 2.5),
@@ -1790,7 +1787,7 @@ fn fig_u_regions_inside_small_lower(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -20.0),
             Complex64::new(20.0, -20.0),
             Complex64::new(20.0, -2.5),
@@ -1800,7 +1797,7 @@ fn fig_u_regions_inside_small_lower(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -20.0),
             Complex64::new(-20.0, -20.0),
             Complex64::new(-20.0, -2.5),
@@ -1872,7 +1869,7 @@ fn fig_u_regions_inside_small(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(20.0, 20.0),
             Complex64::new(20.0, 2.5),
@@ -1882,7 +1879,7 @@ fn fig_u_regions_inside_small(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(-20.0, 20.0),
             Complex64::new(-20.0, 2.5),
@@ -1892,7 +1889,7 @@ fn fig_u_regions_inside_small(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -20.0),
             Complex64::new(20.0, -20.0),
             Complex64::new(20.0, -2.5),
@@ -1902,7 +1899,7 @@ fn fig_u_regions_inside_small(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, -20.0),
             Complex64::new(-20.0, -20.0),
             Complex64::new(-20.0, -2.5),
@@ -1992,7 +1989,7 @@ fn fig_u_regions_long_upper(
 
     figure.add_plot(
         &["fill=yellow", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(20.0, 20.0),
             Complex64::new(20.0, -20.0),
@@ -2002,7 +1999,7 @@ fn fig_u_regions_long_upper(
 
     figure.add_plot(
         &["fill=blue", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(-20.0, 20.0),
             Complex64::new(-20.0, -20.0),
@@ -2074,7 +2071,7 @@ fn fig_u_regions_long_lower(
 
     figure.add_plot(
         &["fill=green", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(20.0, 20.0),
             Complex64::new(20.0, -20.0),
@@ -2084,7 +2081,7 @@ fn fig_u_regions_long_lower(
 
     figure.add_plot(
         &["fill=red", "fill opacity=0.25", "draw=none"],
-        &vec![
+        &[
             Complex64::new(0.0, 20.0),
             Complex64::new(-20.0, 20.0),
             Complex64::new(-20.0, -20.0),
@@ -4744,7 +4741,7 @@ fn fig_p_typical_bound_state(
 
     figure.add_plot(
         &["very thin", "lightgray"],
-        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+        &[Complex64::from(-10.0), Complex64::from(10.0)],
     )?;
 
     figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
@@ -4807,7 +4804,7 @@ fn fig_p_bound_state_region_1(
 
     figure.add_plot(
         &["very thin", "lightgray"],
-        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+        &[Complex64::from(-10.0), Complex64::from(10.0)],
     )?;
 
     figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
@@ -4871,7 +4868,7 @@ fn fig_p_bound_state_regions_min_1_min_2(
 
     figure.add_plot(
         &["very thin", "lightgray"],
-        &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+        &[Complex64::from(-10.0), Complex64::from(10.0)],
     )?;
 
     figure.add_cuts(&contours, &states[0].points[0], consts, &[])?;
@@ -6773,7 +6770,7 @@ fn fig_u_region_min_1_h_0_k_5(
     for y in (-14..=14).map(|n| n as f64) {
         figure.add_curve(
             &["very thin", "lightgray"],
-            &vec![Complex64::new(-2.0, y), Complex64::new(2.0, y)],
+            &[Complex64::new(-2.0, y), Complex64::new(2.0, y)],
         )?;
     }
 
@@ -6823,7 +6820,7 @@ fn fig_p_region_min_1_h_0_k_5(
     for y in [-1.40496, -0.868315, 0.0, 0.868315, 1.40496] {
         figure.add_curve(
             &["very thin", "lightgray"],
-            &vec![Complex64::new(-2.0, y), Complex64::new(2.0, y)],
+            &[Complex64::new(-2.0, y), Complex64::new(2.0, y)],
         )?;
     }
 

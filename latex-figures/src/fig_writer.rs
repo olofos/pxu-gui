@@ -299,7 +299,7 @@ progress_file=io.open(""#;
             .collect::<Vec<_>>()
     }
 
-    pub fn crop(&self, contour: &Vec<Complex64>) -> Vec<Complex64> {
+    pub fn crop(&self, contour: &[Complex64]) -> Vec<Complex64> {
         if contour.len() < 2 {
             return vec![];
         }
@@ -337,7 +337,7 @@ progress_file=io.open(""#;
         coordinates
     }
 
-    pub fn add_plot(&mut self, options: &[&str], contour: &Vec<Complex64>) -> Result<()> {
+    pub fn add_plot(&mut self, options: &[&str], contour: &[Complex64]) -> Result<()> {
         self.add_plot_all(options, self.crop(contour))
     }
 
@@ -359,7 +359,7 @@ progress_file=io.open(""#;
         Ok(())
     }
 
-    pub fn add_curve(&mut self, options: &[&str], contour: &Vec<Complex64>) -> Result<()> {
+    pub fn add_curve(&mut self, options: &[&str], contour: &[Complex64]) -> Result<()> {
         self.add_curve_all(options, self.crop(contour))
     }
 
@@ -443,7 +443,7 @@ progress_file=io.open(""#;
         if matches!(self.component, pxu::Component::Xp | pxu::Component::Xm) {
             self.add_plot(
                 &[&["very thin", "lightgray"], options].concat(),
-                &vec![Complex64::from(-10.0), Complex64::from(10.0)],
+                &[Complex64::from(-10.0), Complex64::from(10.0)],
             )?;
         }
         Ok(())
@@ -545,14 +545,14 @@ progress_file=io.open(""#;
         let options = ["very thin", "black"];
         self.add_plot(
             &options,
-            &vec![
+            &[
                 Complex64::new(self.bounds.x_range.start - 1.0, 0.0),
                 Complex64::new(self.bounds.x_range.end + 1.0, 0.0),
             ],
         )?;
         self.add_plot(
             &options,
-            &vec![
+            &[
                 Complex64::new(0.0, self.bounds.y_range.start - 1.0),
                 Complex64::new(0.0, self.bounds.y_range.end + 1.0),
             ],
@@ -564,14 +564,14 @@ progress_file=io.open(""#;
         let origin = origin.into();
         self.add_plot(
             &options,
-            &vec![
+            &[
                 Complex64::new(self.bounds.x_range.start - 1.0, origin.im),
                 Complex64::new(self.bounds.x_range.end + 1.0, origin.im),
             ],
         )?;
         self.add_plot(
             &options,
-            &vec![
+            &[
                 Complex64::new(origin.re, self.bounds.y_range.start - 1.0),
                 Complex64::new(origin.re, self.bounds.y_range.end + 1.0),
             ],
