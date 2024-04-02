@@ -1178,7 +1178,7 @@ dependencies = [
 
 [[package]]
 name = "interactive-figures"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "clap",
  "flate2",
@@ -1268,7 +1268,7 @@ checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
 
 [[package]]
 name = "latex-figures"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "clap",
  "flo_curves",
@@ -1359,7 +1359,7 @@ checksum = "90ed8c1e510134f979dbc4f070f87d4313098b704861a105fe34231c70a3901c"
 
 [[package]]
 name = "make-paths"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "base64",
  "clap",
@@ -1735,7 +1735,7 @@ checksum = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec"
 
 [[package]]
 name = "plot"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "base64",
  "chrono",
@@ -1803,7 +1803,7 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
 name = "presentation"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "base64",
  "chrono",
@@ -1867,7 +1867,7 @@ dependencies = [
 
 [[package]]
 name = "pxu"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "base64",
  "egui",
@@ -1882,7 +1882,7 @@ dependencies = [
 
 [[package]]
 name = "pxu-gui"
-version = "1.1.0"
+version = "1.1.1"
 dependencies = [
  "base64",
  "chrono",
