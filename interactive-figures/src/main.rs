@@ -116,7 +116,7 @@ fn main() -> std::io::Result<()> {
     },
     FigureSource {
         filename: "typical-bs-min-2",
-        name: "m=2 state in (-4π,-2π)",
+        name: "m=3 state in (-4π,-2π)",
         description:
         "",
         path_names: vec![],
