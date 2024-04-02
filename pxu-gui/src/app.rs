@@ -572,11 +572,8 @@ impl PxuGuiApp {
             egui::Window::new("Share url")
                 .open(&mut open)
                 .show(ctx, |ui| {
-                    ui.add(
-                        egui::TextEdit::multiline(s)
-                            .font(egui::TextStyle::Monospace) // for cursor height
-                            .desired_width(f32::INFINITY),
-                    );
+                    ui.label("Direct link to the current state:");
+                    ui.hyperlink(s.clone());
 
                     ui.add_space(10.0);
                     ui.with_layout(egui::Layout::right_to_left(egui::Align::LEFT), |ui| {
@@ -585,7 +582,7 @@ impl PxuGuiApp {
                             close_dialog = true;
                         }
 
-                        if ui.button("Copy").clicked() {
+                        if ui.button("Copy Link").clicked() {
                             ctx.output_mut(|writer| writer.copied_text = s.clone());
                             close_dialog = true;
                         }
