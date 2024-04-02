@@ -27,6 +27,8 @@ pub struct PxuGuiApp {
     #[serde(skip)]
     state_dialog_text: Option<String>,
     #[serde(skip)]
+    shared_state_text: Option<String>,
+    #[serde(skip)]
     show_about: bool,
     #[serde(skip)]
     show_help: bool,
@@ -100,6 +102,7 @@ impl Default for PxuGuiApp {
             ui_state: Default::default(),
             path_dialog_text: None,
             state_dialog_text: None,
+            shared_state_text: None,
             show_about: false,
             show_help: false,
             show_figure_picker: false,
@@ -443,6 +446,7 @@ impl eframe::App for PxuGuiApp {
         if let Some(saved_state) = self.ui_state.inital_saved_state.take() {
             self.pxu.consts = saved_state.consts;
             self.pxu.state = saved_state.state;
+            self.ui_state.plot_state.active_point = 0;
         }
 
         {
@@ -552,6 +556,7 @@ impl eframe::App for PxuGuiApp {
 
         self.show_load_path_window(ctx);
         self.show_load_save_state_window(ctx);
+        self.show_share_state_window(ctx);
         self.show_about_window(ctx);
         self.show_help_window(ctx);
         self.show_figure_window(ctx);
@@ -559,6 +564,39 @@ impl eframe::App for PxuGuiApp {
 }
 
 impl PxuGuiApp {
+    fn show_share_state_window(&mut self, ctx: &egui::Context) {
+        if let Some(s) = &mut self.shared_state_text {
+            let mut close_dialog = false;
+            let mut open = true;
+
+            egui::Window::new("Share url")
+                .open(&mut open)
+                .show(ctx, |ui| {
+                    ui.add(
+                        egui::TextEdit::multiline(s)
+                            .font(egui::TextStyle::Monospace) // for cursor height
+                            .desired_width(f32::INFINITY),
+                    );
+
+                    ui.add_space(10.0);
+                    ui.with_layout(egui::Layout::right_to_left(egui::Align::LEFT), |ui| {
+                        ui.add_space(10.0);
+                        if ui.button("Close").clicked() {
+                            close_dialog = true;
+                        }
+
+                        if ui.button("Copy").clicked() {
+                            ctx.output_mut(|writer| writer.copied_text = s.clone());
+                            close_dialog = true;
+                        }
+                    });
+                });
+            if close_dialog || !open {
+                self.shared_state_text = None;
+            }
+        }
+    }
+
     fn show_load_path_window(&mut self, ctx: &egui::Context) {
         if let Some(ref mut s) = self.path_dialog_text {
             let mut close_dialog = false;
@@ -1017,9 +1055,43 @@ impl PxuGuiApp {
         egui::SidePanel::right("side_panel").show(ctx, |ui| {
             self.draw_coupling_controls(ui);
 
-            if ui.add(egui::Button::new("Reset State")).clicked() {
-                self.pxu.state = pxu::State::new(self.pxu.state.points.len(), self.pxu.consts);
-            }
+            ui.horizontal(|ui| {
+                if ui.add(egui::Button::new("Reset State")).clicked() {
+                    self.pxu.state = pxu::State::new(self.pxu.state.points.len(), self.pxu.consts);
+                }
+
+                if ui.add(egui::Button::new("Share")).clicked() {
+                    let saved_state = pxu::SavedState {
+                        state: self.pxu.state.clone(),
+                        consts: self.pxu.consts,
+                    };
+                    if let Ok(mut s) = ron::to_string(&saved_state) {
+                        use base64::Engine;
+                        use std::io::Write;
+
+                        let mut enc = flate2::write::DeflateEncoder::new(
+                            Vec::new(),
+                            flate2::Compression::best(),
+                        );
+                        if enc.write_all(s.as_bytes()).is_ok() {
+                            if let Ok(data) = enc.finish() {
+                                s = base64::engine::general_purpose::URL_SAFE.encode(data);
+                                if let Some(url) = self.get_base_url() {
+                                    self.shared_state_text = Some(format!("{url}?state={s}",));
+                                } else {
+                                    log::info!("No base url");
+                                }
+                            } else {
+                                log::info!("Could not url decode state");
+                            }
+                        } else {
+                            log::info!("Could not compress state");
+                        }
+                    } else {
+                        log::info!("Could not serialise state");
+                    }
+                }
+            });
 
             ui.checkbox(&mut self.pxu.state.unlocked, "Unlock bound state");
 
