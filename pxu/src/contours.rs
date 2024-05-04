@@ -971,7 +971,7 @@ impl ContourCommandGenerator {
         self.component = None;
         self.cut_type = None;
         self.periodic = false;
-        self.visibility = self.group_visibility.clone();
+        self.visibility.clone_from(&self.group_visibility);
         self.pre_shift = Complex64::from(0.0);
     }
 

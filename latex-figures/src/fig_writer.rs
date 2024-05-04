@@ -887,7 +887,7 @@ progress_file=io.open(""#;
     }
 
     pub fn set_caption(&mut self, caption: &str) {
-        self.caption = caption.to_owned();
+        caption.clone_into(&mut self.caption);
     }
 
     pub fn set_r(&mut self) {
@@ -907,6 +907,7 @@ progress_file=io.open(""#;
 }
 
 pub trait Node {
+    #[allow(dead_code)]
     fn write_m_node(
         &mut self,
         figure: &mut FigureWriter,

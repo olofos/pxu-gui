@@ -583,7 +583,7 @@ impl PxuGuiApp {
                         }
 
                         if ui.button("Copy Link").clicked() {
-                            ctx.output_mut(|writer| writer.copied_text = s.clone());
+                            ctx.output_mut(|writer| writer.copied_text.clone_from(s));
                             close_dialog = true;
                         }
                     });

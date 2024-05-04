@@ -157,7 +157,9 @@ pub fn check_presentation(dirname: &str, force_rebuild: bool, y_resolution: usiz
     }
 
     for frame in presentation.frame.iter_mut() {
-        frame.image = image_to_image.get(&frame.image).unwrap().clone();
+        frame
+            .image
+            .clone_from(image_to_image.get(&frame.image).unwrap());
     }
 
     let toml = toml::to_string(&presentation)?;
